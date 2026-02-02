@@ -1,0 +1,186 @@
+<?php
+require_once '../config/database.php';
+require_once '../includes/auth_check.php';
+
+// Ambil data siswa
+$stmt = $pdo->query("SELECT * FROM students ORDER BY full_name ASC");
+$students = $stmt->fetchAll();
+$nomor = 0;
+?>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold">Data Siswa</h3>
+    <div class="d-flex gap-2">
+        <div class="input-group" style="width: 250px;">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Cari nama siswa...">
+        </div>
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addSingleModal">
+            <i class="bi bi-person-plus"></i> Tambah Siswa
+        </button>
+        <button class="btn btn-outline-primary" onclick="location.href='modules/students/download_template.php'">
+            <i class="bi bi-download"></i> Template
+        </button>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#importModal">
+            <i class="bi bi-file-earmark-excel"></i> Import
+        </button>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="studentTable">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 60px;" class="text-center">No</th>
+                        <th class="px-4">Nama Siswa</th>
+                        <th>Username</th>
+                        <th>Status Login</th>
+                        <th class="text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <?php foreach ($students as $s): $nomor++; ?>
+                    <tr class="student-row">
+                        <td class="text-center"><?= $nomor ?></td>
+                        <td class="px-4 fw-bold student-name"><?= htmlspecialchars($s['full_name']) ?></td>
+                        <td><code><?= htmlspecialchars($s['username']) ?></code></td>
+                        <td>
+                            <?php if ($s['is_logged_in']): ?>
+                                <span class="badge bg-warning text-dark">Aktif</span>
+                            <?php else: ?>
+                                <span class="badge bg-light text-muted border">Offline</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="text-center">
+                            <a href="modules/students/process.php?action=reset_login&id=<?= $s['id'] ?>" class="btn btn-sm btn-outline-warning" title="Reset Login">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </a>
+                            <a href="modules/students/process.php?action=delete&id=<?= $s['id'] ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Hapus siswa ini?')">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <tr id="noData" style="display: none;">
+                        <td colspan="5" class="text-center p-4 text-muted">Siswa tidak ditemukan.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-white border-0 py-3">
+        <nav>
+            <ul class="pagination pagination-sm justify-content-center mb-0" id="paginationControls"></ul>
+        </nav>
+    </div>
+</div>
+
+<div class="modal fade" id="addSingleModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form action="modules/students/process.php?action=add_single" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Tambah Siswa Baru</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nama Lengkap Siswa</label>
+                        <input type="text" name="full_name" class="form-control" required placeholder="Masukkan nama lengkap">
+                        <small class="text-muted">Username & password otomatis digenerate sistem.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success">Simpan Data</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="importModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form action="modules/students/process.php?action=import" method="POST" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Import Data Siswa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Pilih File Excel (.xlsx)</label>
+                        <input type="file" name="file_excel" class="form-control" required accept=".xlsx">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Mulai Proses</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Logika Pencarian & Paginasi Ringan
+const rowsPerPage = 10;
+let currentPage = 1;
+const searchInput = document.getElementById('searchInput');
+const tableBody = document.getElementById('tableBody');
+const allRows = Array.from(tableBody.querySelectorAll('.student-row'));
+const noDataRow = document.getElementById('noData');
+const paginationControls = document.getElementById('paginationControls');
+
+function displayTable() {
+    const filter = searchInput.value.toLowerCase();
+    const filteredRows = allRows.filter(row => {
+        const name = row.querySelector('.student-name').textContent.toLowerCase();
+        return name.includes(filter);
+    });
+
+    const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
+    
+    // Sembunyikan semua baris terlebih dahulu
+    allRows.forEach(row => row.style.display = 'none');
+
+    if (filteredRows.length === 0) {
+        noDataRow.style.display = '';
+        paginationControls.innerHTML = '';
+    } else {
+        noDataRow.style.display = 'none';
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        
+        filteredRows.slice(start, end).forEach(row => row.style.display = '');
+        
+        setupPagination(totalPages);
+    }
+}
+
+function setupPagination(totalPages) {
+    paginationControls.innerHTML = '';
+    if (totalPages <= 1) return;
+
+    for (let i = 1; i <= totalPages; i++) {
+        const li = document.createElement('li');
+        li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+        li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+        li.addEventListener('click', (e) => {
+            e.preventDefault();
+            currentPage = i;
+            displayTable();
+        });
+        paginationControls.appendChild(li);
+    }
+}
+
+searchInput.addEventListener('keyup', () => {
+    currentPage = 1;
+    displayTable();
+});
+
+// Inisialisasi tampilan awal
+displayTable();
+</script>

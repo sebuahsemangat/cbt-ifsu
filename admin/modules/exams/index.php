@@ -1,0 +1,186 @@
+<?php
+require_once '../config/database.php';
+require_once '../includes/auth_check.php';
+
+// Ambil data ujian
+$stmt = $pdo->query("SELECT * FROM exams ORDER BY start_date DESC");
+$exams = $stmt->fetchAll();
+?>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold">Manajemen Jadwal Ujian (Exams)</h3>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addExamModal">
+        <i class="bi bi-calendar-plus"></i> Buat Jadwal Baru
+    </button>
+</div>
+
+<?php if (isset($_GET['status']) && $_GET['status'] == 'success'): ?>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        Operasi berhasil dilakukan!
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+<?php elseif (isset($_GET['status']) && $_GET['status'] == 'error_time'): ?>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        Waktu selesai tidak boleh lebih kecil dari waktu mulai!
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+<?php endif; ?>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th width="50px"></th> <th class="px-4">Nama Ujian</th>
+                        <th>Waktu Mulai</th>
+                        <th>Waktu Selesai</th>
+                        <th>Status Sistem</th>
+                        <th class="text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($exams as $e): ?>
+                    <tr>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-light border" type="button" data-bs-toggle="collapse" data-bs-target="#subject-<?= $e['id'] ?>">
+                                <i class="bi bi-chevron-down"></i>
+                            </button>
+                        </td>
+                        <td class="px-4 fw-bold text-primary"><?= htmlspecialchars($e['exam_name']) ?></td>
+                        <td><?= date('d M Y, H:i', strtotime($e['start_date'])) ?></td>
+                        <td><?= date('d M Y, H:i', strtotime($e['end_date'])) ?></td>
+                        <td>
+                            <?php 
+                            $now = date('Y-m-d H:i:s');
+                            if ($now < $e['start_date']) echo '<span class="badge bg-warning">Belum Mulai</span>';
+                            elseif ($now > $e['end_date']) echo '<span class="badge bg-danger">Selesai</span>';
+                            else echo '<span class="badge bg-success">Berlangsung</span>';
+                            ?>
+                        </td>
+                        <td class="text-center">
+                            <a href="modules/exams/process.php?action=delete&id=<?= $e['id'] ?>" 
+                               class="btn btn-sm btn-outline-danger" 
+                               onclick="return confirm('Menghapus Exam akan menghapus semua Subject di dalamnya. Lanjutkan?')">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    <tr class="collapse" id="subject-<?= $e['id'] ?>">
+                        <td colspan="6" class="bg-light p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold mb-0"><i class="bi bi-book me-2"></i>Daftar Mata Pelajaran</h6>
+                                <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addSubjectModal<?= $e['id'] ?>">
+                                    <i class="bi bi-plus-circle"></i> Tambah Mapel
+                                </button>
+                            </div>
+                            
+                            <table class="table table-sm table-bordered bg-white shadow-sm">
+                                <thead class="table-secondary">
+                                    <tr>
+                                        <th>Nama Mata Pelajaran</th>
+                                        <th>Durasi</th>
+                                        <th class="text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php 
+                                    $stmtSub = $pdo->prepare("SELECT * FROM subjects WHERE exam_id = ?");
+                                    $stmtSub->execute([$e['id']]);
+                                    $subjects = $stmtSub->fetchAll();
+                                    
+                                    if(empty($subjects)):
+                                    ?>
+                                        <tr><td colspan="3" class="text-center text-muted">Belum ada mata pelajaran.</td></tr>
+                                    <?php else: foreach($subjects as $s): ?>
+                                        <tr>
+                                            <td class="px-3"><?= htmlspecialchars($s['name']) ?></td>
+                                            <td><?= $s['duration'] ?> Menit</td>
+                                            <td class="text-center">
+                                                <a href="dashboard.php?page=questions&subject_id=<?= $s['id'] ?>" class="btn btn-xs btn-primary me-1">
+                                                    <i class="bi bi-pencil-square"></i> Kelola Soal
+                                                </a>
+                                                <a href="modules/subjects/process.php?action=delete&id=<?= $s['id'] ?>" 
+                                                   class="btn btn-xs btn-danger" 
+                                                   onclick="return confirm('Hapus mapel ini?')">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; endif; ?>
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <div class="modal fade" id="addSubjectModal<?= $e['id'] ?>" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <form action="modules/subjects/process.php?action=add" method="POST">
+                                    <input type="hidden" name="exam_id" value="<?= $e['id'] ?>">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title fw-bold">Tambah Mata Pelajaran</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p class="text-muted">Untuk Ujian: <b><?= htmlspecialchars($e['exam_name']) ?></b></p>
+                                        <div class="mb-3">
+                                            <label class="form-label">Nama Mata Pelajaran</label>
+                                            <input type="text" name="name" class="form-control" required placeholder="Contoh: Matematika">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Durasi (Menit)</label>
+                                            <input type="number" name="duration" class="form-control" required placeholder="Contoh: 90">
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                        <button type="submit" class="btn btn-primary">Simpan</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+
+                    <?php if (empty($exams)): ?>
+                        <tr><td colspan="6" class="text-center p-4 text-muted">Belum ada jadwal ujian.</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addExamModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form action="modules/exams/process.php?action=add" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Tambah Jadwal Ujian</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nama Ujian</label>
+                        <input type="text" name="exam_name" class="form-control" required placeholder="Contoh: UAS Semester Ganjil 2026">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Waktu Mulai</label>
+                            <input type="datetime-local" name="start_date" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Waktu Selesai</label>
+                            <input type="datetime-local" name="end_date" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan Jadwal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
