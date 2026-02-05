@@ -67,6 +67,6 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-white rounded shadow-sm mb-4 d-lg-none">
         <div class="container-fluid">
             <button class="btn btn-outline-dark" id="btn-toggle"><i class="bi bi-list"></i> Menu</button>
-            <span class="navbar-text fw-bold">Admin TKA</span>
+            <span class="navbar-text fw-bold">CBT SIMULATION</span>
         </div>
     </nav>

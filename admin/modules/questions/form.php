@@ -26,6 +26,7 @@ if ($id) {
 
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/quill-image-resize-module@3.0.0/image-resize.min.js"></script>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h3 class="fw-bold"><?= $id ? 'Edit' : 'Tambah' ?> Soal</h3>
@@ -84,7 +85,21 @@ if ($id) {
 
 <script>
 // Inisialisasi Quill
-var quill = new Quill('#editor', { theme: 'snow' });
+var quill = new Quill('#editor', { 
+    modules: {
+        imageResize: {
+            displaySize: true
+        },
+        toolbar: [
+          [{ header: [1, 2, false] }],
+          ['bold', 'italic', 'underline', 'strike'],
+          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+          [{ 'indent': '-1'}, { 'indent': '+1' }],
+          ['image'],
+        ],
+    },
+    theme: 'snow' 
+});
 
 function renderOptions() {
     const type = document.getElementById('question_type').value;
