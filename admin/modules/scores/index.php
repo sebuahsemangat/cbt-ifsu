@@ -63,6 +63,9 @@ if ($exam_id):
             </p>
         </div>
         <div class="d-flex gap-2 align-items-end">
+            <a href="modules/scores/export.php?exam_id=<?= $exam_id ?>" class="btn btn-success text-white">
+                <i class="bi bi-file-earmark-excel"></i> Export Excel
+            </a>
             <div class="input-group" style="width: 250px;">
                 <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
                 <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Cari nama siswa...">
