@@ -22,6 +22,24 @@ if ($action == 'add' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     exit;
 }
 
+if ($action == 'edit' && $_SERVER['REQUEST_METHOD'] == 'POST') {
+    $id = (int)$_POST['id'];
+    $name = trim($_POST['exam_name']);
+    $start = $_POST['start_date'];
+    $end = $_POST['end_date'];
+
+    if (!empty($name) && !empty($start) && !empty($end)) {
+        if ($end > $start) {
+            $stmt = $pdo->prepare("UPDATE exams SET exam_name = ?, start_date = ?, end_date = ? WHERE id = ?");
+            $stmt->execute([$name, $start, $end, $id]);
+            header("Location: ../../dashboard.php?page=exams&status=success");
+        } else {
+            header("Location: ../../dashboard.php?page=exams&status=error_time");
+        }
+    }
+    exit;
+}
+
 if ($action == 'delete' && isset($_GET['id'])) {
     $id = (int)$_GET['id'];
     $stmt = $pdo->prepare("DELETE FROM exams WHERE id = ?");

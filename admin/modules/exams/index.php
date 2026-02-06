@@ -80,6 +80,9 @@ $exams = $stmt->fetchAll();
                             ?>
                         </td>
                         <td class="text-center">
+                            <button class="btn btn-sm btn-outline-warning me-1" data-bs-toggle="modal" data-bs-target="#editExamModal<?= $e['id'] ?>">
+                                <i class="bi bi-pencil"></i>
+                            </button>
                             <a href="modules/exams/process.php?action=delete&id=<?= $e['id'] ?>" 
                                class="btn btn-sm btn-outline-danger" 
                                onclick="return confirm('Menghapus Exam akan menghapus semua Subject di dalamnya. Lanjutkan?')">
@@ -158,6 +161,40 @@ $exams = $stmt->fetchAll();
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                                         <button type="submit" class="btn btn-primary">Simpan</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal fade" id="editExamModal<?= $e['id'] ?>" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <form action="modules/exams/process.php?action=edit" method="POST">
+                                    <input type="hidden" name="id" value="<?= $e['id'] ?>">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title fw-bold">Edit Jadwal Ujian</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Nama Ujian</label>
+                                            <input type="text" name="exam_name" class="form-control" required value="<?= htmlspecialchars($e['exam_name']) ?>">
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Waktu Mulai</label>
+                                                <input type="datetime-local" name="start_date" class="form-control" required value="<?= date('Y-m-d\TH:i', strtotime($e['start_date'])) ?>">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Waktu Selesai</label>
+                                                <input type="datetime-local" name="end_date" class="form-control" required value="<?= date('Y-m-d\TH:i', strtotime($e['end_date'])) ?>">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                        <button type="submit" class="btn btn-warning">Update Jadwal</button>
                                     </div>
                                 </form>
                             </div>
