@@ -51,8 +51,8 @@
             </a>
         </li>
         <li class="nav-item">
-            <a href="dashboard.php?page=reports" class="nav-link mb-2 rounded <?= ($_GET['page'] ?? '') == 'reports' ? 'active' : '' ?>">
-                <i class="bi bi-graph-up me-2"></i> Nilai & Export
+            <a href="dashboard.php?page=scores" class="nav-link mb-2 rounded <?= ($_GET['page'] ?? '') == 'scores' ? 'active' : '' ?>">
+                <i class="bi bi-graph-up me-2"></i> Data Nilai
             </a>
         </li>
         <li class="nav-item mt-4">
