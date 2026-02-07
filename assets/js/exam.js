@@ -247,18 +247,23 @@ function toggleMulti(idx) {
   updateGrid();
 }
 
-function toggleDoubt() {
+function toggleDoubt(e) {
   const q = questions[currentIndex];
   const cb = document.getElementById("doubt-checkbox");
-  // If clicked via button onclick
-  // Note: the input onclick event.stopPropagation is good.
-  // If button clicked, toggle.
-  if (event.target !== cb) {
+
+  // Toggle the checkbox if the click was on the button background/icon,
+  // but let the checkbox handle itself if it was clicked directly.
+  if (e && e.target !== cb) {
     cb.checked = !cb.checked;
   }
 
   const isDoubt = cb.checked ? 1 : 0;
-  if (!ansMap[q.id]) ansMap[q.id] = { data: null };
+
+  // Ensure we have an entry in ansMap for this question
+  if (!ansMap[q.id]) {
+    ansMap[q.id] = { data: null, doubt: 0 };
+  }
+
   ansMap[q.id].doubt = isDoubt;
 
   saveAnswer(q.id, ansMap[q.id].data, isDoubt);
@@ -297,17 +302,26 @@ function updateGrid() {
       (Array.isArray(ansMap[q.id].data)
         ? ansMap[q.id].data.length > 0
         : true) &&
-      ansMap[q.id].data !== ""; // Check empty string
+      ansMap[q.id].data !== "" &&
+      ansMap[q.id].data !== undefined;
+
     const isDoubt = ansMap[q.id] && ansMap[q.id].doubt == 1;
     const isCurr = idx === currentIndex;
 
-    let cls = "btn-outline-secondary";
-    if (isCurr) cls = "current";
-    else if (isDoubt) cls = "doubt";
-    else if (hasAns) cls = "answered";
+    let classes = ["btn", "question-number-btn"];
+
+    if (isCurr) classes.push("current");
+
+    if (isDoubt) {
+      classes.push("doubt");
+    } else if (hasAns) {
+      classes.push("answered");
+    } else {
+      classes.push("btn-outline-secondary");
+    }
 
     modalGrid.innerHTML += `
-            <button class="btn question-number-btn ${cls}" onclick="goTo(${idx})">${idx + 1}</button>
+            <button class="${classes.join(" ")}" onclick="goTo(${idx})">${idx + 1}</button>
         `;
   });
 }
@@ -349,19 +363,34 @@ function startTimer() {
 }
 
 function finishExam() {
-  // Count doubts properly
+  // Hide list modal if open
+  const listModalEl = document.getElementById("questionListModal");
+  const listModal = bootstrap.Modal.getInstance(listModalEl);
+  if (listModal) listModal.hide();
+
+  // Count doubts
   let doubts = 0;
-  Object.keys(ansMap).forEach((k) => {
-    if (ansMap[k].doubt == 1) doubts++;
+  questions.forEach((q) => {
+    if (ansMap[q.id] && ansMap[q.id].doubt == 1) {
+      doubts++;
+    }
   });
 
-  let msg = "Apakah Anda yakin ingin menyelesaikan mata pelajaran ini?";
-  if (doubts > 0)
-    msg = `Anda memiliki ${doubts} soal ragu-ragu. Yakin ingin mengumpulkan?`;
+  const doubtWarning = document.getElementById("doubt-warning");
+  const doubtCount = document.getElementById("doubt-count");
 
-  if (confirm(msg)) {
-    submitExamForce();
+  if (doubts > 0) {
+    doubtWarning.classList.remove("d-none");
+    doubtCount.textContent = doubts;
+  } else {
+    doubtWarning.classList.add("d-none");
   }
+
+  // Show confirmation modal
+  const confirmModal = new bootstrap.Modal(
+    document.getElementById("confirmFinishModal"),
+  );
+  confirmModal.show();
 }
 
 function submitExamForce() {

@@ -209,13 +209,21 @@ $remainingSec = max(0, $durationSec - $elapsed);
         .answer-option label { cursor: pointer; margin: 0; width: 100%; }
         .bottom-navigation { background-color: white; border-radius: 12px; padding: 1.2rem; box-shadow: 0 -2px 10px rgba(0,0,0,0.08); margin-top: 1.5rem; }
         .nav-btn { padding: 0.5rem 1rem; font-weight: 600; border-radius: 8px; transition: all 0.3s; font-size: 0.9rem; }
-        .btn-doubt { background-color: #ffc107; color: #000; border: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
-        .btn-doubt input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+        .btn-doubt { background-color: #ffc107; color: #000; border: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem; height: 100%; }
+        .btn-doubt input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
         .btn-doubt:hover { background-color: #ffb300; transform: translateY(-2px); }
+        .nav-container { display: flex; align-items: center; justify-content: center; gap: 0.8rem; }
+        .nav-item-side, .nav-item-center { width: 150px; }
+        @media (max-width: 576px) {
+            .nav-container { flex-direction: column; }
+            .nav-item-side, .nav-item-center { width: 100%; }
+            .nav-btn { padding: 0.8rem; }
+        }
         .modal-question-list .question-number-btn { width: 50px; height: 50px; border-radius: 10px; font-weight: 600; transition: all 0.3s; }
-        .question-number-btn.answered { background-color: #198754; color: white; border-color: #198754; }
-        .question-number-btn.doubt { background-color: #ffc107; color: #000; border-color: #ffc107; }
-        .question-number-btn.current { background-color: #0d6efd; color: white; border-color: #0d6efd; !important }
+        .question-number-btn.answered { background-color: #198754 !important; color: white; border-color: #198754; }
+        .question-number-btn.doubt { background-color: #ffc107 !important; color: #000; border-color: #ffc107; }
+        .question-number-btn.current { border: 3px solid #0d6efd !important; border-radius: 10px; }
+        .question-number-btn.current:not(.answered):not(.doubt) { background-color: #0d6efd; color: white; }
         .review-img { max-width: 100%; border-radius: 8px; margin-bottom: 1rem; }
         @media (max-width: 768px) {
             .reference-section { border-right: none; border-bottom: 2px solid #e9ecef; padding-right: 0; padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
@@ -304,22 +312,47 @@ $remainingSec = max(0, $durationSec - $elapsed);
 
     <!-- Bottom Navigation -->
     <div class="bottom-navigation">
-        <div class="row align-items-center">
-            <div class="col-4">
-                <button class="btn btn-outline-secondary nav-btn" id="btn-prev" onclick="navStep(-1)">
+        <div class="nav-container">
+            <div class="nav-item-side">
+                <button class="btn btn-outline-secondary nav-btn w-100" id="btn-prev" onclick="navStep(-1)">
                     <i class="bi bi-chevron-left me-2"></i>Sebelumnya
                 </button>
             </div>
-            <div class="col-4 text-center">
-                <button class="btn btn-doubt nav-btn" type="button" onclick="toggleDoubt()">
-                    <input type="checkbox" id="doubt-checkbox" onclick="event.stopPropagation()"> <!-- stop propagation fix -->
-                    <i class="bi bi-question-circle me-1"></i>Ragu-ragu
+            <div class="nav-item-center">
+                <button class="btn btn-doubt nav-btn w-100" type="button" onclick="toggleDoubt(event)">
+                    <input type="checkbox" id="doubt-checkbox" pointer-events="none">
+                    <i class="bi bi-question-circle me-1"></i>Ragu
                 </button>
             </div>
-            <div class="col-4 text-end">
-                <button class="btn btn-primary nav-btn" id="btn-next" onclick="navStep(1)">
+            <div class="nav-item-side">
+                <button class="btn btn-primary nav-btn w-100" id="btn-next" onclick="navStep(1)">
                     Berikutnya<i class="bi bi-chevron-right ms-2"></i>
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Konfirmasi Selesai -->
+<div class="modal fade" id="confirmFinishModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Konfirmasi Selesai</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <div id="confirm-message" class="fs-5 mb-0">
+                    Apakah Anda yakin ingin menyelesaikan mata pelajaran ini?
+                </div>
+                <div id="doubt-warning" class="alert alert-warning mt-3 mb-0 d-none">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    Masih ada <strong id="doubt-count">0</strong> soal yang ditandai <strong>ragu-ragu</strong>.
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-3 pt-0 justify-content-center">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">BATAL</button>
+                <button type="button" class="btn btn-success px-4" onclick="submitExamForce()">YA, SELESAI</button>
             </div>
         </div>
     </div>
