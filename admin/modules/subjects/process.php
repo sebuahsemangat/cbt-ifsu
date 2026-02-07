@@ -17,6 +17,19 @@ if ($action == 'add' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     exit;
 }
 
+if ($action == 'edit' && $_SERVER['REQUEST_METHOD'] == 'POST') {
+    $id = (int)$_POST['id'];
+    $name = trim($_POST['name']);
+    $duration = (int)$_POST['duration'];
+
+    if (!empty($name) && $duration > 0 && $id > 0) {
+        $stmt = $pdo->prepare("UPDATE subjects SET name = ?, duration = ? WHERE id = ?");
+        $stmt->execute([$name, $duration, $id]);
+    }
+    header("Location: ../../dashboard.php?page=exams");
+    exit;
+}
+
 if ($action == 'delete' && isset($_GET['id'])) {
     $id = (int)$_GET['id'];
     $stmt = $pdo->prepare("DELETE FROM subjects WHERE id = ?");

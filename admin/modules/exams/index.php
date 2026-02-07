@@ -125,6 +125,9 @@ $exams = $stmt->fetchAll();
                                                 <a href="dashboard.php?page=questions&subject_id=<?= $s['id'] ?>" class="btn btn-xs btn-primary me-1">
                                                     <i class="bi bi-pencil-square"></i> Kelola Soal
                                                 </a>
+                                                <button class="btn btn-xs btn-warning me-1" data-bs-toggle="modal" data-bs-target="#editSubjectModal<?= $s['id'] ?>">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
                                                 <a href="modules/subjects/process.php?action=delete&id=<?= $s['id'] ?>" 
                                                    class="btn btn-xs btn-danger" 
                                                    onclick="return confirm('Hapus mapel ini?')">
@@ -135,6 +138,42 @@ $exams = $stmt->fetchAll();
                                     <?php endforeach; endif; ?>
                                 </tbody>
                             </table>
+                            
+                            <?php 
+                            // Edit modals for each subject
+                            if(!empty($subjects)): 
+                                foreach($subjects as $s): 
+                            ?>
+                            <div class="modal fade" id="editSubjectModal<?= $s['id'] ?>" tabindex="-1">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <form action="modules/subjects/process.php?action=edit" method="POST">
+                                            <input type="hidden" name="id" value="<?= $s['id'] ?>">
+                                            <input type="hidden" name="exam_id" value="<?= $e['id'] ?>">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title fw-bold">Edit Mata Pelajaran</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p class="text-muted">Untuk Ujian: <b><?= htmlspecialchars($e['exam_name']) ?></b></p>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Nama Mata Pelajaran</label>
+                                                    <input type="text" name="name" class="form-control" required value="<?= htmlspecialchars($s['name']) ?>">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Durasi (Menit)</label>
+                                                    <input type="number" name="duration" class="form-control" required value="<?= $s['duration'] ?>">
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                                <button type="submit" class="btn btn-warning">Update</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <?php endforeach; endif; ?>
                         </td>
                     </tr>
 
