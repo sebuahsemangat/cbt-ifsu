@@ -22,6 +22,12 @@ if ($id) {
     $stmt->execute([$id]);
     $data = $stmt->fetch();
 }
+
+// Decode answer_data for JS usage
+$answerData = [];
+if ($data && !empty($data['answer_data'])) {
+    $answerData = json_decode($data['answer_data'], true);
+}
 ?>
 
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
@@ -84,85 +90,167 @@ if ($id) {
 </form>
 
 <script>
-// Inisialisasi Quill
-var quill = new Quill('#editor', { 
+// Data from PHP
+const savedData = <?= json_encode($answerData) ?>;
+const savedType = '<?= $data['question_type'] ?? 'pg' ?>';
+
+// Config
+const quillConfig = {
     modules: {
-        imageResize: {
-            displaySize: true
-        },
+        imageResize: { displaySize: true },
         toolbar: [
           [{ header: [1, 2, false] }],
           ['bold', 'italic', 'underline', 'strike'],
+          [{ 'script': 'sub'}, { 'script': 'super' }],
           [{ 'list': 'ordered'}, { 'list': 'bullet' }],
           [{ 'indent': '-1'}, { 'indent': '+1' }],
           ['image'],
         ],
     },
     theme: 'snow' 
-});
+};
+
+// Main Editor
+var quill = new Quill('#editor', quillConfig);
+var optionQuills = {};
 
 function renderOptions() {
     const type = document.getElementById('question_type').value;
     const container = document.getElementById('optionsContainer');
     container.innerHTML = '';
+    optionQuills = {}; // Reset
 
     if (type === 'pg') {
         container.innerHTML = '<label class="form-label fw-bold">Opsi Jawaban & Kunci</label>';
         ['A', 'B', 'C', 'D', 'E'].forEach(let => {
-            container.innerHTML += `
-                <div class="input-group mb-2">
-                    <div class="input-group-text"><input type="radio" name="correct_ans" value="${let}" required> &nbsp; ${let}</div>
-                    <input type="text" name="options[${let}]" class="form-control" placeholder="Teks opsi ${let}" required>
+            const val = (savedType === 'pg' && savedData && savedData.options && savedData.options[let]) ? savedData.options[let] : '';
+            const checked = (savedType === 'pg' && savedData && savedData.correct === let) ? 'checked' : '';
+            
+            const div = document.createElement('div');
+            div.className = 'card mb-3 shadow-sm';
+            div.innerHTML = `
+                <div class="card-body p-2">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="correct_ans" value="${let}" ${checked} required>
+                            <label class="form-check-label fw-bold">${let}</label>
+                        </div>
+                    </div>
+                    <div id="editor_pg_${let}" style="height: 100px;"></div>
+                    <input type="hidden" name="options[${let}]" id="input_pg_${let}">
                 </div>`;
+            container.appendChild(div);
+            
+            const q = new Quill(`#editor_pg_${let}`, quillConfig);
+            q.root.innerHTML = val;
+            optionQuills[`input_pg_${let}`] = q;
         });
     } else if (type === 'bs') {
         container.innerHTML = `
             <label class="form-label fw-bold">Pernyataan Benar/Salah</label>
             <div id="bs-rows"></div>
             <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addBSRow()">+ Tambah Pernyataan</button>`;
-        addBSRow();
+        
+        if (savedType === 'bs' && Array.isArray(savedData)) {
+            savedData.forEach(item => addBSRow(item.text, item.is_correct));
+        } else {
+            addBSRow();
+        }
     } else if (type === 'multi') {
         container.innerHTML = `
             <label class="form-label fw-bold">Pernyataan (Ceklis yang Benar)</label>
             <div id="multi-rows"></div>
             <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addMultiRow()">+ Tambah Opsi</button>`;
-        addMultiRow();
+        
+        if (savedType === 'multi' && Array.isArray(savedData)) {
+            savedData.forEach(item => addMultiRow(item.text, item.is_correct));
+        } else {
+            addMultiRow();
+        }
     }
 }
 
-function addBSRow() {
+function addBSRow(text = '', isCorrect = 1) {
+    const id = 'bs_' + Math.random().toString(36).substr(2, 9);
     const div = document.createElement('div');
-    div.className = 'input-group mb-2';
+    div.className = 'card mb-2 shadow-sm bs-row'; 
     div.innerHTML = `
-        <input type="text" name="statements[]" class="form-control" placeholder="Pernyataan..." required>
-        <select name="statement_ans[]" class="form-select" style="max-width: 100px;">
-            <option value="1">Benar</option>
-            <option value="0">Salah</option>
-        </select>
-        <button type="button" class="btn btn-outline-danger" onclick="this.parentElement.remove()"><i class="bi bi-x"></i></button>`;
+        <div class="card-body p-2">
+             <div class="d-flex justify-content-between mb-2">
+                <select name="statement_ans[]" class="form-select form-select-sm" style="width: 120px;">
+                    <option value="1" ${isCorrect == 1 ? 'selected' : ''}>Benar</option>
+                    <option value="0" ${isCorrect == 0 ? 'selected' : ''}>Salah</option>
+                </select>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this, '${id}')"><i class="bi bi-x"></i></button>
+             </div>
+             <div id="editor_${id}" style="height: 80px;"></div>
+             <input type="hidden" name="statements[]" id="input_${id}">
+        </div>`;
     document.getElementById('bs-rows').appendChild(div);
+    
+    const q = new Quill(`#editor_${id}`, quillConfig);
+    q.root.innerHTML = text;
+    optionQuills[`input_${id}`] = q;
 }
 
-function addMultiRow() {
-    // Hitung jumlah baris yang sudah ada untuk menentukan index
-    const index = document.querySelectorAll('#multi-rows .input-group').length;
-
+function addMultiRow(text = '', isCorrect = 0) { 
+    const id = 'multi_' + Math.random().toString(36).substr(2, 9);
     const div = document.createElement('div');
-    div.className = 'input-group mb-2';
+    div.className = 'card mb-2 shadow-sm multi-row';
     div.innerHTML = `
-        <div class="input-group-text">
-            <input type="checkbox" name="multi_correct[]" value="${index}">
-        </div>
-        <input type="text" name="multi_options[]" class="form-control" placeholder="Pernyataan..." required>
-        <button type="button" class="btn btn-outline-danger" onclick="this.parentElement.remove()"><i class="bi bi-x"></i></button>`;
+        <div class="card-body p-2">
+             <div class="d-flex justify-content-between mb-2">
+                <div class="form-check">
+                    <input class="form-check-input multi-check" type="checkbox" ${isCorrect == 1 ? 'checked' : ''}>
+                    <label class="form-check-label">Benar</label>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this, '${id}')"><i class="bi bi-x"></i></button>
+             </div>
+             <div id="editor_${id}" style="height: 80px;"></div>
+             <input type="hidden" name="multi_options[]" id="input_${id}">
+        </div>`;
     document.getElementById('multi-rows').appendChild(div);
+     
+    const q = new Quill(`#editor_${id}`, quillConfig);
+    q.root.innerHTML = text;
+    optionQuills[`input_${id}`] = q;
 }
 
-// Sinkronisasi Quill ke Hidden Input saat Submit
+function removeRow(btn, id) {
+    btn.closest('.card').remove();
+    delete optionQuills[`input_${id}`];
+}
+
 document.getElementById('questionForm').onsubmit = function() {
+    // Sync Main Question
     document.getElementById('quill_html').value = quill.root.innerHTML;
+
+    // Sync Options
+    for (let id in optionQuills) {
+        document.getElementById(id).value = optionQuills[id].root.innerHTML;
+    }
+
+    // Handle Multi Checkboxes
+    const type = document.getElementById('question_type').value;
+    if (type === 'multi') {
+        // Remove old hidden inputs for multi_correct to avoid duplicates if re-submitting 
+        // (Use Array.from to avoid live collection issues during removal if modifying DOM, though querySelectorAll returns static NodeList usually? No, it's static.)
+        document.querySelectorAll('input[name="multi_correct[]"]').forEach(el => el.remove());
+
+        const rows = document.querySelectorAll('.multi-row');
+        rows.forEach((row, index) => {
+            const check = row.querySelector('.multi-check');
+            if (check.checked) {
+                const hidden = document.createElement('input');
+                hidden.type = 'hidden';
+                hidden.name = 'multi_correct[]';
+                hidden.value = index;
+                row.appendChild(hidden);
+            }
+        });
+    }
 };
 
-// Jalankan saat load
+// Start
 renderOptions();
 </script>
