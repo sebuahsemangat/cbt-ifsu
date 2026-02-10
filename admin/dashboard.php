@@ -43,6 +43,9 @@ $page = $_GET['page'] ?? 'main';
         case 'questions_form':
             include 'modules/questions/form.php';
             break;
+        case 'questions_import':
+            include 'modules/questions/import.php';
+            break;
         case 'main':
         default:
             // Tampilan Statistik Utama (Konten Dashboard Asli)

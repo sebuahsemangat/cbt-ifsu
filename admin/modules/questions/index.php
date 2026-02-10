@@ -40,9 +40,14 @@ $questions = $stmt->fetchAll();
         </nav>
         <h3 class="fw-bold">Soal: <?= htmlspecialchars($subject['name']) ?></h3>
     </div>
-    <a href="dashboard.php?page=questions_form&subject_id=<?= $subject_id ?>" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Tambah Soal
-    </a>
+    <div class="d-flex gap-2">
+        <a href="dashboard.php?page=questions_import&subject_id=<?= $subject_id ?>" class="btn btn-success">
+            <i class="bi bi-file-earmark-word"></i> Import dari Word
+        </a>
+        <a href="dashboard.php?page=questions_form&subject_id=<?= $subject_id ?>" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Tambah Soal
+        </a>
+    </div>
 </div>
 
 <?php if (isset($_GET['status'])): ?>
