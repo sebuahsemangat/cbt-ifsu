@@ -35,7 +35,9 @@ $nomor = 0;
                     <tr>
                         <th style="width: 60px;" class="text-center">No</th>
                         <th class="px-4">Nama Siswa</th>
-                        <th>Kelas</th>
+                        <th style="cursor: pointer;" id="sortClass">
+                            Kelas <i class="bi bi-arrow-down-up ms-1 small text-muted"></i>
+                        </th>
                         <th>Username</th>
                         <th>Status Login</th>
                         <th class="text-center">Aksi</th>
@@ -44,9 +46,9 @@ $nomor = 0;
                 <tbody id="tableBody">
                     <?php foreach ($students as $s): $nomor++; ?>
                     <tr class="student-row">
-                        <td class="text-center"><?= $nomor ?></td>
+                        <td class="text-center nomor-urut"><?= $nomor ?></td>
                         <td class="px-4 fw-bold student-name"><?= htmlspecialchars($s['full_name']) ?></td>
-                        <td><span class="badge bg-primary"><?= htmlspecialchars($s['class'] ?? '-') ?></span></td>
+                        <td><span class="badge bg-primary student-class"><?= htmlspecialchars($s['class'] ?? '-') ?></span></td>
                         <td><code><?= htmlspecialchars($s['username']) ?></code></td>
                         <td>
                             <?php if ($s['is_logged_in']): ?>
@@ -134,11 +136,13 @@ $nomor = 0;
 // Logika Pencarian & Paginasi Ringan
 const rowsPerPage = 10;
 let currentPage = 1;
+let currentSort = 'none'; // 'asc', 'desc', 'none'
 const searchInput = document.getElementById('searchInput');
 const tableBody = document.getElementById('tableBody');
 const allRows = Array.from(tableBody.querySelectorAll('.student-row'));
 const noDataRow = document.getElementById('noData');
 const paginationControls = document.getElementById('paginationControls');
+const sortClassBtn = document.getElementById('sortClass');
 
 function displayTable() {
     const filter = searchInput.value.toLowerCase();
@@ -184,6 +188,38 @@ function setupPagination(totalPages) {
 }
 
 searchInput.addEventListener('keyup', () => {
+    currentPage = 1;
+    displayTable();
+});
+
+sortClassBtn.addEventListener('click', () => {
+    const icon = sortClassBtn.querySelector('i');
+    
+    if (currentSort === 'asc') {
+        currentSort = 'desc';
+        icon.className = 'bi bi-sort-alpha-down-alt ms-1 small text-primary';
+    } else {
+        currentSort = 'asc';
+        icon.className = 'bi bi-sort-alpha-down ms-1 small text-primary';
+    }
+
+    allRows.sort((a, b) => {
+        const classA = a.querySelector('.student-class').textContent.trim();
+        const classB = b.querySelector('.student-class').textContent.trim();
+        
+        if (currentSort === 'asc') {
+            return classA.localeCompare(classB, undefined, {numeric: true, sensitivity: 'base'});
+        } else {
+            return classB.localeCompare(classA, undefined, {numeric: true, sensitivity: 'base'});
+        }
+    });
+
+    // Sesuaikan nomor urut setelah di-sort
+    allRows.forEach((row, index) => {
+        row.querySelector('.nomor-urut').textContent = index + 1;
+        tableBody.appendChild(row); // Re-order in DOM
+    });
+
     currentPage = 1;
     displayTable();
 });
