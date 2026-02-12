@@ -27,6 +27,7 @@ if ($exam_id):
         SELECT 
             es.id,
             s.full_name,
+            s.class,
             e.exam_name,
             sb.name AS subject_name,
             es.score,
@@ -81,6 +82,7 @@ if ($exam_id):
                         <tr>
                             <th scope="col" class="text-center" style="width: 60px;">No</th>
                             <th scope="col">Nama Siswa</th>
+                            <th scope="col">Kelas</th>
                             <th scope="col">Mata Pelajaran</th>
                             <th scope="col">Nilai</th>
                             <th scope="col">Status</th>
@@ -96,6 +98,7 @@ if ($exam_id):
                                     <td>
                                         <div class="fw-semibold student-name"><?= htmlspecialchars($row['full_name']) ?></div>
                                     </td>
+                                    <td><?= htmlspecialchars($row['class']) ?></td>
                                     <td><?= htmlspecialchars($row['subject_name']) ?></td>
                                     <td>
                                         <?php 
