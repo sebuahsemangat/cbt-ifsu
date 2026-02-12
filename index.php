@@ -37,6 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             } else {
                 // Set Session
                 $_SESSION['user_id']   = $user['id'];
+                $_SESSION['username']  = $username;
                 $_SESSION['full_name'] = $user['full_name'];
                 $_SESSION['role']      = $user['role'];
 

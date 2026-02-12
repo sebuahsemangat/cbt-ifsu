@@ -24,6 +24,9 @@ $page = $_GET['page'] ?? 'main';
         case 'students':
             include 'modules/students/index.php';
             break;
+        case 'admins':
+            include 'modules/admins/index.php';
+            break;
             
         case 'reports':
             include 'reports.php';

@@ -55,6 +55,11 @@
                 <i class="bi bi-graph-up me-2"></i> Data Nilai
             </a>
         </li>
+        <li class="nav-item">
+            <a href="dashboard.php?page=admins" class="nav-link mb-2 rounded <?= ($_GET['page'] ?? '') == 'admins' ? 'active' : '' ?>">
+                <i class="bi bi-person-lock me-2"></i> Manajemen Admin
+            </a>
+        </li>
         <li class="nav-item mt-4">
             <a href="../logout.php" class="nav-link mb-2 rounded text-danger">
                 <i class="bi bi-box-arrow-left me-2"></i> Keluar
