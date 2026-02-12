@@ -7,6 +7,7 @@ $action = $_GET['action'] ?? '';
 // --- FITUR BARU: TAMBAH 1 SISWA ---
 if ($action == 'add_single' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     $nama = trim($_POST['full_name']);
+    $kelas = trim($_POST['class']);
     
     if (!empty($nama)) {
         // Generate Username (nama kecil, tanpa spasi + angka acak)
@@ -24,8 +25,8 @@ if ($action == 'add_single' && $_SERVER['REQUEST_METHOD'] == 'POST') {
         // Password Default: 123456
         $password = password_hash('123456', PASSWORD_DEFAULT);
 
-        $stmt = $pdo->prepare("INSERT INTO students (username, password, full_name) VALUES (?, ?, ?)");
-        $stmt->execute([$username, $password, $nama]);
+        $stmt = $pdo->prepare("INSERT INTO students (username, password, full_name, class) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$username, $password, $nama, $kelas]);
         
         header("Location: ../../dashboard.php?page=students&status=success");
     } else {
@@ -39,10 +40,17 @@ if ($action == 'import' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_FILES['file_excel']) && $_FILES['file_excel']['error'] == 0) {
         $file = $_FILES['file_excel']['tmp_name'];
         $handle = fopen($file, "r");
-        fgetcsv($handle); // Skip header
+        
+        // Baca baris pertama untuk deteksi delimiter (koma atau titik koma)
+        $firstLine = fgets($handle);
+        $delimiter = (strpos($firstLine, ';') !== false) ? ';' : ',';
+        rewind($handle); // Kembali ke awal file
 
-        while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
-            $nama = trim($data[0]);
+        fgetcsv($handle, 1000, $delimiter); // Skip header
+
+        while (($data = fgetcsv($handle, 1000, $delimiter)) !== FALSE) {
+            $nama = trim($data[0] ?? '');
+            $kelas = trim($data[1] ?? ''); // Kolom kedua untuk kelas
             if (empty($nama)) continue;
 
             $usernameBase = strtolower(str_replace(' ', '', $nama));
@@ -54,8 +62,8 @@ if ($action == 'import' && $_SERVER['REQUEST_METHOD'] == 'POST') {
             if ($check->fetchColumn() > 0) $username = $usernameBase . rand(100, 999);
 
             $password = password_hash('123456', PASSWORD_DEFAULT);
-            $stmt = $pdo->prepare("INSERT INTO students (username, password, full_name) VALUES (?, ?, ?)");
-            $stmt->execute([$username, $password, $nama]);
+            $stmt = $pdo->prepare("INSERT INTO students (username, password, full_name, class) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$username, $password, $nama, $kelas]);
         }
         fclose($handle);
         header("Location: ../../dashboard.php?page=students&status=success");

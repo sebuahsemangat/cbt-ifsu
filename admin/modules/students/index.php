@@ -35,6 +35,7 @@ $nomor = 0;
                     <tr>
                         <th style="width: 60px;" class="text-center">No</th>
                         <th class="px-4">Nama Siswa</th>
+                        <th>Kelas</th>
                         <th>Username</th>
                         <th>Status Login</th>
                         <th class="text-center">Aksi</th>
@@ -45,6 +46,7 @@ $nomor = 0;
                     <tr class="student-row">
                         <td class="text-center"><?= $nomor ?></td>
                         <td class="px-4 fw-bold student-name"><?= htmlspecialchars($s['full_name']) ?></td>
+                        <td><span class="badge bg-primary"><?= htmlspecialchars($s['class'] ?? '-') ?></span></td>
                         <td><code><?= htmlspecialchars($s['username']) ?></code></td>
                         <td>
                             <?php if ($s['is_logged_in']): ?>
@@ -64,7 +66,7 @@ $nomor = 0;
                     </tr>
                     <?php endforeach; ?>
                     <tr id="noData" style="display: none;">
-                        <td colspan="5" class="text-center p-4 text-muted">Siswa tidak ditemukan.</td>
+                        <td colspan="6" class="text-center p-4 text-muted">Siswa tidak ditemukan.</td>
                     </tr>
                 </tbody>
             </table>
@@ -89,6 +91,10 @@ $nomor = 0;
                     <div class="mb-3">
                         <label class="form-label">Nama Lengkap Siswa</label>
                         <input type="text" name="full_name" class="form-control" required placeholder="Masukkan nama lengkap">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Kelas</label>
+                        <input type="text" name="class" class="form-control" required placeholder="Contoh: XII IPA 1">
                         <small class="text-muted">Username & password otomatis digenerate sistem.</small>
                     </div>
                 </div>
@@ -111,8 +117,9 @@ $nomor = 0;
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Pilih File Excel (.xlsx)</label>
-                        <input type="file" name="file_excel" class="form-control" required accept=".xlsx">
+                        <label class="form-label">Pilih File Template (.csv)</label>
+                        <input type="file" name="file_excel" class="form-control" required accept=".csv">
+                        <small class="text-muted">Gunakan file yang diunduh dari tombol "Template" di atas.</small>
                     </div>
                 </div>
                 <div class="modal-footer">
