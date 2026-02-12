@@ -85,6 +85,7 @@ if ($exam_id):
                             <th scope="col">Nilai</th>
                             <th scope="col">Status</th>
                             <th scope="col">Waktu Mengerjakan</th>
+                            <th scope="col" class="text-center" style="width: 100px;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
@@ -116,11 +117,16 @@ if ($exam_id):
                                             <?= date('d M Y H:i', strtotime($row['start_time'])) ?>
                                         </small>
                                     </td>
+                                    <td class="text-center">
+                                        <button class="btn btn-danger btn-sm" onclick="deleteScore(<?= $row['id'] ?>, '<?= htmlspecialchars($row['full_name']) ?>')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
                         <tr id="noData" style="display: none;">
-                            <td colspan="6" class="text-center p-4 text-muted">
+                            <td colspan="7" class="text-center p-4 text-muted">
                                 <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                                 Data tidak ditemukan.
                             </td>
@@ -199,6 +205,14 @@ if ($exam_id):
     });
 
     displayTable();
+
+    // Fungsi untuk menghapus data nilai
+    function deleteScore(id, studentName) {
+        if (confirm(`Apakah Anda yakin ingin menghapus nilai siswa "${studentName}"?\n\nData yang dihapus tidak dapat dikembalikan!`)) {
+            // Redirect ke process.php dengan parameter delete
+            window.location.href = 'modules/scores/process.php?action=delete&id=' + id + '&exam_id=<?= $exam_id ?>';
+        }
+    }
     </script>
 
 <?php 
