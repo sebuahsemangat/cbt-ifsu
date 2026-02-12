@@ -156,7 +156,7 @@ $savedAnswers = $stmtAns->fetchAll(PDO::FETCH_ASSOC);
 $ansMap = [];
 foreach ($savedAnswers as $sa) {
     $ansMap[$sa['question_id']] = [
-        'data' => json_decode($sa['answer_data'], true),
+        'data' => json_decode($sa['answer_data'] ?? '', true),
         'doubt' => $sa['is_doubt']
     ];
 }
@@ -180,53 +180,78 @@ $remainingSec = max(0, $durationSec - $elapsed);
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     
     <style>
-        /* Existing CSS maintained */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background-color: #f0f2f5; font-family: 'Poppins', sans-serif; overflow-x: hidden; }
-        .navbar-exam { background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%); box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 0.8rem 0; }
-        .logo-bimbel { width: 45px; height: 45px; object-fit: contain; }
-        .bimbel-name { font-size: 1.3rem; font-weight: 700; color: white; margin: 0; }
-        .student-name { color: white; font-weight: 500; }
-        .question-info-bar { background-color: white; border-radius: 12px; padding: 1.2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 1.5rem; }
-        .question-number { font-size: 1.1rem; font-weight: 700; color: #0d6efd; }
-        .font-size-controls { display: flex; gap: 0.5rem; margin-top: 0.8rem; }
-        .font-size-btn { padding: 0.4rem 1rem; border: 2px solid #dee2e6; background-color: white; border-radius: 8px; cursor: pointer; transition: all 0.3s; font-weight: 600; }
-        .font-size-btn.active { background-color: #0d6efd; color: white; border-color: #0d6efd; }
-        .timer-display { background: linear-gradient(135deg, #dc3545, #c82333); color: white; padding: 0.5rem 1rem; border-radius: 8px; font-size: 1.1rem; font-weight: 700; box-shadow: 0 3px 10px rgba(220, 53, 69, 0.3); }
-        .subject-name { color: #6c757d; font-size: 0.95rem; margin-top: 0.5rem; }
-        .content-card { background-color: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); height: 100%; min-height: 400px; display: flex; flex-direction: column; }
-        .reference-section { border-right: 2px solid #e9ecef; padding-right: 1.5rem; height: 100%; overflow-y: auto;}
-        .reference-title { font-weight: 700; color: #495057; margin-bottom: 1rem; font-size: 1rem; }
-        .reference-content { color: #6c757d; font-size: 0.95rem; line-height: 1.8; }
-        .question-section { padding-left: 1.5rem; }
-        .question-text { font-size: 1rem; line-height: 1.8; color: #212529; margin-bottom: 1.5rem; }
-        .font-small .question-text, .font-small .answer-option label, .font-small .reference-content { font-size: 0.9rem; }
-        .font-medium .question-text, .font-medium .answer-option label, .font-medium .reference-content { font-size: 1rem; }
-        .font-large .question-text, .font-large .answer-option label, .font-large .reference-content { font-size: 1.15rem; }
-        .answer-option { padding: 1rem; border: 2px solid #e9ecef; border-radius: 10px; margin-bottom: 0.8rem; cursor: pointer; transition: all 0.3s; display: flex; align-items: start;}
-        .answer-option:hover { border-color: #0d6efd; background-color: #f8f9ff; }
-        .answer-option input { width: 20px; height: 20px; margin-right: 0.8rem; cursor: pointer; margin-top: 3px; }
-        .answer-option label { cursor: pointer; margin: 0; width: 100%; }
-        .bottom-navigation { background-color: white; border-radius: 12px; padding: 1.2rem; box-shadow: 0 -2px 10px rgba(0,0,0,0.08); margin-top: 1.5rem; }
-        .nav-btn { padding: 0.5rem 1rem; font-weight: 600; border-radius: 8px; transition: all 0.3s; font-size: 0.9rem; }
-        .btn-doubt { background-color: #ffc107; color: #000; border: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem; height: 100%; }
-        .btn-doubt input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
-        .btn-doubt:hover { background-color: #ffb300; transform: translateY(-2px); }
-        .nav-container { display: flex; align-items: center; justify-content: center; gap: 0.8rem; }
-        .nav-item-side, .nav-item-center { width: 150px; }
-        @media (max-width: 576px) {
-            .nav-container { flex-direction: column; }
-            .nav-item-side, .nav-item-center { width: 100%; }
-            .nav-btn { padding: 0.8rem; }
+        :root {
+            --primary-teal: #3a797a;
+            --mint-green: #a2d9c1;
+            --soft-mint: #f9fdfd;
+            --ans-hover: #f1faf6;
         }
-        .modal-question-list .question-number-btn { width: 50px; height: 50px; border-radius: 10px; font-weight: 600; transition: all 0.3s; }
-        .question-number-btn.answered { background-color: #198754 !important; color: white; border-color: #198754; }
-        .question-number-btn.doubt { background-color: #ffc107 !important; color: #000; border-color: #ffc107; }
-        .question-number-btn.current { border: 3px solid #0d6efd !important; border-radius: 10px; }
-        .question-number-btn.current:not(.answered):not(.doubt) { background-color: #0d6efd; color: white; }
-        .review-img { max-width: 100%; border-radius: 8px; margin-bottom: 1rem; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background-color: var(--soft-mint); font-family: 'Poppins', sans-serif; overflow-x: hidden; color: #334155; }
+        .navbar-exam { background: linear-gradient(135deg, var(--primary-teal) 0%, #4b8b8c 100%); box-shadow: 0 4px 12px rgba(58, 121, 122, 0.2); padding: 0.8rem 0; }
+        .navbar-brand { color: #fff !important; }
+        .logo-bimbel { width: 45px; height: 45px; object-fit: contain; }
+        .bimbel-name { font-size: 1.25rem; font-weight: 700; color: white; margin: 0; letter-spacing: 0.5px; }
+        .student-name { color: rgba(255,255,255,0.9); font-weight: 500; font-size: 0.95rem; }
+        
+        .question-info-bar { background-color: white; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 15px rgba(58, 121, 122, 0.05); margin-bottom: 2rem; border-top: 4px solid var(--mint-green); }
+        .question-number { font-size: 1.15rem; font-weight: 700; color: var(--primary-teal); }
+        
+        .font-size-controls { display: flex; gap: 0.5rem; margin-top: 0.8rem; }
+        .font-size-btn { padding: 0.5rem 1.2rem; border: 1.5px solid #e2e8f0; background-color: white; border-radius: 10px; cursor: pointer; transition: all 0.3s; font-weight: 600; color: #64748b; }
+        .font-size-btn.active, .font-size-btn:hover { background-color: var(--primary-teal); color: white; border-color: var(--primary-teal); }
+        
+        .timer-display { background: linear-gradient(135deg, #ef4444, #b91c1c); color: white; padding: 0.6rem 1.2rem; border-radius: 12px; font-size: 1.2rem; font-weight: 700; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25); letter-spacing: 1px; }
+        .subject-name { color: #64748b; font-size: 0.9rem; margin-top: 0.6rem; font-weight: 500; }
+        
+        .content-card { background-color: white; border-radius: 20px; padding: 2rem; box-shadow: 0 4px 20px rgba(58, 121, 122, 0.06); height: 100%; min-height: 450px; display: flex; flex-direction: column; }
+        .reference-section { border-right: 1.5px solid #f1f5f9; padding-right: 1.5rem; height: 100%; overflow-y: auto; scrollbar-width: thin; }
+        .reference-title { font-weight: 700; color: #1e293b; margin-bottom: 1.2rem; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .reference-content { color: #334155; font-size: 0.98rem; line-height: 1.8; }
+        
+        .question-section { padding-left: 1.5rem; }
+        .question-text { font-size: 1.05rem; line-height: 1.8; color: #1e293b; margin-bottom: 2rem; font-weight: 500; }
+        
+        .font-small .question-text, .font-small .answer-option label, .font-small .reference-content { font-size: 0.95rem; }
+        .font-medium .question-text, .font-medium .answer-option label, .font-medium .reference-content { font-size: 1.05rem; }
+        .font-large .question-text, .font-large .answer-option label, .font-large .reference-content { font-size: 1.2rem; }
+        
+        .answer-option { padding: 1.2rem; border: 2px solid #f1f5f9; border-radius: 15px; margin-bottom: 1rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: start; background: #fdfdfd; }
+        .answer-option:hover { border-color: var(--mint-green); background-color: var(--ans-hover); transform: translateX(5px); }
+        .answer-option.selected { border-color: var(--primary-teal); background-color: var(--ans-hover); box-shadow: 0 4px 12px rgba(58, 121, 122, 0.1); }
+        .answer-option input { width: 22px; height: 22px; margin-right: 1rem; cursor: pointer; margin-top: 3px; accent-color: var(--primary-teal); }
+        .answer-option label { cursor: pointer; margin: 0; width: 100%; color: #334155; }
+        
+        .bottom-navigation { background-color: white; border-radius: 16px; padding: 1.5rem; box-shadow: 0 -4px 15px rgba(58, 121, 122, 0.05); margin-top: 2rem; border-bottom: 4px solid var(--primary-teal); }
+        .nav-container { display: flex; align-items: center; justify-content: center; gap: 1rem; }
+        .nav-btn { padding: 0.75rem 1.5rem; font-weight: 600; border-radius: 12px; transition: all 0.3s; font-size: 0.95rem; width: 180px; }
+        
+        .btn-outline-secondary { border: 2px solid #e2e8f0; color: #64748b; }
+        .btn-outline-secondary:hover { background-color: #f1f5f9; color: #1e293b; border-color: #cbd5e1; }
+        .btn-primary { background-color: var(--primary-teal); border: none; }
+        .btn-primary:hover { background-color: #2d6161; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(58, 121, 122, 0.2); }
+        
+        .btn-doubt { background-color: #fbbf24; color: #1e293b; border: none; display: flex; align-items: center; justify-content: center; gap: 0.6rem; transition: all 0.3s; }
+        .btn-doubt input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary-teal); }
+        .btn-doubt:hover { background-color: #f59e0b; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2); }
+        
+        .btn-outline-primary { border: 2px solid var(--primary-teal); color: var(--primary-teal); border-radius: 12px; }
+        .btn-outline-primary:hover { background-color: var(--primary-teal); color: white; }
+        
+        .modal-question-list .question-number-btn { width: 48px; height: 48px; border-radius: 12px; font-weight: 600; transition: all 0.3s; border: 2px solid #e2e8f0; background: white; color: #64748b; }
+        .question-number-btn:hover { border-color: var(--mint-green); background: var(--ans-hover); }
+        .question-number-btn.answered { background-color: var(--mint-green) !important; color: #064e3b; border-color: var(--mint-green); }
+        .question-number-btn.doubt { background-color: #fbbf24 !important; color: #451a03; border-color: #fbbf24; }
+        .question-number-btn.current { border: 3px solid var(--primary-teal) !important; color: var(--primary-teal); z-index: 10; transform: scale(1.1); box-shadow: 0 4px 10px rgba(58, 121, 122, 0.2); }
+        .question-number-btn.current:not(.answered):not(.doubt) { background-color: var(--primary-teal); color: white; }
+        
+        .modal-header { font-weight: 700; border: none; }
+        .modal-content { border-radius: 20px; border: none; }
+        
         @media (max-width: 768px) {
-            .reference-section { border-right: none; border-bottom: 2px solid #e9ecef; padding-right: 0; padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
+            .nav-container { flex-direction: column; width: 100%; }
+            .nav-btn { width: 100%; }
+            .reference-section { border-right: none; border-bottom: 2px solid #f1f5f9; padding-right: 0; padding-bottom: 1.5rem; margin-bottom: 1.8rem; }
             .question-section { padding-left: 0; }
         }
     </style>
@@ -235,10 +260,9 @@ $remainingSec = max(0, $durationSec - $elapsed);
 
 <nav class="navbar navbar-exam">
     <div class="container-fluid px-4">
-        <div class="d-flex align-items-center">
-            <i class="bi bi-mortarboard-fill me-2"></i>
-            <h5 class="bimbel-name">Bimbel Lita</h5>
-        </div>
+        <a class="navbar-brand fw-bold d-flex align-items-center" href="#">
+            <i class="bi bi-mortarboard-fill me-2"></i>CBT - BIMBEL LITA
+        </a>
         <div class="student-name">
             <i class="bi bi-person-circle me-2"></i><?= htmlspecialchars($_SESSION['full_name']) ?>
         </div>

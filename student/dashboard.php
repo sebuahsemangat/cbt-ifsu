@@ -67,42 +67,81 @@ $exams = $stmt->fetchAll();
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     
     <style>
+        :root {
+            --primary-teal: #3a797a;
+            --mint-green: #a2d9c1;
+            --soft-bg: #f0fdf9;
+        }
         body {
-            background-color: #f5f7fa;
+            background-color: var(--soft-bg);
             font-family: 'Poppins', sans-serif;
+            color: #2c3e50;
         }
         .navbar-custom {
-            background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, var(--primary-teal) 0%, #4b8b8c 100%);
+            box-shadow: 0 4px 15px rgba(58, 121, 122, 0.2);
         }
         .navbar-brand, .nav-link {
             color: #fff !important;
         }
         .card-exam {
-            border: none;
-            border-radius: 15px;
-            transition: transform 0.2s, box-shadow 0.2s;
+            border: 2px solid transparent;
+            border-radius: 20px;
+            transition: all 0.3s ease;
             background: #fff;
             overflow: hidden;
+            box-shadow: 0 8px 25px rgba(58, 121, 122, 0.08);
         }
         .card-exam:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+            transform: translateY(-8px);
+            box-shadow: 0 12px 30px rgba(58, 121, 122, 0.15);
+            border-color: var(--mint-green);
         }
         .card-header-exam {
             background-color: #fff;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid #f1f5f9;
             padding: 1.5rem;
         }
         .status-badge {
-            font-size: 0.8rem;
-            padding: 0.5em 0.8em;
-            border-radius: 20px;
+            font-size: 0.75rem;
+            padding: 0.5em 1em;
+            border-radius: 50px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .btn-start {
-            border-radius: 25px;
-            padding: 0.5rem 1.5rem;
+            border-radius: 12px;
+            padding: 0.7rem 1.5rem;
             font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background-color: var(--primary-teal);
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: #2d6161;
+            box-shadow: 0 4px 12px rgba(58, 121, 122, 0.3);
+        }
+        .progress {
+            height: 8px;
+            border-radius: 10px;
+            background-color: #eef2f3;
+        }
+        .progress-bar {
+            background: linear-gradient(to right, #3fb27f, var(--mint-green));
+        }
+        .text-primary {
+            color: var(--primary-teal) !important;
+        }
+        .btn-outline-primary {
+            color: var(--primary-teal);
+            border-color: var(--primary-teal);
+        }
+        .btn-outline-primary:hover {
+            background-color: var(--primary-teal);
+            border-color: var(--primary-teal);
         }
     </style>
 </head>

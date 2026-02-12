@@ -7,12 +7,45 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
-        :root { --sidebar-width: 250px; }
-        body { background-color: #f4f7f6; }
-        .sidebar { width: var(--sidebar-width); height: 100vh; position: fixed; background: #212529; color: white; transition: 0.3s; z-index: 1000; }
+        :root { 
+            --sidebar-width: 250px; 
+            --primary-teal: #3a797a;
+            --mint-green: #a2d9c1;
+            --mint-light: #f0fdf4;
+        }
+        body { background-color: #f0f4f4; font-family: 'Poppins', sans-serif; }
+        .sidebar { 
+            width: var(--sidebar-width); 
+            height: 100vh; 
+            position: fixed; 
+            background: var(--primary-teal); 
+            color: white; 
+            transition: 0.3s; 
+            z-index: 1000; 
+            box-shadow: 4px 0 15px rgba(58, 121, 122, 0.1);
+        }
         .main-content { margin-left: var(--sidebar-width); transition: 0.3s; padding: 20px; }
-        .nav-link { color: rgba(255,255,255,0.7); }
-        .nav-link:hover, .nav-link.active { color: white; background: rgba(255,255,255,0.1); }
+        .nav-link { 
+            color: rgba(255,255,255,0.8); 
+            font-weight: 500;
+            padding: 12px 15px;
+            margin-bottom: 5px;
+            transition: all 0.2s;
+        }
+        .nav-link:hover, .nav-link.active { 
+            color: white; 
+            background: rgba(255,255,255,0.15); 
+            transform: translateX(5px);
+        }
+        .nav-link.active {
+            border-left: 4px solid var(--mint-green);
+            background: rgba(255,255,255,0.2);
+        }
+        .card { border-radius: 15px; border: none; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .btn-success { background-color: #3fb27f; border: none; }
+        .btn-success:hover { background-color: #36a374; }
+        .btn-primary { background-color: var(--primary-teal); border: none; }
+        .btn-primary:hover { background-color: #2d6161; }
         
         @media (max-width: 991.98px) {
             .sidebar { margin-left: calc(-1 * var(--sidebar-width)); }
@@ -25,9 +58,11 @@
 <body>
 
 <div class="sidebar" id="sidebar">
-    <div class="p-3 text-center">
-        <h5 class="fw-bold">CBT SIMULATION</h5>
-        <hr>
+    <div class="p-4 text-center">
+        <img src="../assets/img/logo-bimbel.png" alt="Logo" class="rounded-circle bg-white p-1 mb-3 shadow-sm" style="width: 70px; height: 70px; object-fit: contain;">
+        <h6 class="fw-bold mb-0" style="letter-spacing: 1px;">CBT SIMULATION</h6>
+        <small class="opacity-75">Bimbel Lita</small>
+        <hr class="bg-white opacity-25 mt-3">
     </div>
     <ul class="nav flex-column px-2">
         <li class="nav-item">
@@ -42,7 +77,7 @@
         </li>
         <li class="nav-item">
             <a href="dashboard.php?page=references" class="nav-link mb-2 rounded <?= ($_GET['page'] ?? '') == 'references' ? 'active' : '' ?>">
-                <i class="bi bi-book me-2"></i> Referensi
+                <i class="bi bi-journal-text me-2"></i> Referensi
             </a>
         </li>
         <li class="nav-item">
@@ -61,7 +96,7 @@
             </a>
         </li>
         <li class="nav-item mt-4">
-            <a href="../logout.php" class="nav-link mb-2 rounded text-danger">
+            <a href="../logout.php" class="nav-link mb-2 rounded text-white bg-danger bg-opacity-75 mx-2 text-center shadow-sm">
                 <i class="bi bi-box-arrow-left me-2"></i> Keluar
             </a>
         </li>

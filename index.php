@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         
         body { 
-            background: linear-gradient(135deg, #0d6efd 0%, #0dcaf0 100%); /* Gradasi Biru */
+            background: linear-gradient(135deg, #e8f5e9 0%, #a2d9c1 100%); /* Gradasi Mint Lembut */
             min-height: 100vh; 
             display: flex; 
             align-items: center; 
@@ -100,10 +100,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             width: 100%; 
             border: none; 
             border-radius: 20px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15); 
+            box-shadow: 0 15px 35px rgba(58, 121, 122, 0.15); 
             overflow: hidden;
             background-color: #fff;
-            animation: fadeInUp 0.5s ease-out;
+            animation: fadeInUp 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
         }
         
         @keyframes fadeInUp {
@@ -119,36 +119,40 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         .card-header-custom {
             background-color: #fff;
-            padding: 2rem 2rem 1rem 2rem;
+            padding: 2.5rem 2rem 1.5rem 2rem;
             text-align: center;
         }
         
         .logo-placeholder {
-            width: 100px;
-            height: 100px;
+            width: 110px;
+            height: 110px;
             object-fit: contain;
             margin-bottom: 15px;
-            transition: transform 0.3s ease;
+            transition: transform 0.4s ease;
+            border: 4px solid #f0fdf4;
+            padding: 5px;
         }
         
         .logo-placeholder:hover {
-            transform: scale(1.05);
+            transform: scale(1.08) rotate(2deg);
         }
         
         .bimbel-name {
-            color: #0d6efd;
+            color: #3a797a; /* Teal Gelap sesuai teks logo */
             font-weight: 700;
             letter-spacing: 0.5px;
+            font-size: 1.25rem;
         }
         
         .form-control:focus {
-            box-shadow: none;
-            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.25rem rgba(162, 217, 193, 0.25);
+            border-color: #a2d9c1;
         }
         
         .input-group-text {
-            background-color: #f8f9fa;
+            background-color: #f8fdfb;
             border-right: none;
+            color: #3a797a;
         }
         
         .form-control {
@@ -157,23 +161,38 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         
         .btn-primary { 
-            background: linear-gradient(to right, #0d6efd, #0b5ed7);
+            background: linear-gradient(to right, #3a797a, #4b8b8c);
             border: none; 
-            padding: 12px; 
-            border-radius: 10px; 
+            padding: 14px; 
+            border-radius: 12px; 
             font-weight: 600;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
             transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(58, 121, 122, 0.2);
         }
         
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3);
+            box-shadow: 0 6px 20px rgba(58, 121, 122, 0.3);
+            background: linear-gradient(to right, #4b8b8c, #3a797a);
+        }
+        
+        .alert-danger {
+            background-color: #fef2f2;
+            border-color: #fee2e2;
+            color: #991b1b;
+            border-radius: 12px;
         }
         
         .copyright {
-            font-size: 0.8rem;
-            color: #aaa;
+            font-size: 0.75rem;
+            color: #8fa3a3;
+            font-weight: 400;
+        }
+
+        .text-muted.small.fw-bold {
+            color: #3a797a !important;
+            opacity: 0.8;
         }
     </style>
 </head>
