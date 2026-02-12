@@ -35,6 +35,22 @@ if ($action == 'add_single' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     exit;
 }
 
+// --- FITUR BARU: EDIT DATA SISWA ---
+if ($action == 'edit' && $_SERVER['REQUEST_METHOD'] == 'POST') {
+    $id = (int)$_POST['id'];
+    $nama = trim($_POST['full_name']);
+    $kelas = trim($_POST['class']);
+    
+    if (!empty($id) && !empty($nama)) {
+        $stmt = $pdo->prepare("UPDATE students SET full_name = ?, class = ? WHERE id = ?");
+        $stmt->execute([$nama, $kelas, $id]);
+        header("Location: ../../dashboard.php?page=students&status=updated");
+    } else {
+        header("Location: ../../dashboard.php?page=students&status=error");
+    }
+    exit;
+}
+
 // Logika Import Excel
 if ($action == 'import' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_FILES['file_excel']) && $_FILES['file_excel']['error'] == 0) {

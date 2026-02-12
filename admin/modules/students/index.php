@@ -8,6 +8,22 @@ $students = $stmt->fetchAll();
 $nomor = 0;
 ?>
 
+
+<?php if (isset($_GET['status'])): ?>
+    <div class="alert alert-<?= in_array($_GET['status'], ['success', 'updated', 'deleted', 'resetted']) ? 'success' : 'danger' ?> alert-dismissible fade show" role="alert">
+        <?php 
+        switch($_GET['status']) {
+            case 'success': echo "Data siswa berhasil ditambahkan!"; break;
+            case 'updated': echo "Data siswa berhasil diperbarui!"; break;
+            case 'deleted': echo "Data siswa berhasil dihapus!"; break;
+            case 'resetted': echo "Status login berhasil direset!"; break;
+            case 'error': echo "Terjadi kesalahan dalam memproses data."; break;
+        }
+        ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+<?php endif; ?>
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h3 class="fw-bold">Data Siswa</h3>
     <div class="d-flex gap-2">
@@ -58,6 +74,15 @@ $nomor = 0;
                             <?php endif; ?>
                         </td>
                         <td class="text-center">
+                            <button class="btn btn-sm btn-outline-primary edit-btn" 
+                                    data-id="<?= $s['id'] ?>" 
+                                    data-name="<?= htmlspecialchars($s['full_name']) ?>" 
+                                    data-class="<?= htmlspecialchars($s['class'] ?? '') ?>"
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#editModal"
+                                    title="Edit Data">
+                                <i class="bi bi-pencil"></i>
+                            </button>
                             <a href="modules/students/process.php?action=reset_login&id=<?= $s['id'] ?>" class="btn btn-sm btn-outline-warning" title="Reset Login">
                                 <i class="bi bi-arrow-clockwise"></i>
                             </a>
@@ -126,6 +151,34 @@ $nomor = 0;
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-primary">Mulai Proses</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form action="modules/students/process.php?action=edit" method="POST">
+                <input type="hidden" name="id" id="edit_id">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Edit Data Siswa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nama Lengkap Siswa</label>
+                        <input type="text" name="full_name" id="edit_name" class="form-control" required placeholder="Masukkan nama lengkap">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Kelas</label>
+                        <input type="text" name="class" id="edit_class" class="form-control" required placeholder="Contoh: XII IPA 1">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
                 </div>
             </form>
         </div>
@@ -222,6 +275,16 @@ sortClassBtn.addEventListener('click', () => {
 
     currentPage = 1;
     displayTable();
+});
+
+// Logika Edit Modal Data
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.edit-btn')) {
+        const btn = e.target.closest('.edit-btn');
+        document.getElementById('edit_id').value = btn.dataset.id;
+        document.getElementById('edit_name').value = btn.dataset.name;
+        document.getElementById('edit_class').value = btn.dataset.class;
+    }
 });
 
 // Inisialisasi tampilan awal
