@@ -74,6 +74,9 @@ $nomor = 0;
                             <?php endif; ?>
                         </td>
                         <td class="text-center">
+                            <a href="modules/students/process.php?action=reset_login&id=<?= $s['id'] ?>" class="btn btn-sm btn-outline-warning" title="Reset Login">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </a>
                             <button class="btn btn-sm btn-outline-primary edit-btn" 
                                     data-id="<?= $s['id'] ?>" 
                                     data-name="<?= htmlspecialchars($s['full_name']) ?>" 
@@ -83,9 +86,6 @@ $nomor = 0;
                                     title="Edit Data">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <a href="modules/students/process.php?action=reset_login&id=<?= $s['id'] ?>" class="btn btn-sm btn-outline-warning" title="Reset Login">
-                                <i class="bi bi-arrow-clockwise"></i>
-                            </a>
                             <a href="modules/students/process.php?action=delete&id=<?= $s['id'] ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Hapus siswa ini?')">
                                 <i class="bi bi-trash"></i>
                             </a>

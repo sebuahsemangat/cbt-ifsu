@@ -121,9 +121,16 @@ if ($exam_id):
                                         </small>
                                     </td>
                                     <td class="text-center">
-                                        <button class="btn btn-danger btn-sm" onclick="deleteScore(<?= $row['id'] ?>, '<?= htmlspecialchars($row['full_name']) ?>')">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                        <div class="d-flex justify-content-center gap-1">
+                                            <?php if ($row['status'] != 'finished'): ?>
+                                                <button class="btn btn-warning btn-sm text-dark" onclick="finishExam(<?= $row['id'] ?>, '<?= htmlspecialchars($row['full_name']) ?>')" title="Selesaikan Ujian">
+                                                    <i class="bi bi-check-circle"></i>
+                                                </button>
+                                            <?php endif; ?>
+                                            <button class="btn btn-danger btn-sm" onclick="deleteScore(<?= $row['id'] ?>, '<?= htmlspecialchars($row['full_name']) ?>')" title="Hapus Nilai">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -214,6 +221,14 @@ if ($exam_id):
         if (confirm(`Apakah Anda yakin ingin menghapus nilai siswa "${studentName}"?\n\nData yang dihapus tidak dapat dikembalikan!`)) {
             // Redirect ke process.php dengan parameter delete
             window.location.href = 'modules/scores/process.php?action=delete&id=' + id + '&exam_id=<?= $exam_id ?>';
+        }
+    }
+
+    // Fungsi untuk menyelesaikan ujian secara paksa
+    function finishExam(id, studentName) {
+        if (confirm(`Apakah Anda yakin ingin menyelesaikan paksa ujian untuk siswa "${studentName}"?\n\nSistem akan menghitung nilai berdasarkan jawaban yang sudah tersimpan.`)) {
+            // Redirect ke process.php dengan parameter finish
+            window.location.href = 'modules/scores/process.php?action=finish&id=' + id + '&exam_id=<?= $exam_id ?>';
         }
     }
     </script>

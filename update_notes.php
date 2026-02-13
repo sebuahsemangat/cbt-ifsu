@@ -9,3 +9,4 @@ yang belum diimplementasi:
 3. Copy soal ke ujian lain 
 4. Setiap mata pelajaran memiliki bobot nilai yang berbeda
 5. Perhitungan nilai berdasarkan bobot mata pelajaran
+6. Tambahkan tombol selesaikan ujian di halaman nilai. Ini digunakan jika siswa belum selesai mengerjakan ujian namun sudah melewati waktu ujian/tidak aktif lagi.
