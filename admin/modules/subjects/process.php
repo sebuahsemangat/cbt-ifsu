@@ -10,8 +10,9 @@ if ($action == 'add' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     $duration = (int)$_POST['duration'];
 
     if (!empty($name) && $duration > 0) {
-        $stmt = $pdo->prepare("INSERT INTO subjects (name, exam_id, duration) VALUES (?, ?, ?)");
-        $stmt->execute([$name, $exam_id, $duration]);
+        $max_score = (float)$_POST['max_score'];
+        $stmt = $pdo->prepare("INSERT INTO subjects (name, exam_id, duration, max_score) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$name, $exam_id, $duration, $max_score]);
     }
     header("Location: ../../dashboard.php?page=exams");
     exit;
@@ -23,8 +24,9 @@ if ($action == 'edit' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     $duration = (int)$_POST['duration'];
 
     if (!empty($name) && $duration > 0 && $id > 0) {
-        $stmt = $pdo->prepare("UPDATE subjects SET name = ?, duration = ? WHERE id = ?");
-        $stmt->execute([$name, $duration, $id]);
+        $max_score = (float)$_POST['max_score'];
+        $stmt = $pdo->prepare("UPDATE subjects SET name = ?, duration = ?, max_score = ? WHERE id = ?");
+        $stmt->execute([$name, $duration, $max_score, $id]);
     }
     header("Location: ../../dashboard.php?page=exams");
     exit;

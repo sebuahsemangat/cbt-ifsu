@@ -55,7 +55,7 @@ if ($action === 'finish') {
 
     try {
         // 1. Ambil info sesi & subject
-        $stmt_session = $pdo->prepare("SELECT * FROM exam_sessions WHERE id = ?");
+        $stmt_session = $pdo->prepare("SELECT es.*, s.max_score FROM exam_sessions es JOIN subjects s ON es.subject_id = s.id WHERE es.id = ?");
         $stmt_session->execute([$id]);
         $session = $stmt_session->fetch(PDO::FETCH_ASSOC);
 
@@ -137,7 +137,8 @@ if ($action === 'finish') {
 
         $score = 0;
         if ($totalQuestions > 0) {
-            $score = ($correctCount / $totalQuestions) * 100;
+            $maxScore = $session['max_score'] ?? 100;
+            $score = ($correctCount / $totalQuestions) * $maxScore;
         }
 
         // 4. Update status sesi

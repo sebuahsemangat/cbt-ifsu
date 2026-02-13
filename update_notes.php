@@ -2,6 +2,7 @@
 2. Manajemen admin
 3. Data siswa ditambahkan kelas dan bisa sort berdasarkan kelas
 4. Ganti password siswa
+5. Tambahkan tombol selesaikan ujian di halaman nilai. Ini digunakan jika siswa belum selesai mengerjakan ujian namun sudah melewati waktu ujian/tidak aktif lagi.
 
 yang belum diimplementasi:
 1. Tipe soal isian singkat
@@ -9,4 +10,4 @@ yang belum diimplementasi:
 3. Copy soal ke ujian lain 
 4. Setiap mata pelajaran memiliki bobot nilai yang berbeda
 5. Perhitungan nilai berdasarkan bobot mata pelajaran
-6. Tambahkan tombol selesaikan ujian di halaman nilai. Ini digunakan jika siswa belum selesai mengerjakan ujian namun sudah melewati waktu ujian/tidak aktif lagi.
+6. Tambahkan tombol hapus semua nilai di halaman nilai

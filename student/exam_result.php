@@ -79,7 +79,7 @@ $isAllDone = ($finishedSubjects >= $totalSubjects);
             <h4 class="text-secondary"><?= htmlspecialchars($session['subject_name']) ?></h4>
             <hr>
             <p>Nilai Anda:</p>
-            <div class="score-val"><?= number_format($session['score'], 0) ?></div>
+            <div class="score-val"><?= number_format($session['score'], 2) ?></div>
             
             <div class="mt-4">
             <div class="mt-4">

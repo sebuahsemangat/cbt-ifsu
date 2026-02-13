@@ -24,6 +24,7 @@ $subjects = $stmt->fetchAll();
                         <tr>
                             <th class="px-4">Nama Mata Pelajaran</th>
                             <th>Durasi (Menit)</th>
+                            <th>Skor Maksimal</th>
                             <th>Status</th>
                             <th class="text-center">Aksi</th>
                         </tr>
@@ -33,6 +34,7 @@ $subjects = $stmt->fetchAll();
                         <tr>
                             <td class="px-4 fw-semibold"><?= htmlspecialchars($s['name']) ?></td>
                             <td><?= $s['duration'] ?> Menit</td>
+                            <td><?= $s['max_score'] ?></td>
                             <td>
                                 <span class="badge bg-<?= $s['is_active'] ? 'success' : 'danger' ?>">
                                     <?= $s['is_active'] ? 'Aktif' : 'Non-Aktif' ?>
@@ -48,7 +50,7 @@ $subjects = $stmt->fetchAll();
                         </tr>
                         <?php endforeach; ?>
                         <?php if (empty($subjects)): ?>
-                            <tr><td colspan="4" class="text-center p-4 text-muted">Belum ada data.</td></tr>
+                            <tr><td colspan="5" class="text-center p-4 text-muted">Belum ada data.</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
@@ -73,6 +75,10 @@ $subjects = $stmt->fetchAll();
                     <div class="mb-3">
                         <label class="form-label">Durasi (Menit)</label>
                         <input type="number" name="duration" class="form-control" required placeholder="Contoh: 90">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Skor Maksimal</label>
+                        <input type="number" name="max_score" class="form-control" required value="100" step="0.01" placeholder="Contoh: 100">
                     </div>
                 </div>
                 <div class="modal-footer">

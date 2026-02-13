@@ -12,7 +12,7 @@ if (!$sessionId) {
 }
 
 // Get Session & Subject Info
-$stmtSess = $pdo->prepare("SELECT * FROM exam_sessions WHERE id = ?");
+$stmtSess = $pdo->prepare("SELECT es.*, s.max_score FROM exam_sessions es JOIN subjects s ON es.subject_id = s.id WHERE es.id = ?");
 $stmtSess->execute([$sessionId]);
 $session = $stmtSess->fetch();
 
@@ -124,7 +124,8 @@ foreach ($questions as $q) {
 // Calculate Score
 $score = 0;
 if ($totalQuestions > 0) {
-    $score = ($correctCount / $totalQuestions) * 100;
+    $maxScore = $session['max_score'] ?? 100;
+    $score = ($correctCount / $totalQuestions) * $maxScore;
 }
 
 // Update Session

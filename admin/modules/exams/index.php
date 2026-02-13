@@ -105,6 +105,7 @@ $exams = $stmt->fetchAll();
                                     <tr>
                                         <th>Nama Mata Pelajaran</th>
                                         <th>Durasi</th>
+                                        <th>Skor Maksimal</th>
                                         <th class="text-center">Aksi</th>
                                     </tr>
                                 </thead>
@@ -121,6 +122,7 @@ $exams = $stmt->fetchAll();
                                         <tr>
                                             <td class="px-3"><?= htmlspecialchars($s['name']) ?></td>
                                             <td><?= $s['duration'] ?> Menit</td>
+                                            <td><?= $s['max_score'] ?></td>
                                             <td class="text-center">
                                                 <a href="dashboard.php?page=questions&subject_id=<?= $s['id'] ?>" class="btn btn-xs btn-primary me-1">
                                                     <i class="bi bi-pencil-square"></i> Kelola Soal
@@ -136,6 +138,9 @@ $exams = $stmt->fetchAll();
                                             </td>
                                         </tr>
                                     <?php endforeach; endif; ?>
+                                    <?php if(!empty($subjects)): ?>
+                                        <tr><td colspan="4" class="text-center p-2 text-muted small">Total Mapel: <?= count($subjects) ?></td></tr>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                             
@@ -163,6 +168,10 @@ $exams = $stmt->fetchAll();
                                                 <div class="mb-3">
                                                     <label class="form-label">Durasi (Menit)</label>
                                                     <input type="number" name="duration" class="form-control" required value="<?= $s['duration'] ?>">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Skor Maksimal</label>
+                                                    <input type="number" name="max_score" class="form-control" required value="<?= $s['max_score'] ?>" step="0.01">
                                                 </div>
                                             </div>
                                             <div class="modal-footer">
@@ -195,6 +204,10 @@ $exams = $stmt->fetchAll();
                                         <div class="mb-3">
                                             <label class="form-label">Durasi (Menit)</label>
                                             <input type="number" name="duration" class="form-control" required placeholder="Contoh: 90">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Skor Maksimal</label>
+                                            <input type="number" name="max_score" class="form-control" required step="0.01" placeholder="Contoh: 100">
                                         </div>
                                     </div>
                                     <div class="modal-footer">
