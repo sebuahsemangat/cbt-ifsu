@@ -70,10 +70,39 @@ $isAllDone = ($finishedSubjects >= $totalSubjects);
         body { font-family: 'Poppins', sans-serif; background: #f0f2f5; }
         .score-card { background: white; border-radius: 15px; padding: 2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; max-width: 600px; margin: 2rem auto; }
         .score-val { font-size: 3rem; font-weight: 700; color: #0d6efd; }
+
+        @media print {
+            .btn, hr, .d-print-none, .card-header { display: none !important; }
+            body { background: white !important; padding: 0 !important; }
+            .score-card { box-shadow: none !important; margin: 0 auto 2rem auto !important; padding: 1rem !important; border: 1px solid #eee !important; }
+            .card { border: 1px solid #eee !important; box-shadow: none !important; margin-top: 1rem !important; }
+            .container { width: 100% !important; max-width: 100% !important; padding: 0 !important; }
+            .badge { border: 1px solid #ccc !important; color: black !important; background: transparent !important; padding: 2px 5px !important; }
+            .bg-success { color: #198754 !important; border-color: #198754 !important; }
+            .bg-danger { color: #dc3545 !important; border-color: #dc3545 !important; }
+            .text-secondary { color: #6c757d !important; }
+        }
     </style>
 </head>
 <body>
     <div class="container py-5">
+        <!-- Print Only Header -->
+        <div class="d-none d-print-block text-center mb-4">
+            <h2 class="fw-bold">LAPORAN HASIL UJIAN</h2>
+            <hr>
+            <div class="row text-start mt-4">
+                <div class="col-6">
+                    <p class="mb-1"><strong>Nama:</strong> <?= htmlspecialchars($_SESSION['full_name'] ?? 'Siswa') ?></p>
+                    <p class="mb-1"><strong>Ujian:</strong> <?= htmlspecialchars($session['exam_name']) ?></p>
+                </div>
+                <div class="col-6 text-end">
+                    <p class="mb-1"><strong>Mata Pelajaran:</strong> <?= htmlspecialchars($session['subject_name']) ?></p>
+                    <p class="mb-1"><strong>Tanggal:</strong> <?= date('d M Y H:i') ?></p>
+                </div>
+            </div>
+            <hr>
+        </div>
+
         <div class="score-card">
             <h3>Hasil Mata Pelajaran</h3>
             <h4 class="text-secondary"><?= htmlspecialchars($session['subject_name']) ?></h4>
@@ -81,16 +110,24 @@ $isAllDone = ($finishedSubjects >= $totalSubjects);
             <p>Nilai Anda:</p>
             <div class="score-val"><?= number_format($session['score'], 2) ?></div>
             
-            <div class="mt-4">
+            <div class="mt-4 d-print-none">
             <div class="mt-4">
                 <?php if ($isAllDone): ?>
-                    <a href="dashboard.php" class="btn btn-success btn-lg w-100">
-                        Kembali ke Dashboard
-                    </a>
+                    <div class="d-flex gap-2">
+                        <a href="dashboard.php" class="btn btn-outline-primary btn-lg flex-grow-1">
+                            Dashboard
+                        </a>
+                        <button onclick="window.print()" class="btn btn-primary btn-lg flex-grow-1">
+                            <i class="bi bi-printer me-2"></i> Cetak Hasil
+                        </button>
+                    </div>
                 <?php else: ?>
-                    <a href="take_exam.php" class="btn btn-primary btn-lg w-100">
+                    <a href="take_exam.php" class="btn btn-primary btn-lg w-100 mb-2">
                         Lanjut Mata Pelajaran Berikutnya
                     </a>
+                    <button onclick="window.print()" class="btn btn-outline-info w-100">
+                        <i class="bi bi-printer me-2"></i> Cetak Hasil Sementara
+                    </button>
                 <?php endif; ?>
             </div>
             </div>
@@ -105,49 +142,50 @@ $isAllDone = ($finishedSubjects >= $totalSubjects);
                     $qData = json_decode($q['answer_data'], true);
                     $type = $q['question_type'];
                     $isCorrect = false;
+                    $formattedUserAns = "Belum dijawab";
+                    $correctLabel = "";
                     
-                    // Simple check for display color
                     if ($type == 'pg') {
+                        $formattedUserAns = $userAns ?? '-';
+                        $correctLabel = $qData['correct'] ?? '-';
                         if (isset($qData['correct']) && $userAns === $qData['correct']) {
                             $isCorrect = true;
                         }
                     } elseif ($type == 'bs') {
-                        // BS: $userAns is {0:'B', 1:'S'}, $qData is [{text:.., is_correct:1}, ..] OR {labels:.., items:..}
                         $isCorrect = true;
                         $items = isset($qData['items']) ? $qData['items'] : (is_array($qData) ? $qData : []);
                         $labels = $qData['labels'] ?? ['pos' => 'Benar', 'neg' => 'Salah'];
-
+                        
+                        $userBits = [];
+                        $correctBits = [];
+                        
                         if (!empty($items)) {
                              foreach ($items as $idx => $item) {
-                                 // Determine correct char: Support 'is_correct' or 'correct'
-                                 $flag = 0;
-                                 if (isset($item['is_correct'])) $flag = $item['is_correct'];
-                                 elseif (isset($item['correct'])) $flag = $item['correct'];
-                                 
+                                 $flag = $item['is_correct'] ?? $item['correct'] ?? 0;
                                  $correctChar = ($flag == 1) ? 'B' : 'S';
+                                 $correctBits[] = ($idx+1) . ":" . (($flag == 1) ? $labels['pos'] : $labels['neg']);
                                  
-                                 // User answer for this index
                                  $uVal = $userAns[$idx] ?? null;
+                                 if ($uVal !== null) {
+                                     $userBits[] = ($idx+1) . ":" . (($uVal == 'B') ? $labels['pos'] : $labels['neg']);
+                                 } else {
+                                     $userBits[] = ($idx+1) . ":-";
+                                 }
+
                                  if ($uVal !== $correctChar) {
                                      $isCorrect = false;
-                                     break; 
                                  }
                              }
-                        } else {
-                            $isCorrect = false; 
-                        }
+                        } else { $isCorrect = false; }
+                        $formattedUserAns = implode(", ", $userBits);
+                        $correctLabel = implode(", ", $correctBits);
+
                     } elseif ($type == 'multi') {
-                        // Multi: $userAns is [0, 2], $qData is [{text:.., correct:1}, ..] OR {options:[], correct:[]}
-                        // Based on form.php, structure likely array of objects with correct flag OR separate list.
-                        // Let's assume most robust: Check if 'correct' key exists in items.
-                        // If $qData has 'multi_correct' array (indices)? No, likely stored in items.
-                        
                         $isCorrect = true;
-                        // Normalize user ans to array of integers
-                        $uIndices = [];
-                        if (is_array($userAns)) {
-                            foreach($userAns as $v) $uIndices[] = (int)$v;
-                        }
+                        $uIndices = is_array($userAns) ? array_map('intval', $userAns) : [];
+                        
+                        $userSelected = [];
+                        $correctSelected = [];
                         
                         if (is_array($qData)) {
                             foreach ($qData as $idx => $item) {
@@ -155,16 +193,22 @@ $isAllDone = ($finishedSubjects >= $totalSubjects);
                                                     || (isset($item['is_correct']) && $item['is_correct']);
                                 $isSelected = in_array((int)$idx, $uIndices);
                                 
+                                if ($isSelected) $userSelected[] = strip_tags($item['text']);
+                                if ($shouldBeSelected) $correctSelected[] = strip_tags($item['text']);
+                                
                                 if ($shouldBeSelected !== $isSelected) {
                                     $isCorrect = false;
-                                    break;
                                 }
                             }
                         }
+                        $formattedUserAns = empty($userSelected) ? "-" : implode(", ", $userSelected);
+                        $correctLabel = implode(", ", $correctSelected);
+
                     } elseif ($type == 'isian') {
-                        // Isian: Case-insensitive comparison
                         $correctVal = $qData['correct'] ?? '';
                         $userVal = is_string($userAns) ? trim($userAns) : '';
+                        $formattedUserAns = $userVal ?: "-";
+                        $correctLabel = $correctVal;
                         
                         if (strtolower($userVal) == strtolower(trim($correctVal))) {
                             $isCorrect = true;
@@ -172,17 +216,15 @@ $isAllDone = ($finishedSubjects >= $totalSubjects);
                     }
                 ?>
                     <div class="mb-3 border-bottom pb-3">
-                        <p class="fw-bold">No. <?= $index + 1 ?></p>
-                        <p> <?=$q['question_text']?></p>
-                        <p class="mb-1">
-                            Jawaban Kamu: <span class="badge bg-secondary"><?= htmlspecialchars(is_string($userAns) ? $userAns : json_encode($userAns)) ?></span>
-                            <?php if ($isCorrect): ?>
-                                <span class="badge bg-success ms-2">Benar</span>
-                            <?php else: ?>
-                                <span class="badge bg-danger ms-2">Salah</span>
-                            <?php endif; ?>
-                        </p>
-                        <!-- Show correct answer logic here if desired -->
+                        <p class="fw-bold mb-1">No. <?= $index + 1 ?></p>
+                        <div class="mb-2"> <?=$q['question_text']?></div>
+                        <div class="small">
+                            <div class="mb-1">
+                                <strong>Jawaban Kamu:</strong> 
+                                <span class="text-<?= $isCorrect ? 'success' : 'danger' ?> fw-bold"><?= htmlspecialchars($formattedUserAns) ?></span>
+                                <span class="badge bg-<?= $isCorrect ? 'success' : 'danger' ?> ms-2"><?= $isCorrect ? 'Benar' : 'Salah' ?></span>
+                            </div>
+                        </div>
                     </div>
                 <?php endforeach; ?>
             </div>

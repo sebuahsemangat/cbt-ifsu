@@ -8,8 +8,8 @@
 8. Tipe soal isian singkat
 9. Label Benar/Salah harus dinamis
 10. Tombol hapus semua nilai dan refresh di halaman nilai
+11. Export hasil ujian (Cetak/PDF) untuk siswa
 
 yang belum diimplementasi:
 1. Copy soal ke ujian lain 
 2. Cek koneksi internet di halaman ujian
-3. Download report nilai di siswa
