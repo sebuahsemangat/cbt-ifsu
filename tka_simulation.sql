@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Feb 13, 2026 at 09:32 AM
+-- Generation Time: Feb 14, 2026 at 09:19 AM
 -- Server version: 8.0.30
 -- PHP Version: 8.3.6
 
@@ -62,7 +62,7 @@ CREATE TABLE `exams` (
 --
 
 INSERT INTO `exams` (`id`, `exam_name`, `start_date`, `end_date`, `is_active`, `created_at`) VALUES
-(8, 'Simulasi UTBK', '2026-02-13 08:58:00', '2026-02-14 08:58:00', 1, '2026-02-13 01:59:05');
+(8, 'Simulasi UTBK', '2026-02-13 08:58:00', '2026-02-15 08:58:00', 1, '2026-02-13 01:59:05');
 
 -- --------------------------------------------------------
 
@@ -86,7 +86,8 @@ CREATE TABLE `exam_sessions` (
 --
 
 INSERT INTO `exam_sessions` (`id`, `student_id`, `exam_id`, `subject_id`, `start_time`, `end_time`, `score`, `status`) VALUES
-(71, 17, 8, 11, '2026-02-13 09:17:17', '2026-02-13 09:19:08', 708.90, 'finished');
+(76, 20, 8, 11, '2026-02-14 15:30:26', '2026-02-14 15:30:51', 775.36, 'finished'),
+(78, 15, 8, 11, '2026-02-14 15:45:43', '2026-02-14 15:46:20', 0.00, 'finished');
 
 -- --------------------------------------------------------
 
@@ -113,7 +114,7 @@ CREATE TABLE `questions` (
   `reference_id` int DEFAULT NULL,
   `question_text` text NOT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `question_type` enum('pg','bs','multi') NOT NULL,
+  `question_type` enum('pg','bs','multi','isian') NOT NULL,
   `answer_data` json NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -126,7 +127,10 @@ INSERT INTO `questions` (`id`, `subject_id`, `reference_id`, `question_text`, `c
 (27, 11, NULL, '<p><span style=\"color: rgb(44, 49, 58);\">Lima peserta ujian, yaitu Q, R, S, T, U mengikuti seleksi masuk PTN. Nilai TPA mereka sebagai berikut. Nilai U lebih tinggi dari R, tetapi U lebih rendah dari S. Nilai R lebih tinggi dari Q dan T lebih rendah dari Q.</span></p>', '2026-02-13 02:12:42', 'pg', '{\"type\": \"single_choice\", \"correct\": \"C\", \"options\": {\"A\": \"<p>Q</p>\", \"B\": \"<p>R</p>\", \"C\": \"<p>S</p>\", \"D\": \"<p>T</p>\", \"E\": \"<p>U</p>\"}}'),
 (28, 11, NULL, '<p><span style=\"color: rgb(44, 49, 58);\">Ziko memiliki lima anak perempuan. Mereka adalah Humairoh, Aisyah, Hafsoh, Ruqoyyah, dan Fatimah. Humairoh lebih kaya dari Ruqoyyah, Aisyah lebih miskin dari Roqoyyah dan lebih kaya dari Fatimah, dan Fatimah lebih kaya dari Hafsoh. Di antara anak perempuan Ziko, siapakah yang paling kaya?</span></p>', '2026-02-13 02:13:45', 'pg', '{\"type\": \"single_choice\", \"correct\": \"D\", \"options\": {\"A\": \"<p>Aisyah</p>\", \"B\": \"<p>Fatimah</p>\", \"C\": \"<p>Hafson</p>\", \"D\": \"<p>Humairroh</p>\", \"E\": \"<p>Ruqoyyah</p>\"}}'),
 (29, 11, NULL, '<p class=\"ql-align-justify\">Ada lima keranjang buah-buahan dengan berat yang berbeda. Keranjang salak lebih berat daripada jambu. Keranjang manggis lebih ringan daripada jambu. Keranjang pisang lebih berat daripada apel. Keranjang jambu lebih berat daripada pisang. Keranjang apel tidak lebih ringan daripada manggis.</p><p class=\"ql-align-justify\">Keranjang buah terberat kedua adalah keranjang ….</p>', '2026-02-13 02:14:26', 'pg', '{\"type\": \"single_choice\", \"correct\": \"A\", \"options\": {\"A\": \"<p>Jambu</p>\", \"B\": \"<p>Salak</p>\", \"C\": \"<p>Pisang</p>\", \"D\": \"<p>Manggis</p>\", \"E\": \"<p>Apel</p>\"}}'),
-(30, 11, NULL, '<p class=\"ql-align-justify\">Dalam perjalanan menuju sekolah, lima sekawan Slamet, Joni, Anto, Rika, dan Rahma selalu berangkat bersama. Joni selalu menjemput Slamet, setelah ia dijemput oleh Anto. Rika menjadi anak terakhir yang dijemput. Sementara rumah Rahma terletak di antara rumah Joni dan rumah Anto.</p><p class=\"ql-align-justify\">Berikut ini pernyataan yang BENAR adalah ….</p>', '2026-02-13 02:15:37', 'pg', '{\"type\": \"single_choice\", \"correct\": \"E\", \"options\": {\"A\": \"<p>Rumah Rahma terletak paling jauh</p>\", \"B\": \"<p>Rumah Joni terletak paling jauh</p>\", \"C\": \"<p>Rumah Rika terletak paling jauh</p>\", \"D\": \"<p>Rumah Slamet terletak paling dekat</p>\", \"E\": \"<p>Rumah Rika terletak paling dekat</p>\"}}');
+(30, 11, NULL, '<p class=\"ql-align-justify\">Dalam perjalanan menuju sekolah, lima sekawan Slamet, Joni, Anto, Rika, dan Rahma selalu berangkat bersama. Joni selalu menjemput Slamet, setelah ia dijemput oleh Anto. Rika menjadi anak terakhir yang dijemput. Sementara rumah Rahma terletak di antara rumah Joni dan rumah Anto.</p><p class=\"ql-align-justify\">Berikut ini pernyataan yang BENAR adalah ….</p>', '2026-02-13 02:15:37', 'pg', '{\"type\": \"single_choice\", \"correct\": \"E\", \"options\": {\"A\": \"<p>Rumah Rahma terletak paling jauh</p>\", \"B\": \"<p>Rumah Joni terletak paling jauh</p>\", \"C\": \"<p>Rumah Rika terletak paling jauh</p>\", \"D\": \"<p>Rumah Slamet terletak paling dekat</p>\", \"E\": \"<p>Rumah Rika terletak paling dekat</p>\"}}'),
+(31, 11, NULL, '<p><span style=\"color: rgb(13, 13, 13);\">Perhatikan deret bilangan berikut: 3, -5, -1, -4, 7, -1, -9, 8, A, B. Nilai dari 2A - B adalah ...</span></p>', '2026-02-14 07:54:01', 'isian', '{\"type\": \"short_answer\", \"correct\": \"11\"}'),
+(32, 11, NULL, '<p>Hari setelah Senin adalah...</p>', '2026-02-14 07:54:23', 'isian', '{\"type\": \"short_answer\", \"correct\": \"SELASA\"}'),
+(33, 11, NULL, '<p>Jumlah pekerja yang berasal dari generasi milenial saat ini semakin banyak. Ahli psikologi kerja menyebutkan bahwa pekerja milenial cenderung memiliki komitmen organisasi yang rendah.</p><p><br></p><p><strong>Manakah pernyataan-pernyataan berikut yang MEMPERLEMAH dan TIDAK MEMPERLEMAH pendapat ahli psikologi kerja tersebut?</strong></p>', '2026-02-14 08:14:52', 'bs', '{\"items\": [{\"text\": \"<p>Pekerja milenial sering berpindah-pindah tempat kerja.</p>\", \"is_correct\": 0}, {\"text\": \"<p><span style=\\\"background-color: rgb(255, 255, 255); color: rgb(33, 37, 41);\\\">Pekerja milenial memberikan ide-ide terbaik untuk tempat kerjanya.</span></p>\", \"is_correct\": 1}, {\"text\": \"<p>Banyak pekerja milenial yang bekerja di perusahaan untuk jangka waktu yang lama.</p>\", \"is_correct\": 1}, {\"text\": \"<p><span style=\\\"background-color: rgb(255, 255, 255); color: rgb(33, 37, 41);\\\">Banyak perusahaan mengapresiasi etos kerja pekerja milenial.</span></p>\", \"is_correct\": 1}, {\"text\": \"<p><span style=\\\"background-color: rgb(255, 255, 255); color: rgb(33, 37, 41);\\\">Banyak perusahaan yang mengeluhkan kinerja pekerja milenial.</span></p>\", \"is_correct\": 0}], \"labels\": {\"neg\": \"Tidak Memperlemah\", \"pos\": \"Memperlemah\"}}');
 
 -- --------------------------------------------------------
 
@@ -171,7 +175,8 @@ CREATE TABLE `scores` (
 
 INSERT INTO `scores` (`id`, `student_id`, `exam_id`, `total_score`, `completed_at`) VALUES
 (2, 13, 5, 0.00, '2026-02-06 09:33:08'),
-(3, 19, 7, 0.00, '2026-02-12 06:45:47');
+(3, 19, 7, 0.00, '2026-02-12 06:45:47'),
+(4, 15, 8, 775.36, '2026-02-14 08:44:50');
 
 -- --------------------------------------------------------
 
@@ -195,12 +200,12 @@ CREATE TABLE `students` (
 --
 
 INSERT INTO `students` (`id`, `username`, `password`, `full_name`, `class`, `is_logged_in`, `last_login`, `created_at`) VALUES
-(15, 'lita11', '$2y$10$KtBLQHy9vIFAOj/y.x9O..rYhvHTbIvUr/Cg6p2F0PK23wutKBUHm', 'Lita', 'XII IPA 1', 0, NULL, '2026-02-12 04:52:07'),
-(16, 'apepwahyudin53', '$2y$10$z8AukipRA2hZN1BfW./ad.jmmCSHSB48ZM6kLJsRtur3jtc1QWKWS', 'Apep Wahyudin 2', 'XII IPA 11', 0, '2026-02-13 08:37:30', '2026-02-12 04:58:41'),
-(17, 'budisantoso44', '$2y$10$ONGpw7jsOvOdxSINCoNVUOspSMFRoIQn7GjM0Fy.W8IJUhsn0BQkW', 'Budi Santoso', 'XII IPA 2', 1, '2026-02-13 09:16:55', '2026-02-12 04:58:41'),
+(15, 'lita11', '$2y$10$MSktbJKnvZ5RIMweVyaRnO6m3KUveD5PbxD3cMYKFDlMAEZar6Lm.', 'Lita', 'XII IPA 1', 0, '2026-02-14 15:59:54', '2026-02-12 04:52:07'),
+(16, 'apepwahyudin53', '$2y$10$z8AukipRA2hZN1BfW./ad.jmmCSHSB48ZM6kLJsRtur3jtc1QWKWS', 'Apep Wahyudin 2', 'XII IPA 11', 0, '2026-02-14 15:15:37', '2026-02-12 04:58:41'),
+(17, 'budisantoso44', '$2y$10$ONGpw7jsOvOdxSINCoNVUOspSMFRoIQn7GjM0Fy.W8IJUhsn0BQkW', 'Budi Santoso', 'XII IPA 2', 0, '2026-02-13 09:16:55', '2026-02-12 04:58:41'),
 (18, 'shintakurzawa78', '$2y$10$Zm6XouZXG6w22qzN0WBOWOZtMtl8lLUabA5wdUUeFmc4R8AH9qsxC', 'Shinta Kurzawa', 'XII RPL 2', 0, NULL, '2026-02-12 04:58:41'),
 (19, 'ramakusnandar13', '$2y$10$24jHz5guauTTPOr.u6aK9.AAwr9gFRUwWOWNnkMk4iTi69ofWoPuC', 'Rama Kusnandar', 'XII IPA 3', 0, '2026-02-12 14:07:53', '2026-02-12 04:58:41'),
-(20, 'm.46', '$2y$10$YrCiuJgkmDcVTK10VOHFAeO2E7lrZ/kh3ghbB1EtAShAmtcbZGFIe', 'M. Ahmad Sanusi', 'XII IPA 1', 0, '2026-02-12 14:26:12', '2026-02-12 07:11:28');
+(20, 'm.46', '$2y$10$YrCiuJgkmDcVTK10VOHFAeO2E7lrZ/kh3ghbB1EtAShAmtcbZGFIe', 'M. Ahmad Sanusi', 'XII IPA 1', 0, '2026-02-14 15:30:16', '2026-02-12 07:11:28');
 
 -- --------------------------------------------------------
 
@@ -224,11 +229,14 @@ CREATE TABLE `student_answers` (
 --
 
 INSERT INTO `student_answers` (`id`, `session_id`, `question_id`, `answer_data`, `is_doubt`, `time_spent`, `option_id`, `answered_at`) VALUES
-(211, 71, 26, '\"E\"', 0, 0, NULL, '2026-02-13 02:17:49'),
-(212, 71, 29, '\"A\"', 0, 0, NULL, '2026-02-13 02:18:01'),
-(213, 71, 27, '\"C\"', 0, 0, NULL, '2026-02-13 02:18:13'),
-(214, 71, 28, '\"D\"', 0, 0, NULL, '2026-02-13 02:18:29'),
-(215, 71, 30, '\"A\"', 0, 0, NULL, '2026-02-13 02:19:04');
+(246, 76, 27, '\"C\"', 0, 0, NULL, '2026-02-14 08:30:28'),
+(247, 76, 31, '\"11\"', 0, 0, NULL, '2026-02-14 08:30:30'),
+(248, 76, 30, '\"A\"', 0, 0, NULL, '2026-02-14 08:30:31'),
+(249, 76, 26, '\"E\"', 0, 0, NULL, '2026-02-14 08:30:33'),
+(250, 76, 29, '\"A\"', 0, 0, NULL, '2026-02-14 08:30:35'),
+(251, 76, 28, '\"D\"', 0, 0, NULL, '2026-02-14 08:30:37'),
+(252, 76, 32, '\"Selasa\"', 0, 0, NULL, '2026-02-14 08:30:41'),
+(253, 76, 33, '[\"S\",\"B\",\"B\",\"B\",\"S\"]', 0, 0, NULL, '2026-02-14 08:30:49');
 
 -- --------------------------------------------------------
 
@@ -272,7 +280,11 @@ CREATE TABLE `tokens` (
 --
 
 INSERT INTO `tokens` (`id`, `exam_id`, `token_code`, `created_at`, `expires_at`) VALUES
-(34, 8, '7DSX', '2026-02-13 02:17:11', '2026-02-13 02:27:11');
+(34, 8, '7DSX', '2026-02-13 02:17:11', '2026-02-13 02:27:11'),
+(35, 8, 'ANY3', '2026-02-14 07:56:10', '2026-02-14 08:06:10'),
+(36, 8, 'HTUQ', '2026-02-14 08:15:43', '2026-02-14 08:25:43'),
+(37, 8, '4MXH', '2026-02-14 08:25:43', '2026-02-14 08:35:43'),
+(38, 8, 'TRGL', '2026-02-14 08:38:26', '2026-02-14 08:48:26');
 
 --
 -- Indexes for dumped tables
@@ -381,7 +393,7 @@ ALTER TABLE `exams`
 -- AUTO_INCREMENT for table `exam_sessions`
 --
 ALTER TABLE `exam_sessions`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=72;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=79;
 
 --
 -- AUTO_INCREMENT for table `options`
@@ -393,7 +405,7 @@ ALTER TABLE `options`
 -- AUTO_INCREMENT for table `questions`
 --
 ALTER TABLE `questions`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
 
 --
 -- AUTO_INCREMENT for table `references`
@@ -405,7 +417,7 @@ ALTER TABLE `references`
 -- AUTO_INCREMENT for table `scores`
 --
 ALTER TABLE `scores`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `students`
@@ -417,7 +429,7 @@ ALTER TABLE `students`
 -- AUTO_INCREMENT for table `student_answers`
 --
 ALTER TABLE `student_answers`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=216;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=262;
 
 --
 -- AUTO_INCREMENT for table `subjects`
@@ -429,7 +441,7 @@ ALTER TABLE `subjects`
 -- AUTO_INCREMENT for table `tokens`
 --
 ALTER TABLE `tokens`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
 
 --
 -- Constraints for dumped tables
