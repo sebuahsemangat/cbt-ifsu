@@ -118,10 +118,16 @@ $questions = $stmt->fetchAll();
                                         echo "Kunci: <span class='text-primary'>" . ($ansData['correct'] ?? '-') . "</span>";
                                     } elseif ($q['question_type'] == 'bs') {
                                         $bsArr = [];
-                                        foreach ($ansData as $i => $item) {
-                                            $bsArr[] = ($i+1) . ":" . (($item['is_correct'] ?? 0) == 1 ? 'B' : 'S');
+                                        $items = isset($ansData['items']) ? $ansData['items'] : (is_array($ansData) ? $ansData : []);
+                                        $labels = $ansData['labels'] ?? ['pos' => 'B', 'neg' => 'S'];
+                                        $posLabel = ($labels['pos'] == 'Benar') ? 'B' : $labels['pos'];
+                                        $negLabel = ($labels['neg'] == 'Salah') ? 'S' : $labels['neg'];
+
+                                        foreach ($items as $i => $item) {
+                                            $shortLabel = (($item['is_correct'] ?? 0) == 1) ? $posLabel : $negLabel;
+                                            $bsArr[] = ($i+1) . ":" . $shortLabel;
                                         }
-                                        echo implode(", ", $bsArr);
+                                        echo "<small>" . implode(", ", $bsArr) . "</small>";
                                     } elseif ($q['question_type'] == 'multi') {
                                         $corrects = [];
                                         foreach ($ansData as $item) {

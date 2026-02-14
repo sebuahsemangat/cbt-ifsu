@@ -147,13 +147,31 @@ function renderOptions() {
             optionQuills[`input_pg_${let}`] = q;
         });
     } else if (type === 'bs') {
+        const posLabel = (savedType === 'bs' && savedData && savedData.labels) ? savedData.labels.pos : 'Benar';
+        const negLabel = (savedType === 'bs' && savedData && savedData.labels) ? savedData.labels.neg : 'Salah';
+        
         container.innerHTML = `
-            <label class="form-label fw-bold">Pernyataan Benar/Salah</label>
+            <div class="row mb-3">
+                <div class="col-6">
+                    <label class="form-label small fw-bold">Label Positif (B)</label>
+                    <input type="text" name="bs_label_pos" class="form-control form-control-sm" value="${posLabel}" placeholder="Contoh: Benar, Sesuai, Mendukung" required onkeyup="updateBSLabels()">
+                </div>
+                <div class="col-6">
+                    <label class="form-label small fw-bold">Label Negatif (S)</label>
+                    <input type="text" name="bs_label_neg" class="form-control form-control-sm" value="${negLabel}" placeholder="Contoh: Salah, Tidak Sesuai" required onkeyup="updateBSLabels()">
+                </div>
+            </div>
+            <label class="form-label fw-bold">Pernyataan & Kunci</label>
             <div id="bs-rows"></div>
             <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addBSRow()">+ Tambah Pernyataan</button>`;
         
-        if (savedType === 'bs' && Array.isArray(savedData)) {
-            savedData.forEach(item => addBSRow(item.text, item.is_correct));
+        if (savedType === 'bs') {
+            const items = Array.isArray(savedData) ? savedData : (savedData.items || []);
+            if (items.length > 0) {
+                items.forEach(item => addBSRow(item.text, item.is_correct));
+            } else {
+                addBSRow();
+            }
         } else {
             addBSRow();
         }
@@ -183,14 +201,17 @@ function renderOptions() {
 
 function addBSRow(text = '', isCorrect = 1) {
     const id = 'bs_' + Math.random().toString(36).substr(2, 9);
+    const posLabel = document.getElementsByName('bs_label_pos')[0]?.value || 'Benar';
+    const negLabel = document.getElementsByName('bs_label_neg')[0]?.value || 'Salah';
+    
     const div = document.createElement('div');
     div.className = 'card mb-2 shadow-sm bs-row'; 
     div.innerHTML = `
         <div class="card-body p-2">
              <div class="d-flex justify-content-between mb-2">
-                <select name="statement_ans[]" class="form-select form-select-sm" style="width: 120px;">
-                    <option value="1" ${isCorrect == 1 ? 'selected' : ''}>Benar</option>
-                    <option value="0" ${isCorrect == 0 ? 'selected' : ''}>Salah</option>
+                <select name="statement_ans[]" class="form-select form-select-sm bs-select" style="width: 140px;">
+                    <option value="1" ${isCorrect == 1 ? 'selected' : ''}>${posLabel}</option>
+                    <option value="0" ${isCorrect == 0 ? 'selected' : ''}>${negLabel}</option>
                 </select>
                 <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this, '${id}')"><i class="bi bi-x"></i></button>
              </div>
@@ -202,6 +223,16 @@ function addBSRow(text = '', isCorrect = 1) {
     const q = new Quill(`#editor_${id}`, quillConfig);
     q.root.innerHTML = text;
     optionQuills[`input_${id}`] = q;
+}
+
+function updateBSLabels() {
+    const posLabel = document.getElementsByName('bs_label_pos')[0].value || 'Benar';
+    const negLabel = document.getElementsByName('bs_label_neg')[0].value || 'Salah';
+    
+    document.querySelectorAll('.bs-select').forEach(sel => {
+        sel.options[0].text = posLabel;
+        sel.options[1].text = negLabel;
+    });
 }
 
 function addMultiRow(text = '', isCorrect = 0) { 

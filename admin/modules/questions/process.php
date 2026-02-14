@@ -50,8 +50,14 @@ if ($action == 'save' && $_SERVER['REQUEST_METHOD'] == 'POST') {
 
             if (empty($items)) throw new Exception("Minimal satu pernyataan harus diisi.");
 
-            // Struktur JSON: [ {"text":"Bumi bulat", "is_correct":1}, ... ]
-            $answer_data = $items;
+            // Struktur JSON Baru: { "labels": {"pos":"Benar", "neg":"Salah"}, "items": [...] }
+            $answer_data = [
+                'labels' => [
+                    'pos' => trim($_POST['bs_label_pos'] ?? 'Benar'),
+                    'neg' => trim($_POST['bs_label_neg'] ?? 'Salah')
+                ],
+                'items' => $items
+            ];
 
         } elseif ($type == 'multi') {
             // --- PILIHAN GANDA KOMPLEKS (Checkbox) ---

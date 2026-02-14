@@ -112,10 +112,13 @@ $isAllDone = ($finishedSubjects >= $totalSubjects);
                             $isCorrect = true;
                         }
                     } elseif ($type == 'bs') {
-                        // BS: $userAns is {0:'B', 1:'S'}, $qData is [{text:.., is_correct:1}, ..]
+                        // BS: $userAns is {0:'B', 1:'S'}, $qData is [{text:.., is_correct:1}, ..] OR {labels:.., items:..}
                         $isCorrect = true;
-                        if (is_array($qData)) {
-                             foreach ($qData as $idx => $item) {
+                        $items = isset($qData['items']) ? $qData['items'] : (is_array($qData) ? $qData : []);
+                        $labels = $qData['labels'] ?? ['pos' => 'Benar', 'neg' => 'Salah'];
+
+                        if (!empty($items)) {
+                             foreach ($items as $idx => $item) {
                                  // Determine correct char: Support 'is_correct' or 'correct'
                                  $flag = 0;
                                  if (isset($item['is_correct'])) $flag = $item['is_correct'];
@@ -127,7 +130,7 @@ $isAllDone = ($finishedSubjects >= $totalSubjects);
                                  $uVal = $userAns[$idx] ?? null;
                                  if ($uVal !== $correctChar) {
                                      $isCorrect = false;
-                                     break; // One wrong makes the whole question wrong/partially wrong
+                                     break; 
                                  }
                              }
                         } else {

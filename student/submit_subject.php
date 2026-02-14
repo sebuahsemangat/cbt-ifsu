@@ -63,10 +63,12 @@ foreach ($questions as $q) {
             $isCorrect = true;
         }
     } elseif ($type == 'bs') {
-        // BS: $userAns is {0:'B', 1:'S'}, $qData is [{"text":..., "is_correct":1}, ...]
+        // BS: $userAns is {0:'B', 1:'S'}, $qData is [{"text":..., "is_correct":1}, ...] OR {labels:..., items:[...]}
         $isCorrect = true;
-        if (is_array($qData)) {
-             foreach ($qData as $idx => $item) {
+        $items = isset($qData['items']) ? $qData['items'] : (is_array($qData) ? $qData : []);
+        
+        if (!empty($items)) {
+             foreach ($items as $idx => $item) {
                  // Determine correct char: Support 'is_correct' or 'correct'
                  $flag = 0;
                  if (isset($item['is_correct'])) $flag = $item['is_correct'];

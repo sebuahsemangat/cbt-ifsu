@@ -93,7 +93,11 @@ function renderQuestion(index) {
                 `;
     });
   } else if (type === "bs") {
-    // Table Layout for Benar/Salah
+    // Labels support: Handle legacy array or new object with labels
+    const posLabel = ansData.labels ? ansData.labels.pos : "Benar";
+    const negLabel = ansData.labels ? ansData.labels.neg : "Salah";
+    const items = Array.isArray(ansData) ? ansData : ansData.items || [];
+
     let html = `
             <div class="table-responsive">
             <table class="table table-bordered table-hover mt-2">
@@ -101,14 +105,12 @@ function renderQuestion(index) {
                     <tr>
                         <th style="width: 50px;" class="text-center">No</th>
                         <th>Pernyataan</th>
-                        <th style="width: 100px;" class="text-center">Benar</th>
-                        <th style="width: 100px;" class="text-center">Salah</th>
+                        <th style="width: 140px;" class="text-center">${posLabel}</th>
+                        <th style="width: 140px;" class="text-center">${negLabel}</th>
                     </tr>
                 </thead>
                 <tbody>`;
 
-    // Support both array of strings or objects with 'text'
-    const items = Array.isArray(ansData) ? ansData : [];
     items.forEach((item, idx) => {
       const text = typeof item === "object" && item.text ? item.text : item;
       const char = String.fromCharCode(65 + idx);
