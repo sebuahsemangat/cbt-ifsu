@@ -98,6 +98,16 @@ if ($action == 'reset_login' && isset($_GET['id'])) {
     exit;
 }
 
+// Fitur Reset Password
+if ($action == 'reset_password' && isset($_GET['id'])) {
+    $id = (int)$_GET['id'];
+    $password = password_hash('123456', PASSWORD_DEFAULT);
+    $stmt = $pdo->prepare("UPDATE students SET password = ? WHERE id = ?");
+    $stmt->execute([$password, $id]);
+    header("Location: ../../dashboard.php?page=students&status=pw_resetted");
+    exit;
+}
+
 // Fitur Hapus Siswa
 if ($action == 'delete' && isset($_GET['id'])) {
     $id = (int)$_GET['id'];

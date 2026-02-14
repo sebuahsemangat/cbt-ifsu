@@ -10,13 +10,14 @@ $nomor = 0;
 
 
 <?php if (isset($_GET['status'])): ?>
-    <div class="alert alert-<?= in_array($_GET['status'], ['success', 'updated', 'deleted', 'resetted']) ? 'success' : 'danger' ?> alert-dismissible fade show" role="alert">
+    <div class="alert alert-<?= in_array($_GET['status'], ['success', 'updated', 'deleted', 'resetted', 'pw_resetted']) ? 'success' : 'danger' ?> alert-dismissible fade show" role="alert">
         <?php 
         switch($_GET['status']) {
             case 'success': echo "Data siswa berhasil ditambahkan!"; break;
             case 'updated': echo "Data siswa berhasil diperbarui!"; break;
             case 'deleted': echo "Data siswa berhasil dihapus!"; break;
             case 'resetted': echo "Status login berhasil direset!"; break;
+            case 'pw_resetted': echo "Password siswa berhasil direset ke 123456!"; break;
             case 'error': echo "Terjadi kesalahan dalam memproses data."; break;
         }
         ?>
@@ -34,6 +35,9 @@ $nomor = 0;
         <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addSingleModal">
             <i class="bi bi-person-plus"></i> Tambah Siswa
         </button>
+        <a href="modules/students/export.php" class="btn btn-outline-success">
+            <i class="bi bi-file-earmark-excel"></i> Export Excel
+        </a>
         <button class="btn btn-outline-primary" onclick="location.href='modules/students/download_template.php'">
             <i class="bi bi-download"></i> Template
         </button>
@@ -69,13 +73,16 @@ $nomor = 0;
                         <td>
                             <?php if ($s['is_logged_in']): ?>
                                 <span class="badge bg-warning text-dark">Aktif</span>
+                                <a onclick="return confirm('Reset login siswa ini?')" href="modules/students/process.php?action=reset_login&id=<?= $s['id'] ?>" class="btn btn-sm btn-outline-warning" title="Reset Login Session">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </a>
                             <?php else: ?>
                                 <span class="badge bg-light text-muted border">Offline</span>
                             <?php endif; ?>
                         </td>
                         <td class="text-center">
-                            <a href="modules/students/process.php?action=reset_login&id=<?= $s['id'] ?>" class="btn btn-sm btn-outline-warning" title="Reset Login">
-                                <i class="bi bi-arrow-clockwise"></i>
+                            <a href="modules/students/process.php?action=reset_password&id=<?= $s['id'] ?>" class="btn btn-sm btn-outline-info" title="Reset Password ke 123456" onclick="return confirm('Reset password siswa ini menjadi 123456?')">
+                                Reset Password
                             </a>
                             <button class="btn btn-sm btn-outline-primary edit-btn" 
                                     data-id="<?= $s['id'] ?>" 

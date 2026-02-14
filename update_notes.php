@@ -10,7 +10,8 @@
 10. Tombol hapus semua nilai dan refresh di halaman nilai
 11. Export hasil ujian (Cetak/PDF) untuk siswa
 12. Status koneksi internet di halaman ujian
+13. Reset password siswa di halaman admin
+14. Export data siswa ke Excel di halaman admin
 
 yang belum diimplementasi:
 1. Copy soal ke ujian lain 
-2. Reset password siswa
