@@ -42,6 +42,31 @@ if ($action === 'delete') {
     exit;
 }
 
+// === HAPUS SEMUA DATA NILAI BERDASARKAN EXAM ===
+if ($action === 'delete_all') {
+    $exam_id = $_GET['exam_id'] ?? null;
+
+    if (!$exam_id) {
+        $_SESSION['error'] = "ID ujian tidak valid.";
+        header("Location: ../../dashboard.php?page=scores");
+        exit;
+    }
+
+    try {
+        // Hapus semua data dari exam_sessions berdasarkan exam_id
+        $stmt = $pdo->prepare("DELETE FROM exam_sessions WHERE exam_id = ?");
+        $stmt->execute([$exam_id]);
+
+        $_SESSION['success'] = "Semua data nilai untuk ujian ini berhasil dihapus.";
+    } catch (PDOException $e) {
+        $_SESSION['error'] = "Gagal menghapus semua data: " . $e->getMessage();
+    }
+
+    // Redirect kembali ke halaman nilai
+    header("Location: ../../dashboard.php?page=scores&exam_id=" . $exam_id);
+    exit;
+}
+
 // === SELESAIKAN PAKSA UJIAN ===
 if ($action === 'finish') {
     $id = $_GET['id'] ?? null;

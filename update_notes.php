@@ -7,9 +7,9 @@
 7. Perhitungan nilai berdasarkan bobot mata pelajaran
 8. Tipe soal isian singkat
 9. Label Benar/Salah harus dinamis
+10. Tombol hapus semua nilai dan refresh di halaman nilai
 
 yang belum diimplementasi:
 1. Copy soal ke ujian lain 
-2. Tambahkan tombol hapus semua nilai di halaman nilai
-3. Cek koneksi internet di halaman ujian
-4. Download report nilai di siswa
+2. Cek koneksi internet di halaman ujian
+3. Download report nilai di siswa

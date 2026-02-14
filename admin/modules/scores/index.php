@@ -9,6 +9,24 @@ if (!isset($_SESSION['user_id'])) {
 
 $exam_id = isset($_GET['exam_id']) ? $_GET['exam_id'] : null;
 
+// === PESAN NOTIFIKASI ===
+if (isset($_SESSION['success'])): ?>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-1"></i> <?= $_SESSION['success'] ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <?php unset($_SESSION['success']); ?>
+<?php endif; ?>
+
+<?php if (isset($_SESSION['error'])): ?>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-1"></i> <?= $_SESSION['error'] ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <?php unset($_SESSION['error']); ?>
+<?php endif; ?>
+
+<?php
 // === TAMPILAN DAFTAR NILAI (DETAIL) ===
 if ($exam_id):
 
@@ -64,6 +82,16 @@ if ($exam_id):
             </p>
         </div>
         <div class="d-flex gap-2 align-items-end">
+            <!-- Tombol Refresh -->
+            <button class="btn btn-outline-primary" onclick="window.location.reload();" title="Refresh Data">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+            
+            <!-- Tombol Hapus Semua -->
+            <button class="btn btn-danger" onclick="deleteAllScores()" title="Hapus Semua Nilai">
+                <i class="bi bi-trash-fill"></i> Hapus Semua
+            </button>
+
             <a href="modules/scores/export.php?exam_id=<?= $exam_id ?>" class="btn btn-success text-white">
                 <i class="bi bi-file-earmark-excel"></i> Export Excel
             </a>
@@ -231,7 +259,61 @@ if ($exam_id):
             window.location.href = 'modules/scores/process.php?action=finish&id=' + id + '&exam_id=<?= $exam_id ?>';
         }
     }
+
+    // Fungsi untuk menghapus semua data nilai pada ujian ini
+    function deleteAllScores() {
+        const confirmInput = document.getElementById('confirmDeleteInput');
+        const btnConfirm = document.getElementById('btnConfirmDeleteAll');
+        
+        confirmInput.value = '';
+        btnConfirm.disabled = true;
+        
+        // Pastikan event listener terpasang (hanya sekali)
+        if (!confirmInput.getAttribute('data-listener')) {
+            confirmInput.addEventListener('input', function() {
+                btnConfirm.disabled = (this.value.toLowerCase() !== 'hapus');
+            });
+            confirmInput.setAttribute('data-listener', 'true');
+        }
+
+        const myModal = new bootstrap.Modal(document.getElementById('deleteAllModal'));
+        myModal.show();
+    }
+
+    function executeDeleteAll() {
+        window.location.href = 'modules/scores/process.php?action=delete_all&exam_id=<?= $exam_id ?>';
+    }
     </script>
+
+    <!-- Modal Konfirmasi Hapus Semua -->
+    <div class="modal fade" id="deleteAllModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-danger text-white border-0">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-trash-fill me-2"></i>Konfirmasi Hapus Semua</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <div class="mb-3">
+                        <i class="bi bi-exclamation-triangle text-danger" style="font-size: 4rem;"></i>
+                    </div>
+                    <h5 class="fw-bold mb-3">Tindakan Berbahaya!</h5>
+                    <p class="text-muted">
+                        Anda akan menghapus <strong>SELURUH</strong> data nilai untuk ujian ini. 
+                        Data yang sudah dihapus tidak dapat dikembalikan lagi.
+                    </p>
+                    <div class="mt-4 text-start">
+                        <label class="form-label small fw-bold">Silakan ketik <span class="text-danger italic">"hapus"</span> untuk mengonfirmasi:</label>
+                        <input type="text" id="confirmDeleteInput" class="form-control border-2" placeholder="Ketik di sini..." autocomplete="off">
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-3 pt-0 justify-content-center">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" id="btnConfirmDeleteAll" class="btn btn-danger px-4" disabled onclick="executeDeleteAll()">Iya, Hapus Semua Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 <?php 
 // === TAMPILAN PILIH UJIAN (UTAMA) ===
