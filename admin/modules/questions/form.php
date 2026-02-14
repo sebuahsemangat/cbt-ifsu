@@ -77,6 +77,7 @@ if ($data && !empty($data['answer_data'])) {
                             <option value="pg" <?= ($data['question_type'] ?? '') == 'pg' ? 'selected' : '' ?>>Pilihan Ganda (A-E)</option>
                             <option value="bs" <?= ($data['question_type'] ?? '') == 'bs' ? 'selected' : '' ?>>Benar / Salah (Multi Pernyataan)</option>
                             <option value="multi" <?= ($data['question_type'] ?? '') == 'multi' ? 'selected' : '' ?>>Pernyataan Benar (Checkbox)</option>
+                            <option value="isian" <?= ($data['question_type'] ?? '') == 'isian' ? 'selected' : '' ?>>Isian Singkat</option>
                         </select>
                     </div>
 
@@ -167,6 +168,16 @@ function renderOptions() {
         } else {
             addMultiRow();
         }
+    } else if (type === 'isian') {
+        const val = (savedType === 'isian' && savedData && savedData.correct) ? savedData.correct : '';
+        container.innerHTML = `
+            <label class="form-label fw-bold">Kunci Jawaban Singkat</label>
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <input type="text" name="isian_correct" class="form-control" value="${val}" placeholder="Masukkan jawaban yang benar" required>
+                    <small class="text-muted mt-1 d-block font-italic">* Jawaban tidak sensitif huruf besar/kecil (case-insensitive)</small>
+                </div>
+            </div>`;
     }
 }
 

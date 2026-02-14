@@ -86,6 +86,17 @@ if ($action == 'save' && $_SERVER['REQUEST_METHOD'] == 'POST') {
             if (empty($items)) throw new Exception("Minimal satu opsi harus diisi.");
 
             $answer_data = $items;
+        } elseif ($type == 'isian') {
+            // --- ISIAN SINGKAT ---
+            $correct = $_POST['isian_correct'] ?? '';
+            if (empty(trim($correct))) {
+                throw new Exception("Kunci jawaban isian singkat tidak boleh kosong.");
+            }
+
+            $answer_data = [
+                'type' => 'short_answer',
+                'correct' => trim($correct)
+            ];
         }
 
         // 3. Encode ke JSON

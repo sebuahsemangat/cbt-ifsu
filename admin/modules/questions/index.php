@@ -73,6 +73,7 @@ $questions = $stmt->fetchAll();
                         <th style="width: 50px;" class="text-center">No</th>
                         <th style="width: 20%;">Referensi (Stimulus)</th>
                         <th>Pertanyaan</th>
+                        <th style="width: 15%;">Kunci Jawaban</th>
                         <th style="width: 150px;" class="text-center">Tipe</th>
                         <th style="width: 120px;" class="text-center">Aksi</th>
                     </tr>
@@ -80,7 +81,7 @@ $questions = $stmt->fetchAll();
                 <tbody>
                     <?php if (empty($questions)): ?>
                         <tr>
-                            <td colspan="5" class="text-center py-5 text-muted">
+                            <td colspan="6" class="text-center py-5 text-muted">
                                 <i class="bi bi-clipboard-x display-4"></i>
                                 <p class="mt-2">Belum ada soal untuk mata pelajaran ini.</p>
                             </td>
@@ -109,12 +110,40 @@ $questions = $stmt->fetchAll();
                                 </div>
                             </td>
 
+                            <td>
+                                <div class="small fw-bold">
+                                    <?php 
+                                    $ansData = json_decode($q['answer_data'], true);
+                                    if ($q['question_type'] == 'pg') {
+                                        echo "Kunci: <span class='text-primary'>" . ($ansData['correct'] ?? '-') . "</span>";
+                                    } elseif ($q['question_type'] == 'bs') {
+                                        $bsArr = [];
+                                        foreach ($ansData as $i => $item) {
+                                            $bsArr[] = ($i+1) . ":" . (($item['is_correct'] ?? 0) == 1 ? 'B' : 'S');
+                                        }
+                                        echo implode(", ", $bsArr);
+                                    } elseif ($q['question_type'] == 'multi') {
+                                        $corrects = [];
+                                        foreach ($ansData as $item) {
+                                            if (($item['is_correct'] ?? 0) == 1) {
+                                                $corrects[] = strip_tags($item['text']);
+                                            }
+                                        }
+                                        echo "<span class='text-success'>" . implode(", ", $corrects) . "</span>";
+                                    } elseif ($q['question_type'] == 'isian') {
+                                        echo "<span class='text-info'>" . htmlspecialchars($ansData['correct'] ?? '-') . "</span>";
+                                    }
+                                    ?>
+                                </div>
+                            </td>
+
                             <td class="text-center">
                                 <?php 
                                 $badges = [
                                     'pg' => ['bg' => 'primary', 'label' => 'Pilihan Ganda'],
                                     'bs' => ['bg' => 'warning', 'label' => 'Benar / Salah'],
-                                    'multi' => ['bg' => 'purple', 'label' => 'Ceklis (Multi)'], // Custom color logic needed or use standard
+                                    'multi' => ['bg' => 'info', 'label' => 'Ceklis (Multi)'],
+                                    'isian' => ['bg' => 'success', 'label' => 'Isian Singkat'],
                                 ];
                                 $type = $q['question_type'];
                                 $badge = $badges[$type] ?? ['bg' => 'secondary', 'label' => $type];

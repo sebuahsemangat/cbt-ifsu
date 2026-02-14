@@ -135,13 +135,26 @@ function renderQuestion(index) {
     });
     html += `</tbody></table></div>`;
     container.innerHTML = html;
-  } else {
+  } else if (type === "isian") {
+    const val = myAns || "";
+    container.innerHTML = `
+            <div class="card shadow-sm border-0 bg-light">
+                <div class="card-body p-4">
+                    <label class="form-label fw-bold mb-3"><i class="bi bi-pencil-square me-2"></i>Jawaban Anda:</label>
+                    <input type="text" class="form-control form-control-lg border-2" 
+                           id="isian_${q.id}" 
+                           value="${val}" 
+                           placeholder="Tuliskan jawaban singkat di sini..."
+                           onkeyup="saveIsian('${q.id}')"
+                           autocomplete="off">
+                    <div class="mt-2 text-muted small"><i class="bi bi-info-circle me-1"></i>Jawaban otomatis tersimpan saat Anda mengetik.</div>
+                </div>
+            </div>`;
+  } else if (type === "multi") {
     const items = Array.isArray(ansData) ? ansData : [];
     items.forEach((item, idx) => {
       let isChecked = false;
       if (Array.isArray(myAns)) {
-        // Need to check loose equality if numbers came back as strings from DB JSON
-        // But json_decode should handle it.
         isChecked = myAns.includes(idx) || myAns.includes(String(idx));
       }
 
@@ -281,6 +294,17 @@ function saveAnswer(qid, data, doubt) {
       is_doubt: doubt,
     }),
   }).catch((e) => console.error(e));
+}
+
+function saveIsian(qid) {
+  const val = document.getElementById(`isian_${qid}`).value;
+  const q = questions[currentIndex];
+
+  if (!ansMap[q.id]) ansMap[q.id] = { doubt: 0 };
+  ansMap[q.id].data = val;
+
+  saveAnswer(q.id, val, ansMap[q.id].doubt);
+  updateGrid();
 }
 
 function navStep(step) {

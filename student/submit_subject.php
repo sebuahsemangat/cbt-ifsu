@@ -114,6 +114,14 @@ foreach ($questions as $q) {
         if ($uIndices != $correctIndices) {
             $isCorrect = false;
         }
+    } elseif ($type == 'isian') {
+        // Isian: Case-insensitive comparison
+        $correctVal = $qData['correct'] ?? '';
+        $userVal = is_string($userAns) ? trim($userAns) : '';
+        
+        if (strtolower($userVal) == strtolower(trim($correctVal))) {
+            $isCorrect = true;
+        }
     }
 
     if ($isCorrect) {

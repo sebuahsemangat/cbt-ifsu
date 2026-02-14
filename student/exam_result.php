@@ -158,6 +158,14 @@ $isAllDone = ($finishedSubjects >= $totalSubjects);
                                 }
                             }
                         }
+                    } elseif ($type == 'isian') {
+                        // Isian: Case-insensitive comparison
+                        $correctVal = $qData['correct'] ?? '';
+                        $userVal = is_string($userAns) ? trim($userAns) : '';
+                        
+                        if (strtolower($userVal) == strtolower(trim($correctVal))) {
+                            $isCorrect = true;
+                        }
                     }
                 ?>
                     <div class="mb-3 border-bottom pb-3">
