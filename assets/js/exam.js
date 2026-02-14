@@ -25,12 +25,26 @@ document.addEventListener("DOMContentLoaded", () => {
   startTimer();
 
   window.addEventListener("offline", () => {
-    document.getElementById("connection-status").classList.remove("d-none");
+    updateConnectionStatus(false);
   });
   window.addEventListener("online", () => {
-    document.getElementById("connection-status").classList.add("d-none");
+    updateConnectionStatus(true);
   });
 });
+
+function updateConnectionStatus(isOnline) {
+  const dot = document.querySelector(".status-dot");
+  const text = document.querySelector(".status-text");
+  if (isOnline) {
+    dot.classList.remove("bg-danger");
+    dot.classList.add("bg-success");
+    text.textContent = "Terhubung";
+  } else {
+    dot.classList.remove("bg-success");
+    dot.classList.add("bg-danger");
+    text.textContent = "Terputus";
+  }
+}
 
 function renderQuestion(index) {
   if (index < 0 || index >= questions.length) return;

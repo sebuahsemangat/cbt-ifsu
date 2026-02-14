@@ -193,6 +193,8 @@ $remainingSec = max(0, $durationSec - $elapsed);
         .logo-bimbel { width: 45px; height: 45px; object-fit: contain; }
         .bimbel-name { font-size: 1.25rem; font-weight: 700; color: white; margin: 0; letter-spacing: 0.5px; }
         .student-name { color: rgba(255,255,255,0.9); font-weight: 500; font-size: 0.95rem; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        .status-text { font-size: 0.85rem; color: rgba(255,255,255,0.8); }
         
         .question-info-bar { background-color: white; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 15px rgba(58, 121, 122, 0.05); margin-bottom: 2rem; border-top: 4px solid var(--mint-green); }
         .question-number { font-size: 1.15rem; font-weight: 700; color: var(--primary-teal); }
@@ -263,8 +265,14 @@ $remainingSec = max(0, $durationSec - $elapsed);
         <a class="navbar-brand fw-bold d-flex align-items-center" href="#">
             <i class="bi bi-mortarboard-fill me-2"></i>CBT - BIMBEL LITA
         </a>
-        <div class="student-name">
-            <i class="bi bi-person-circle me-2"></i><?= htmlspecialchars($_SESSION['full_name']) ?>
+        <div class="d-flex align-items-center gap-3">
+            <div id="connection-indicator" class="student-name d-flex align-items-center gap-2">
+                <span class="status-dot bg-success"></span>
+                <span class="status-text">Terhubung</span>
+            </div>
+            <div class="student-name">
+                <i class="bi bi-person-circle me-2"></i><?= htmlspecialchars($_SESSION['full_name']) ?>
+            </div>
         </div>
     </div>
 </nav>
@@ -276,10 +284,6 @@ $remainingSec = max(0, $durationSec - $elapsed);
             <div class="col-md-4">
                 <div class="question-number">
                     <i class="bi bi-journal-text me-2"></i>Soal Nomor <span id="current-question-number">1</span>
-                </div>
-                <!-- Connection Status Alert -->
-                <div id="connection-status" class="alert alert-danger d-none mt-2 py-1 small" role="alert">
-                    <i class="bi bi-wifi-off me-2"></i>Koneksi Terputus!
                 </div>
                 <div class="font-size-controls">
                     <button class="font-size-btn" onclick="setFontSize('small')">A</button>

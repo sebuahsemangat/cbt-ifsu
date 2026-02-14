@@ -9,7 +9,8 @@
 9. Label Benar/Salah harus dinamis
 10. Tombol hapus semua nilai dan refresh di halaman nilai
 11. Export hasil ujian (Cetak/PDF) untuk siswa
+12. Status koneksi internet di halaman ujian
 
 yang belum diimplementasi:
 1. Copy soal ke ujian lain 
-2. Cek koneksi internet di halaman ujian
+2. Reset password siswa
