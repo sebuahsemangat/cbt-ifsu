@@ -94,11 +94,19 @@ try {
         throw $e;
     }
     
-    // Success redirect
-    header("Location: ../../dashboard.php?page=questions_import&subject_id=$subject_id&status=success&count=$insertedCount");
+    // JSON Success response
+    echo json_encode([
+        'status' => 'success',
+        'count' => $insertedCount,
+        'msg' => 'Berhasil mengimport ' . $insertedCount . ' soal.'
+    ]);
     
 } catch (Exception $e) {
-    header("Location: ../../dashboard.php?page=questions_import&subject_id=$subject_id&status=error&msg=" . urlencode($e->getMessage()));
+    http_response_code(400);
+    echo json_encode([
+        'status' => 'error',
+        'msg' => $e->getMessage()
+    ]);
 }
 exit;
 
@@ -176,7 +184,7 @@ function parseQuestions($text) {
     $questions = [];
     
     // Split by question markers
-    $pattern = '/\[(SOAL|SOAL-BS|SOAL-MULTI)\]/i';
+    $pattern = '/\[(SOAL|SOAL-BS|SOAL-MULTI|SOAL-ISIAN)\]/i';
     $parts = preg_split($pattern, $text, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
     
     $i = 0;
@@ -194,6 +202,10 @@ function parseQuestions($text) {
             $i += 2;
         } elseif ($marker === 'SOAL-MULTI') {
             $q = parseMultiQuestion($content);
+            if ($q) $questions[] = $q;
+            $i += 2;
+        } elseif ($marker === 'SOAL-ISIAN') {
+            $q = parseIsianQuestion($content);
             if ($q) $questions[] = $q;
             $i += 2;
         } else {
@@ -324,5 +336,40 @@ function parseMultiQuestion($content) {
         'question_text' => $questionText,
         'question_type' => 'multi',
         'answer_data' => $options
+    ];
+}
+/**
+ * Parse Jawaban Singkat (Isian) question
+ */
+function parseIsianQuestion($content) {
+    $lines = array_filter(array_map('trim', explode("\n", $content)));
+    
+    $questionLines = [];
+    $correct = '';
+    
+    foreach ($lines as $line) {
+        // Check for answer marker
+        if (preg_match('/^\[JAWABAN\]\s*(.*)$/i', $line, $match)) {
+            $correct = trim($match[1]);
+        }
+        // Part of question text
+        else {
+            $questionLines[] = $line;
+        }
+    }
+    
+    $questionText = implode('<br>', $questionLines);
+    
+    if (empty($questionText) || empty($correct)) {
+        return null;
+    }
+    
+    return [
+        'question_text' => $questionText,
+        'question_type' => 'isian',
+        'answer_data' => [
+            'type' => 'short_answer',
+            'correct' => $correct
+        ]
     ];
 }

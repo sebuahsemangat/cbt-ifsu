@@ -79,9 +79,20 @@ $section->addText('[4] Jawa Tengah [V]');
 $section->addText('[5] Kalimantan Timur []');
 $section->addTextBreak(2);
 
+// ==================== JAWABAN SINGKAT ====================
+$section->addTitle('4. JAWABAN SINGKAT (ISIAN)', 2);
+$section->addText('Gunakan tag [SOAL-ISIAN] untuk soal yang memerlukan jawaban teks singkat.', ['size' => 10, 'color' => '4a5568']);
+$section->addTextBreak();
+
+// Example Isian
+$section->addText('[SOAL-ISIAN]', ['bold' => true, 'color' => 'd97706']);
+$section->addText('Siapa nama proklamator kemerdekaan Indonesia?');
+$section->addText('[JAWABAN] Soekarno dan Hatta', ['bold' => true, 'color' => '16a34a']);
+$section->addTextBreak(2);
+
 // ==================== NOTES ====================
 $section->addTitle('CATATAN PENTING:', 3);
-$section->addListItem('Setiap soal HARUS diawali dengan tag [SOAL], [SOAL-BS], atau [SOAL-MULTI]', 0, ['size' => 10]);
+$section->addListItem('Setiap soal HARUS diawali dengan tag [SOAL], [SOAL-BS], [SOAL-MULTI], atau [SOAL-ISIAN]', 0, ['size' => 10]);
 $section->addListItem('Untuk soal PG, kunci jawaban WAJIB dicantumkan dengan [JAWABAN] A/B/C/D/E', 0, ['size' => 10]);
 $section->addListItem('Gambar bisa disisipkan di dalam soal (harus inline, bukan floating)', 0, ['size' => 10]);
 $section->addListItem('Jangan sisipkan baris kosong di antara opsi jawaban', 0, ['size' => 10]);

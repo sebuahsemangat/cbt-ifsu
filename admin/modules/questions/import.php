@@ -62,8 +62,18 @@ $references = $stmtRef->fetchAll();
                     <div class="mb-4">
                         <label class="form-label fw-bold">File Word (.docx)</label>
                         <input type="file" name="word_file" class="form-control form-control-lg" 
-                               accept=".docx" required id="wordFile">
+                                accept=".docx" required id="wordFile">
                         <small class="text-muted">Maksimal 10MB. Pastikan mengikuti format template.</small>
+                    </div>
+
+                    <div id="importProgress" class="d-none mb-4">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-primary fw-bold" id="progressStatus">Mengupload...</span>
+                            <span class="text-muted" id="progressPercent">0%</span>
+                        </div>
+                        <div class="progress" style="height: 12px;">
+                            <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                        </div>
                     </div>
 
                     <div id="fileInfo" class="alert alert-info d-none">
@@ -166,6 +176,22 @@ Pilih semua yang termasuk buah:
                             </div>
                         </div>
                     </div>
+
+                    <!-- Jawaban Singkat -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#formatIsian">
+                                <strong>Jawaban Singkat</strong>
+                            </button>
+                        </h2>
+                        <div id="formatIsian" class="accordion-collapse collapse" data-bs-parent="#formatAccordion">
+                            <div class="accordion-body">
+<pre class="bg-light p-3 rounded small"><code>[SOAL-ISIAN]
+Siapa nama presiden pertama Indonesia?
+[JAWABAN] Soekarno</code></pre>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <hr>
@@ -183,7 +209,7 @@ Pilih semua yang termasuk buah:
                 <ul class="mb-0 small">
                     <li>Gambar dalam dokumen harus <strong>inline</strong> (bukan floating)</li>
                     <li>Rumus matematika kompleks bisa disisipkan sebagai gambar</li>
-                    <li>Setiap soal harus diawali dengan tag <code>[SOAL]</code>, <code>[SOAL-BS]</code>, atau <code>[SOAL-MULTI]</code></li>
+                    <li>Setiap soal harus diawali dengan tag <code>[SOAL]</code>, <code>[SOAL-BS]</code>, <code>[SOAL-MULTI]</code>, atau <code>[SOAL-ISIAN]</code></li>
                     <li>Pastikan tidak ada baris kosong di antara opsi jawaban</li>
                 </ul>
             </div>
@@ -205,9 +231,55 @@ document.getElementById('wordFile').addEventListener('change', function(e) {
     }
 });
 
-document.getElementById('importForm').addEventListener('submit', function() {
+document.getElementById('importForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const form = this;
+    const formData = new FormData(form);
     const btn = document.getElementById('submitBtn');
+    const progressBar = document.getElementById('progressBar');
+    const progressPercent = document.getElementById('progressPercent');
+    const progressStatus = document.getElementById('progressStatus');
+    const progressContainer = document.getElementById('importProgress');
+    
+    // UI states
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Memproses...';
+    progressContainer.classList.remove('d-none');
+    
+    const xhr = new XMLHttpRequest();
+    
+    // Track upload progress
+    xhr.upload.addEventListener('progress', function(e) {
+        if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            progressBar.style.width = percent + '%';
+            progressPercent.textContent = percent + '%';
+            
+            if (percent === 100) {
+                progressStatus.textContent = 'Memproses dokumen (Mungkin butuh waktu)...';
+                progressBar.classList.add('bg-success');
+            }
+        }
+    });
+    
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+            btn.disabled = false;
+            try {
+                const response = JSON.parse(xhr.responseText);
+                if (response.status === 'success') {
+                    window.location.href = `dashboard.php?page=questions_import&subject_id=<?= $subject_id ?>&status=success&count=${response.count}`;
+                } else {
+                    alert('Error: ' + response.msg);
+                }
+            } catch (e) {
+                alert('Terjadi kesalahan sistem saat memproses file.');
+                console.error(xhr.responseText);
+            }
+        }
+    };
+    
+    xhr.open('POST', form.action, true);
+    xhr.send(formData);
 });
 </script>
