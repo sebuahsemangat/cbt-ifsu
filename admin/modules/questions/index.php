@@ -117,25 +117,25 @@ $questions = $stmt->fetchAll();
                                     if ($q['question_type'] == 'pg') {
                                         echo "Kunci: <span class='text-primary'>" . ($ansData['correct'] ?? '-') . "</span>";
                                     } elseif ($q['question_type'] == 'bs') {
-                                        $bsArr = [];
                                         $items = isset($ansData['items']) ? $ansData['items'] : (is_array($ansData) ? $ansData : []);
-                                        $labels = $ansData['labels'] ?? ['pos' => 'B', 'neg' => 'S'];
+                                        $labels = $ansData['labels'] ?? ['pos' => 'Benar', 'neg' => 'Salah'];
                                         $posLabel = ($labels['pos'] == 'Benar') ? 'B' : $labels['pos'];
                                         $negLabel = ($labels['neg'] == 'Salah') ? 'S' : $labels['neg'];
 
+                                        echo "<ol class='ps-3 mb-0 text-warning' style='font-size: 0.85rem;'>";
                                         foreach ($items as $i => $item) {
                                             $shortLabel = (($item['is_correct'] ?? 0) == 1) ? $posLabel : $negLabel;
-                                            $bsArr[] = ($i+1) . ":" . $shortLabel;
+                                            echo "<li>" . $shortLabel . "</li>";
                                         }
-                                        echo "<small>" . implode(", ", $bsArr) . "</small>";
+                                        echo "</ol>";
                                     } elseif ($q['question_type'] == 'multi') {
-                                        $corrects = [];
+                                        echo "<ol class='ps-3 mb-0 text-success'>";
                                         foreach ($ansData as $item) {
                                             if (($item['is_correct'] ?? 0) == 1) {
-                                                $corrects[] = strip_tags($item['text']);
+                                                echo "<li>" . strip_tags($item['text']) . "</li>";
                                             }
                                         }
-                                        echo "<span class='text-success'>" . implode(", ", $corrects) . "</span>";
+                                        echo "</ol>";
                                     } elseif ($q['question_type'] == 'isian') {
                                         echo "<span class='text-info'>" . htmlspecialchars($ansData['correct'] ?? '-') . "</span>";
                                     }
