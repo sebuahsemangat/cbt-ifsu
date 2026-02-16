@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Feb 14, 2026 at 09:19 AM
+-- Generation Time: Feb 16, 2026 at 08:32 AM
 -- Server version: 8.0.30
 -- PHP Version: 8.3.6
 
@@ -40,7 +40,8 @@ CREATE TABLE `admins` (
 --
 
 INSERT INTO `admins` (`id`, `username`, `password`, `full_name`, `created_at`) VALUES
-(1, 'lita', '$2y$10$ejV/4IDm.mPaPOSYi6GpruDOhfM011TkMmt.xtNpWazsFiUIntcwa', 'Lita', '2026-01-29 08:07:37');
+(1, 'lita', '$2y$10$sAKcIpqwblGxlp59Cyx1l.Xyv8vYcQxRdftooRY9C5T8n.WnBIPX.', 'Lita', '2026-01-29 08:07:37'),
+(4, 'lingga', '$2y$10$iNx62TujJw6zWo0IejnqsugxKfvvpHOKP1Wlg/4mzS07YQK73a93e', 'Lingga Tampomas', '2026-02-16 06:58:33');
 
 -- --------------------------------------------------------
 
@@ -62,7 +63,7 @@ CREATE TABLE `exams` (
 --
 
 INSERT INTO `exams` (`id`, `exam_name`, `start_date`, `end_date`, `is_active`, `created_at`) VALUES
-(8, 'Simulasi UTBK', '2026-02-13 08:58:00', '2026-02-15 08:58:00', 1, '2026-02-13 01:59:05');
+(8, 'Simulasi UTBK', '2026-02-13 08:58:00', '2026-02-17 08:58:00', 1, '2026-02-13 01:59:05');
 
 -- --------------------------------------------------------
 
@@ -86,8 +87,7 @@ CREATE TABLE `exam_sessions` (
 --
 
 INSERT INTO `exam_sessions` (`id`, `student_id`, `exam_id`, `subject_id`, `start_time`, `end_time`, `score`, `status`) VALUES
-(76, 20, 8, 11, '2026-02-14 15:30:26', '2026-02-14 15:30:51', 775.36, 'finished'),
-(78, 15, 8, 11, '2026-02-14 15:45:43', '2026-02-14 15:46:20', 0.00, 'finished');
+(81, 15, 8, 11, '2026-02-16 14:37:10', '2026-02-16 14:40:31', 886.12, 'finished');
 
 -- --------------------------------------------------------
 
@@ -130,7 +130,14 @@ INSERT INTO `questions` (`id`, `subject_id`, `reference_id`, `question_text`, `c
 (30, 11, NULL, '<p class=\"ql-align-justify\">Dalam perjalanan menuju sekolah, lima sekawan Slamet, Joni, Anto, Rika, dan Rahma selalu berangkat bersama. Joni selalu menjemput Slamet, setelah ia dijemput oleh Anto. Rika menjadi anak terakhir yang dijemput. Sementara rumah Rahma terletak di antara rumah Joni dan rumah Anto.</p><p class=\"ql-align-justify\">Berikut ini pernyataan yang BENAR adalah ….</p>', '2026-02-13 02:15:37', 'pg', '{\"type\": \"single_choice\", \"correct\": \"E\", \"options\": {\"A\": \"<p>Rumah Rahma terletak paling jauh</p>\", \"B\": \"<p>Rumah Joni terletak paling jauh</p>\", \"C\": \"<p>Rumah Rika terletak paling jauh</p>\", \"D\": \"<p>Rumah Slamet terletak paling dekat</p>\", \"E\": \"<p>Rumah Rika terletak paling dekat</p>\"}}'),
 (31, 11, NULL, '<p><span style=\"color: rgb(13, 13, 13);\">Perhatikan deret bilangan berikut: 3, -5, -1, -4, 7, -1, -9, 8, A, B. Nilai dari 2A - B adalah ...</span></p>', '2026-02-14 07:54:01', 'isian', '{\"type\": \"short_answer\", \"correct\": \"11\"}'),
 (32, 11, NULL, '<p>Hari setelah Senin adalah...</p>', '2026-02-14 07:54:23', 'isian', '{\"type\": \"short_answer\", \"correct\": \"SELASA\"}'),
-(33, 11, NULL, '<p>Jumlah pekerja yang berasal dari generasi milenial saat ini semakin banyak. Ahli psikologi kerja menyebutkan bahwa pekerja milenial cenderung memiliki komitmen organisasi yang rendah.</p><p><br></p><p><strong>Manakah pernyataan-pernyataan berikut yang MEMPERLEMAH dan TIDAK MEMPERLEMAH pendapat ahli psikologi kerja tersebut?</strong></p>', '2026-02-14 08:14:52', 'bs', '{\"items\": [{\"text\": \"<p>Pekerja milenial sering berpindah-pindah tempat kerja.</p>\", \"is_correct\": 0}, {\"text\": \"<p><span style=\\\"background-color: rgb(255, 255, 255); color: rgb(33, 37, 41);\\\">Pekerja milenial memberikan ide-ide terbaik untuk tempat kerjanya.</span></p>\", \"is_correct\": 1}, {\"text\": \"<p>Banyak pekerja milenial yang bekerja di perusahaan untuk jangka waktu yang lama.</p>\", \"is_correct\": 1}, {\"text\": \"<p><span style=\\\"background-color: rgb(255, 255, 255); color: rgb(33, 37, 41);\\\">Banyak perusahaan mengapresiasi etos kerja pekerja milenial.</span></p>\", \"is_correct\": 1}, {\"text\": \"<p><span style=\\\"background-color: rgb(255, 255, 255); color: rgb(33, 37, 41);\\\">Banyak perusahaan yang mengeluhkan kinerja pekerja milenial.</span></p>\", \"is_correct\": 0}], \"labels\": {\"neg\": \"Tidak Memperlemah\", \"pos\": \"Memperlemah\"}}');
+(34, 11, NULL, 'Suatu toko memberikan diskon 20% untuk sebuah jaket. Setelah diskon, harga jaket menjadi Rp240.000. Berapakah harga awal jaket tersebut?', '2026-02-16 07:31:31', 'pg', '{\"type\": \"single_choice\", \"correct\": \"B\", \"options\": {\"A\": \"Rp280.000\", \"B\": \"Rp300.000\", \"C\": \"Rp320.000\", \"D\": \"Rp340.000\", \"E\": \"Rp360.000\"}}'),
+(35, 11, NULL, 'Jika semua A adalah B, dan sebagian B adalah C, maka pernyataan yang pasti benar adalah...', '2026-02-16 07:31:31', 'pg', '{\"type\": \"single_choice\", \"correct\": \"C\", \"options\": {\"A\": \"Semua A adalah C\", \"B\": \"Semua C adalah A\", \"C\": \"Sebagian A mungkin C\", \"D\": \"Tidak ada A yang C\", \"E\": \"Semua B adalah A\"}}'),
+(36, 11, NULL, 'Tentukan benar atau salah untuk pernyataan berikut tentang logika dan pola bilangan:', '2026-02-16 07:31:31', 'bs', '[{\"text\": \"Jika suatu pernyataan bernilai benar, maka negasinya pasti bernilai salah\", \"is_correct\": 1}, {\"text\": \"Pola bilangan 2, 4, 8, 16, ... merupakan barisan aritmetika\", \"is_correct\": 0}, {\"text\": \"Jika p → q bernilai salah, maka p bernilai benar dan q bernilai salah\", \"is_correct\": 1}, {\"text\": \"Pola 1, 4, 9, 16, ... merupakan bilangan kuadrat\", \"is_correct\": 1}]'),
+(37, 11, NULL, 'Pilih semua pernyataan yang merupakan contoh penalaran induktif:', '2026-02-16 07:31:31', 'multi', '[{\"text\": \"Menyimpulkan pola dari beberapa contoh khusus\", \"is_correct\": 1}, {\"text\": \"Menarik kesimpulan umum dari fakta-fakta khusus\", \"is_correct\": 1}, {\"text\": \"Menarik kesimpulan dari aturan umum ke kasus khusus\", \"is_correct\": 0}, {\"text\": \"Mengamati tren lalu memprediksi kejadian berikutnya\", \"is_correct\": 1}, {\"text\": \"Menggunakan definisi umum untuk membuktikan kasus tertentu\", \"is_correct\": 0}]'),
+(38, 11, NULL, 'Pilih semua yang termasuk ciri soal penalaran umum:', '2026-02-16 07:31:31', 'multi', '[{\"text\": \"Menguji kemampuan berpikir logis\", \"is_correct\": 1}, {\"text\": \"Menghafal tanggal dan tahun kejadian\", \"is_correct\": 0}, {\"text\": \"Menguji kemampuan memahami pola\", \"is_correct\": 1}, {\"text\": \"Menguji kemampuan menarik kesimpulan\", \"is_correct\": 1}, {\"text\": \"Menguji kemampuan mengingat rumus saja\", \"is_correct\": 0}]'),
+(39, 11, NULL, 'Sebutkan istilah untuk proses menarik kesimpulan dari pernyataan umum ke pernyataan khusus.', '2026-02-16 07:31:31', 'isian', '{\"type\": \"short_answer\", \"correct\": \"Deduktif\"}'),
+(40, 11, NULL, 'Sebutkan nama barisan bilangan dengan selisih tetap antar suku.', '2026-02-16 07:31:31', 'isian', '{\"type\": \"short_answer\", \"correct\": \"Aritmetika\"}'),
+(43, 11, NULL, '<p>Jumlah pekerja yang berasal dari generasi milenial saat ini semakin banyak. Ahli psikologi kerja menyebutkan bahwa pekerja milenial cenderung memiliki komitmen organisasi yang rendah.</p><p>Manakah pernyataan-pernyataan berikut yang BENAR dan SALAH pendapat ahli psikologi kerja tersebut?</p>', '2026-02-16 07:48:19', 'bs', '{\"items\": [{\"text\": \"<p>Pekerja milenial sering berpindah-pindah tempat kerja.</p>\", \"is_correct\": 0}, {\"text\": \"<p>Pekerja milenial memberikan ide-ide terbaik untuk tempat kerjanya.</p>\", \"is_correct\": 1}, {\"text\": \"<p>Banyak pekerja milenial yang bekerja di perusahaan untuk jangka waktu yang lama.</p>\", \"is_correct\": 1}, {\"text\": \"<p>Banyak perusahaan mengapresiasi etos kerja pekerja milenial.</p>\", \"is_correct\": 1}, {\"text\": \"<p>Banyak perusahaan yang mengeluhkan kinerja pekerja milenial.</p>\", \"is_correct\": 0}], \"labels\": {\"neg\": \"Tidak Memperlemah\", \"pos\": \"Memperlemah\"}}');
 
 -- --------------------------------------------------------
 
@@ -200,12 +207,17 @@ CREATE TABLE `students` (
 --
 
 INSERT INTO `students` (`id`, `username`, `password`, `full_name`, `class`, `is_logged_in`, `last_login`, `created_at`) VALUES
-(15, 'lita11', '$2y$10$MSktbJKnvZ5RIMweVyaRnO6m3KUveD5PbxD3cMYKFDlMAEZar6Lm.', 'Lita', 'XII IPA 1', 0, '2026-02-14 15:59:54', '2026-02-12 04:52:07'),
+(15, 'lita11', '$2y$10$MSktbJKnvZ5RIMweVyaRnO6m3KUveD5PbxD3cMYKFDlMAEZar6Lm.', 'Lita', 'XII IPA 1', 0, '2026-02-16 14:36:57', '2026-02-12 04:52:07'),
 (16, 'apepwahyudin53', '$2y$10$z8AukipRA2hZN1BfW./ad.jmmCSHSB48ZM6kLJsRtur3jtc1QWKWS', 'Apep Wahyudin 2', 'XII IPA 11', 0, '2026-02-14 15:15:37', '2026-02-12 04:58:41'),
 (17, 'budisantoso44', '$2y$10$ONGpw7jsOvOdxSINCoNVUOspSMFRoIQn7GjM0Fy.W8IJUhsn0BQkW', 'Budi Santoso', 'XII IPA 2', 0, '2026-02-13 09:16:55', '2026-02-12 04:58:41'),
 (18, 'shintakurzawa78', '$2y$10$Zm6XouZXG6w22qzN0WBOWOZtMtl8lLUabA5wdUUeFmc4R8AH9qsxC', 'Shinta Kurzawa', 'XII RPL 2', 0, NULL, '2026-02-12 04:58:41'),
 (19, 'ramakusnandar13', '$2y$10$24jHz5guauTTPOr.u6aK9.AAwr9gFRUwWOWNnkMk4iTi69ofWoPuC', 'Rama Kusnandar', 'XII IPA 3', 0, '2026-02-12 14:07:53', '2026-02-12 04:58:41'),
-(20, 'm.46', '$2y$10$YrCiuJgkmDcVTK10VOHFAeO2E7lrZ/kh3ghbB1EtAShAmtcbZGFIe', 'M. Ahmad Sanusi', 'XII IPA 1', 0, '2026-02-14 15:30:16', '2026-02-12 07:11:28');
+(20, 'm.46', '$2y$10$YrCiuJgkmDcVTK10VOHFAeO2E7lrZ/kh3ghbB1EtAShAmtcbZGFIe', 'M. Ahmad Sanusi', 'XII IPA 1', 0, '2026-02-16 14:15:05', '2026-02-12 07:11:28'),
+(21, 'mrahman86', '$2y$10$QKTSX04NkamBt6HS7ms0jemw8Tyq849pOJ0BFVESGHx8LBK18D08e', 'M Rahman Sudrajat', 'XII IPS 2', 0, NULL, '2026-02-16 07:53:45'),
+(22, 'm.gusman64', '$2y$10$MriTiqkBrIYc5A5Us/NLwuDAahw4Z0/rsFQsdrwunN8i5V1O3IcPC', 'M. Gusman Sinaga', 'XII IPS 3', 0, NULL, '2026-02-16 07:54:12'),
+(23, 'aiharyati54', '$2y$10$wNBMx0JquiLrMIG10Stotueesu5BFwiz7rQyorkle4GTWfeicIg3K', 'Ai Haryati Sholehah', 'XII IPA 1', 0, NULL, '2026-02-16 07:55:17'),
+(24, 'm.ridwan10', '$2y$10$ta1E15/zOWt8DLXMrCVYtulnWPGXI3rjaGR4hU.3RWpeQIi/U1fT6', 'M. Ridwan Sanusi', 'XII IPA 2', 0, NULL, '2026-02-16 07:55:18'),
+(25, 'agus85', '$2y$10$.xKp3TcpFeov0VyMkqhk7eTHfwJ/Qr.KW.AS0WbuWarCoFxmR8GBe', 'Agus Muhibban', 'XII IPA 2', 0, NULL, '2026-02-16 07:55:18');
 
 -- --------------------------------------------------------
 
@@ -229,14 +241,20 @@ CREATE TABLE `student_answers` (
 --
 
 INSERT INTO `student_answers` (`id`, `session_id`, `question_id`, `answer_data`, `is_doubt`, `time_spent`, `option_id`, `answered_at`) VALUES
-(246, 76, 27, '\"C\"', 0, 0, NULL, '2026-02-14 08:30:28'),
-(247, 76, 31, '\"11\"', 0, 0, NULL, '2026-02-14 08:30:30'),
-(248, 76, 30, '\"A\"', 0, 0, NULL, '2026-02-14 08:30:31'),
-(249, 76, 26, '\"E\"', 0, 0, NULL, '2026-02-14 08:30:33'),
-(250, 76, 29, '\"A\"', 0, 0, NULL, '2026-02-14 08:30:35'),
-(251, 76, 28, '\"D\"', 0, 0, NULL, '2026-02-14 08:30:37'),
-(252, 76, 32, '\"Selasa\"', 0, 0, NULL, '2026-02-14 08:30:41'),
-(253, 76, 33, '[\"S\",\"B\",\"B\",\"B\",\"S\"]', 0, 0, NULL, '2026-02-14 08:30:49');
+(270, 81, 32, '\"selasa\"', 0, 0, NULL, '2026-02-16 07:37:18'),
+(271, 81, 36, '[\"B\",\"S\",\"B\",\"B\"]', 0, 0, NULL, '2026-02-16 07:37:44'),
+(272, 81, 27, '\"C\"', 0, 0, NULL, '2026-02-16 07:37:52'),
+(273, 81, 37, '[0,1,3]', 0, 0, NULL, '2026-02-16 07:38:14'),
+(274, 81, 28, '\"D\"', 0, 0, NULL, '2026-02-16 07:38:19'),
+(275, 81, 35, '\"C\"', 0, 0, NULL, '2026-02-16 07:38:29'),
+(276, 81, 31, '\"11\"', 0, 0, NULL, '2026-02-16 07:38:36'),
+(278, 81, 38, '[0,2,3]', 0, 0, NULL, '2026-02-16 07:39:14'),
+(279, 81, 39, '\"dEdukTif\"', 0, 0, NULL, '2026-02-16 07:39:28'),
+(280, 81, 40, '\"Aritmetika\"', 0, 0, NULL, '2026-02-16 07:39:40'),
+(281, 81, 26, '\"E\"', 0, 0, NULL, '2026-02-16 07:39:46'),
+(282, 81, 34, '\"B\"', 0, 0, NULL, '2026-02-16 07:40:08'),
+(283, 81, 29, '\"A\"', 0, 0, NULL, '2026-02-16 07:40:24'),
+(284, 81, 30, '\"E\"', 0, 0, NULL, '2026-02-16 07:40:29');
 
 -- --------------------------------------------------------
 
@@ -284,7 +302,10 @@ INSERT INTO `tokens` (`id`, `exam_id`, `token_code`, `created_at`, `expires_at`)
 (35, 8, 'ANY3', '2026-02-14 07:56:10', '2026-02-14 08:06:10'),
 (36, 8, 'HTUQ', '2026-02-14 08:15:43', '2026-02-14 08:25:43'),
 (37, 8, '4MXH', '2026-02-14 08:25:43', '2026-02-14 08:35:43'),
-(38, 8, 'TRGL', '2026-02-14 08:38:26', '2026-02-14 08:48:26');
+(38, 8, 'TRGL', '2026-02-14 08:38:26', '2026-02-14 08:48:26'),
+(39, 8, 'SMPG', '2026-02-16 07:14:51', '2026-02-16 07:24:51'),
+(40, 8, '6MQY', '2026-02-16 07:37:06', '2026-02-16 07:47:06'),
+(41, 8, 'RGWQ', '2026-02-16 07:49:49', '2026-02-16 07:59:49');
 
 --
 -- Indexes for dumped tables
@@ -381,7 +402,7 @@ ALTER TABLE `tokens`
 -- AUTO_INCREMENT for table `admins`
 --
 ALTER TABLE `admins`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `exams`
@@ -393,7 +414,7 @@ ALTER TABLE `exams`
 -- AUTO_INCREMENT for table `exam_sessions`
 --
 ALTER TABLE `exam_sessions`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=79;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=82;
 
 --
 -- AUTO_INCREMENT for table `options`
@@ -405,7 +426,7 @@ ALTER TABLE `options`
 -- AUTO_INCREMENT for table `questions`
 --
 ALTER TABLE `questions`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
 
 --
 -- AUTO_INCREMENT for table `references`
@@ -423,13 +444,13 @@ ALTER TABLE `scores`
 -- AUTO_INCREMENT for table `students`
 --
 ALTER TABLE `students`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
 
 --
 -- AUTO_INCREMENT for table `student_answers`
 --
 ALTER TABLE `student_answers`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=262;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=285;
 
 --
 -- AUTO_INCREMENT for table `subjects`
@@ -441,7 +462,7 @@ ALTER TABLE `subjects`
 -- AUTO_INCREMENT for table `tokens`
 --
 ALTER TABLE `tokens`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
 
 --
 -- Constraints for dumped tables
