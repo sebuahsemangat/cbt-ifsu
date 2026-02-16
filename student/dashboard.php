@@ -51,8 +51,13 @@ if (isset($_POST['change_password'])) {
 }
 
 // --- AMBIL DAFTAR UJIAN ---
-// Mengambil semua ujian, diurutkan dari yang paling baru
-$stmt = $pdo->query("SELECT * FROM exams ORDER BY start_date DESC");
+// Mengambil semua ujian beserta jumlah mapel dan progress-nya dalam satu query (Optimasi N+1)
+$stmt = $pdo->prepare("SELECT e.*, 
+    (SELECT COUNT(*) FROM subjects s WHERE s.exam_id = e.id) as total_subjects_cnt,
+    (SELECT COUNT(*) FROM exam_sessions es WHERE es.exam_id = e.id AND es.student_id = ? AND es.status = 'finished') as finished_subjects_cnt
+FROM exams e
+ORDER BY e.start_date DESC");
+$stmt->execute([$student_id]);
 $exams = $stmt->fetchAll();
 ?>
 
@@ -213,16 +218,9 @@ $exams = $stmt->fetchAll();
                     $start = $exam['start_date'];
                     $end = $exam['end_date'];
                     
-                    // --- Progress Calculation ---
-                    // 1. Total Subjects
-                    $stmtSubCnt = $pdo->prepare("SELECT COUNT(*) FROM subjects WHERE exam_id = ?");
-                    $stmtSubCnt->execute([$exam['id']]);
-                    $totalSubjects = $stmtSubCnt->fetchColumn();
-
-                    // 2. Finished Sessions
-                    $stmtFinCnt = $pdo->prepare("SELECT COUNT(*) FROM exam_sessions WHERE exam_id = ? AND student_id = ? AND status = 'finished'");
-                    $stmtFinCnt->execute([$exam['id'], $student_id]);
-                    $finishedSubjects = $stmtFinCnt->fetchColumn();
+                    // --- Progress Calculation (Optimized) ---
+                    $totalSubjects = $exam['total_subjects_cnt'];
+                    $finishedSubjects = $exam['finished_subjects_cnt'];
 
                     $progress = ($totalSubjects > 0) ? round(($finishedSubjects / $totalSubjects) * 100) : 0;
                     
