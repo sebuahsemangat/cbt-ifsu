@@ -11,8 +11,17 @@ if ($action == 'add_single' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     
     if (!empty($nama)) {
         // Generate Username (nama kecil, tanpa spasi + angka acak)
-        $namadepan = explode(" ", $nama)[0];
-        $usernameBase = strtolower(str_replace(' ', '', $namadepan));
+        $parts = explode(" ", $nama);
+        $firstName = $parts[0];
+        
+        // Aturan: Jika nama depan <= 2 huruf, gunakan kata ke-1 dan ke-2
+        if (strlen($firstName) <= 2 && count($parts) > 1) {
+            $usernameBase = strtolower($parts[0] . $parts[1]);
+        } else {
+            $usernameBase = strtolower($firstName);
+        }
+        
+        $usernameBase = str_replace(' ', '', $usernameBase);
         $username = $usernameBase . rand(10, 99);
 
         // Proteksi duplikat username
@@ -69,7 +78,17 @@ if ($action == 'import' && $_SERVER['REQUEST_METHOD'] == 'POST') {
             $kelas = trim($data[1] ?? ''); // Kolom kedua untuk kelas
             if (empty($nama)) continue;
 
-            $usernameBase = strtolower(str_replace(' ', '', $nama));
+            $parts = explode(" ", $nama);
+            $firstName = $parts[0];
+            
+            // Aturan: Jika nama depan <= 2 huruf, gunakan kata ke-1 dan ke-2
+            if (strlen($firstName) <= 2 && count($parts) > 1) {
+                $usernameBase = strtolower($parts[0] . $parts[1]);
+            } else {
+                $usernameBase = strtolower($firstName);
+            }
+            
+            $usernameBase = str_replace(' ', '', $usernameBase);
             $username = $usernameBase . rand(10, 99);
             
             // Cek duplikat
