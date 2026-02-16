@@ -194,7 +194,7 @@ $nomor = 0;
 
 <script>
 // Logika Pencarian & Paginasi Ringan
-const rowsPerPage = 10;
+const rowsPerPage = 20;
 let currentPage = 1;
 let currentSort = 'none'; // 'asc', 'desc', 'none'
 const searchInput = document.getElementById('searchInput');
