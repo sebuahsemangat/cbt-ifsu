@@ -35,27 +35,17 @@ if (!$sessionId || !$questionId) {
 // ...
 
 try {
-    // Check if answer exists
-    $stmtCheck = $pdo->prepare("SELECT id FROM student_answers WHERE session_id = ? AND question_id = ?");
-    $stmtCheck->execute([$sessionId, $questionId]);
-    $existing = $stmtCheck->fetch();
-
-    if ($existing) {
-        // Update
-        $stmtUpd = $pdo->prepare("UPDATE student_answers SET answer_data = ?, is_doubt = ?, answered_at = NOW() WHERE id = ?");
-        $stmtUpd->execute([$answerData, $isDoubt, $existing['id']]);
-    } else {
-        // Insert
-        // We set option_id to 0 to avoid NULL issues if unique index problematic, or just NULL if DB allows.
-        // The table schema has `option_id` int DEFAULT NULL.
-        // UNIQUE KEY `unique_answer` (`session_id`,`question_id`,`option_id`)
-        // If we use NULL, we can have multiple rows with NULL option_id for same session/question.
-        // So we should enforce 1 row per question by checking existence (which we did).
-        // Safest is to keep option_id NULL but ensure we update if exists.
-        
-        $stmtIns = $pdo->prepare("INSERT INTO student_answers (session_id, question_id, answer_data, is_doubt, answered_at) VALUES (?, ?, ?, ?, NOW())");
-        $stmtIns->execute([$sessionId, $questionId, $answerData, $isDoubt]);
-    }
+    // Atomic upsert: INSERT or UPDATE jika sudah ada (cegah race condition)
+    // Gunakan option_id = 0 agar UNIQUE KEY (session_id, question_id, option_id) berfungsi benar
+    // (NULL dianggap unik berbeda-beda di MySQL, jadi kita fix dengan nilai 0)
+    $sql = "INSERT INTO student_answers (session_id, question_id, answer_data, is_doubt, option_id, answered_at)
+            VALUES (?, ?, ?, ?, 0, NOW())
+            ON DUPLICATE KEY UPDATE
+                answer_data = VALUES(answer_data),
+                is_doubt = VALUES(is_doubt),
+                answered_at = NOW()";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$sessionId, $questionId, $answerData, $isDoubt]);
 
     echo json_encode(['status' => 'success']);
 

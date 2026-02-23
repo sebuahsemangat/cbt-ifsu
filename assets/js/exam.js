@@ -221,24 +221,18 @@ function selectBS(idx, val) {
 
 function selectOption(val, type) {
   const q = questions[currentIndex];
-  // Don't trigger if clicked on child input (bubbling)
-  if (event.target.tagName === "INPUT") return;
-
-  // If clicking div, verify invalidation
-  // Better: let the input click handle logic?
-  // But the design requires clicking the whole div.
 
   // Update local object
   if (!ansMap[q.id]) ansMap[q.id] = { doubt: 0 };
   ansMap[q.id].data = val;
 
-  saveAnswer(q.id, val, ansMap[q.id].doubt);
-
+  // Sync radio buttons visual state
   const inputs = document.getElementsByName(`ans_${q.id}`);
   inputs.forEach((i) => {
     i.checked = i.value == val;
   });
 
+  saveAnswer(q.id, val, ansMap[q.id].doubt);
   updateGrid();
 }
 
@@ -299,7 +293,21 @@ function toggleDoubt(e) {
   updateGrid();
 }
 
+// Per-question save queue: prevents race conditions on rapid answer changes
+const _saveTimers = {};
+
 function saveAnswer(qid, data, doubt) {
+  // Debounce: if called multiple times quickly (e.g. isian typing),
+  // cancel previously scheduled save and reschedule after 400ms
+  if (_saveTimers[qid]) clearTimeout(_saveTimers[qid]);
+
+  _saveTimers[qid] = setTimeout(() => {
+    delete _saveTimers[qid];
+    _doSaveAnswer(qid, data, doubt, 0);
+  }, 400);
+}
+
+function _doSaveAnswer(qid, data, doubt, retryCount) {
   fetch("save_answer.php", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -309,7 +317,32 @@ function saveAnswer(qid, data, doubt) {
       answer_data: data,
       is_doubt: doubt,
     }),
-  }).catch((e) => console.error(e));
+  })
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      return res.json();
+    })
+    .then((json) => {
+      if (json.error) {
+        console.error("Save error from server:", json.error);
+        // Retry once after 1.5s
+        if (retryCount < 1) {
+          setTimeout(
+            () => _doSaveAnswer(qid, data, doubt, retryCount + 1),
+            1500,
+          );
+        }
+      }
+    })
+    .catch((e) => {
+      console.error("Network error saat menyimpan jawaban:", e);
+      // Retry once after 2s on network failure
+      if (retryCount < 1) {
+        setTimeout(() => _doSaveAnswer(qid, data, doubt, retryCount + 1), 2000);
+      }
+    });
 }
 
 function saveIsian(qid) {

@@ -33,8 +33,17 @@ $stmtQ = $pdo->prepare("SELECT * FROM questions WHERE subject_id = ?");
 $stmtQ->execute([$session['subject_id']]);
 $questions = $stmtQ->fetchAll(PDO::FETCH_ASSOC);
 
-$stmtAns = $pdo->prepare("SELECT * FROM student_answers WHERE session_id = ?");
-$stmtAns->execute([$sessionId]);
+// Get Answers - ambil jawaban terbaru per soal (hindari duplikat dari bug lama)
+$stmtAns = $pdo->prepare("
+    SELECT sa.* FROM student_answers sa
+    INNER JOIN (
+        SELECT question_id, MAX(answered_at) as latest
+        FROM student_answers WHERE session_id = ?
+        GROUP BY question_id
+    ) latest_ans ON sa.question_id = latest_ans.question_id AND sa.answered_at = latest_ans.latest
+    WHERE sa.session_id = ?
+");
+$stmtAns->execute([$sessionId, $sessionId]);
 $answers = $stmtAns->fetchAll(PDO::FETCH_ASSOC);
 
 $answerMap = [];
