@@ -395,11 +395,19 @@ $remainingSec = max(0, $durationSec - $elapsed);
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
-                <div class="mb-3">
-                    <span class="badge bg-success me-2">&#9632;</span> Dijawab
-                    <span class="badge bg-warning text-dark ms-3 me-2">&#9632;</span> Ragu
-                    <span class="badge bg-primary ms-3 me-2">&#9632;</span> Aktif
-                    <span class="badge bg-secondary ms-3 me-2">&#9632;</span> Kosong
+                <div class="mb-3 d-flex flex-wrap gap-3 align-items-center">
+                    <div class="d-flex align-items-center">
+                        <span class="badge border-0 me-2" style="background-color: var(--mint-green); color: #064e3b; width: 14px; height: 14px; padding: 0;">&nbsp;</span> Dijawab
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <span class="badge border-0 me-2" style="background-color: #fbbf24; color: #451a03; width: 14px; height: 14px; padding: 0;">&nbsp;</span> Ragu
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <span class="badge border-0 me-2" style="background-color: var(--primary-teal); width: 14px; height: 14px; padding: 0;">&nbsp;</span> Aktif
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <span class="badge border me-2" style="background-color: #fff; width: 14px; height: 14px; padding: 0;">&nbsp;</span> Kosong
+                    </div>
                 </div>
                 <hr>
                 <div class="d-flex flex-wrap gap-2 modal-question-list" id="modal-grid">
