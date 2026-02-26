@@ -188,11 +188,15 @@ function renderQuestion(index) {
   document.getElementById("doubt-checkbox").checked = doubtVal == 1;
 
   // 6. Navigation Buttons
-  document.getElementById("btn-prev").disabled = index === 0;
-  document.getElementById("btn-next").innerHTML =
-    index === questions.length - 1
-      ? "Selesai"
-      : 'Berikutnya <i class="bi bi-chevron-right ms-2"></i>';
+  if (typeof updateSavingUI === "function") {
+    updateSavingUI();
+  } else {
+    document.getElementById("btn-prev").disabled = index === 0;
+    document.getElementById("btn-next").innerHTML =
+      index === questions.length - 1
+        ? "Selesai"
+        : 'Berikutnya <i class="bi bi-chevron-right ms-2"></i>';
+  }
 
   updateGrid();
 }
@@ -295,11 +299,40 @@ function toggleDoubt(e) {
 
 // Per-question save queue: prevents race conditions on rapid answer changes
 const _saveTimers = {};
+const _pendingSavesSet = new Set();
+
+function updateSavingUI() {
+  const isSaving = _pendingSavesSet.size > 0;
+
+  const btnPrev = document.getElementById("btn-prev");
+  const btnNext = document.getElementById("btn-next");
+
+  if (isSaving) {
+    if (btnPrev) btnPrev.disabled = true;
+    if (btnNext) {
+      btnNext.disabled = true;
+      btnNext.innerHTML =
+        '<span class="spinner-border spinner-border-sm align-middle me-2" role="status" aria-hidden="true"></span>Menyimpan...';
+    }
+  } else {
+    if (btnPrev) btnPrev.disabled = currentIndex === 0;
+    if (btnNext) {
+      btnNext.disabled = false;
+      btnNext.innerHTML =
+        currentIndex === questions.length - 1
+          ? "Selesai"
+          : 'Berikutnya <i class="bi bi-chevron-right ms-2"></i>';
+    }
+  }
+}
 
 function saveAnswer(qid, data, doubt) {
   // Debounce: if called multiple times quickly (e.g. isian typing),
   // cancel previously scheduled save and reschedule after 400ms
   if (_saveTimers[qid]) clearTimeout(_saveTimers[qid]);
+
+  _pendingSavesSet.add(qid);
+  updateSavingUI();
 
   _saveTimers[qid] = setTimeout(() => {
     delete _saveTimers[qid];
@@ -333,7 +366,15 @@ function _doSaveAnswer(qid, data, doubt, retryCount) {
             () => _doSaveAnswer(qid, data, doubt, retryCount + 1),
             1500,
           );
+        } else {
+          _pendingSavesSet.delete(qid);
+          updateSavingUI();
+          updateGrid();
         }
+      } else {
+        _pendingSavesSet.delete(qid);
+        updateSavingUI();
+        updateGrid();
       }
     })
     .catch((e) => {
@@ -341,6 +382,10 @@ function _doSaveAnswer(qid, data, doubt, retryCount) {
       // Retry once after 2s on network failure
       if (retryCount < 1) {
         setTimeout(() => _doSaveAnswer(qid, data, doubt, retryCount + 1), 2000);
+      } else {
+        _pendingSavesSet.delete(qid);
+        updateSavingUI();
+        updateGrid();
       }
     });
 }
@@ -357,6 +402,8 @@ function saveIsian(qid) {
 }
 
 function navStep(step) {
+  if (typeof _pendingSavesSet !== "undefined" && _pendingSavesSet.size > 0)
+    return;
   const next = currentIndex + step;
   if (next >= 0 && next < questions.length) {
     renderQuestion(next);
@@ -367,7 +414,12 @@ function navStep(step) {
 
 function updateGrid() {
   const modalGrid = document.getElementById("modal-grid");
+  if (!modalGrid) return;
   modalGrid.innerHTML = "";
+
+  const isSaving =
+    typeof _pendingSavesSet !== "undefined" && _pendingSavesSet.size > 0;
+
   questions.forEach((q, idx) => {
     const hasAns =
       ansMap[q.id] &&
@@ -393,13 +445,17 @@ function updateGrid() {
       classes.push("btn-outline-secondary");
     }
 
+    let disabledAttr = isSaving ? "disabled" : "";
+
     modalGrid.innerHTML += `
-            <button class="${classes.join(" ")}" onclick="goTo(${idx})">${idx + 1}</button>
+            <button class="${classes.join(" ")}" ${disabledAttr} onclick="goTo(${idx})">${idx + 1}</button>
         `;
   });
 }
 
 function goTo(idx) {
+  if (typeof _pendingSavesSet !== "undefined" && _pendingSavesSet.size > 0)
+    return;
   const el = document.getElementById("questionListModal");
   const m = bootstrap.Modal.getInstance(el);
   if (m) m.hide();
@@ -436,10 +492,15 @@ function startTimer() {
 }
 
 function finishExam() {
+  if (typeof _pendingSavesSet !== "undefined" && _pendingSavesSet.size > 0)
+    return;
+
   // Hide list modal if open
   const listModalEl = document.getElementById("questionListModal");
-  const listModal = bootstrap.Modal.getInstance(listModalEl);
-  if (listModal) listModal.hide();
+  if (listModalEl) {
+    const listModal = bootstrap.Modal.getInstance(listModalEl);
+    if (listModal) listModal.hide();
+  }
 
   // Count doubts
   let doubts = 0;
