@@ -49,6 +49,10 @@ function updateConnectionStatus(isOnline) {
 function renderQuestion(index) {
   if (index < 0 || index >= questions.length) return;
   currentIndex = index;
+
+  // Scroll ke atas soal saat navigasi (terutama di mobile)
+  window.scrollTo({ top: 0, behavior: "smooth" });
+
   const q = questions[index];
   const ansData = JSON.parse(q.answer_data); // Parse question structure
 
