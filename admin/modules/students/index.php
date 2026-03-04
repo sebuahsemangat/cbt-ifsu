@@ -10,7 +10,7 @@ $nomor = 0;
 
 
 <?php if (isset($_GET['status'])): ?>
-    <div class="alert alert-<?= in_array($_GET['status'], ['success', 'updated', 'deleted', 'resetted', 'pw_resetted']) ? 'success' : 'danger' ?> alert-dismissible fade show" role="alert">
+    <div class="alert alert-<?= in_array($_GET['status'], ['success', 'updated', 'deleted', 'resetted', 'pw_resetted', 'all_resetted']) ? 'success' : 'danger' ?> alert-dismissible fade show" role="alert">
         <?php 
         switch($_GET['status']) {
             case 'success': echo "Data siswa berhasil ditambahkan!"; break;
@@ -18,6 +18,7 @@ $nomor = 0;
             case 'deleted': echo "Data siswa berhasil dihapus!"; break;
             case 'resetted': echo "Status login berhasil direset!"; break;
             case 'pw_resetted': echo "Password siswa berhasil direset ke 123456!"; break;
+            case 'all_resetted': echo "Status login semua siswa berhasil direset!"; break;
             case 'error': echo "Terjadi kesalahan dalam memproses data."; break;
         }
         ?>
@@ -27,23 +28,27 @@ $nomor = 0;
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h3 class="fw-bold">Data Siswa</h3>
-    <div class="d-flex gap-2">
-        <div class="input-group" style="width: 250px;">
-            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-            <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Cari nama siswa...">
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+        <div class="input-group input-group-sm" style="width: 200px;">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted small"></i></span>
+            <input type="text" id="searchInput" class="form-control form-control-sm border-start-0" placeholder="Cari nama siswa...">
         </div>
-        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addSingleModal">
+        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addSingleModal">
             <i class="bi bi-person-plus"></i> Tambah Siswa
         </button>
-        <a href="modules/students/export.php" class="btn btn-outline-success">
+        <a href="modules/students/export.php" class="btn btn-sm btn-outline-success">
             <i class="bi bi-file-earmark-excel"></i> Export Excel
         </a>
-        <button class="btn btn-outline-primary" onclick="location.href='modules/students/download_template.php'">
+        <button class="btn btn-sm btn-outline-primary" onclick="location.href='modules/students/download_template.php'">
             <i class="bi bi-download"></i> Template
         </button>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#importModal">
+        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#importModal">
             <i class="bi bi-file-earmark-excel"></i> Import
         </button>
+        <a href="modules/students/process.php?action=reset_all_login" class="btn btn-sm btn-outline-danger"
+           onclick="return confirm('Reset status login SEMUA siswa? Semua sesi aktif siswa akan diakhiri.')">
+            <i class="bi bi-arrow-clockwise"></i> Reset Login Semua
+        </a>
     </div>
 </div>
 

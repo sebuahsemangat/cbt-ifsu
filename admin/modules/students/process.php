@@ -108,6 +108,13 @@ if ($action == 'import' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     exit;
 }
 
+// Fitur Reset Login Semua Siswa
+if ($action == 'reset_all_login') {
+    $stmt = $pdo->query("UPDATE students SET is_logged_in = 0");
+    header("Location: ../../dashboard.php?page=students&status=all_resetted");
+    exit;
+}
+
 // Fitur Reset Login
 if ($action == 'reset_login' && isset($_GET['id'])) {
     $id = (int)$_GET['id'];
