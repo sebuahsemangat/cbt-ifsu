@@ -255,6 +255,13 @@ $remainingSec = max(0, $durationSec - $elapsed);
             .nav-btn { width: 100%; }
             .reference-section { border-right: none; border-bottom: 2px solid #f1f5f9; padding-right: 0; padding-bottom: 1.5rem; margin-bottom: 1.8rem; }
             .question-section { padding-left: 0; }
+
+            /* Perkecil kontrol info bar di mobile */
+            .font-size-btn { padding: 0.3rem 0.75rem; font-size: 0.82rem; border-radius: 8px; }
+            .font-size-controls { gap: 0.35rem; margin-top: 0.5rem; }
+            .timer-display { padding: 0.35rem 0.75rem; font-size: 0.9rem; border-radius: 8px; }
+            .btn-daftar-soal { padding: 0.35rem 0.85rem !important; font-size: 0.82rem !important; }
+            .question-info-bar { padding: 1rem; }
         }
     </style>
 </head>
@@ -297,7 +304,7 @@ $remainingSec = max(0, $durationSec - $elapsed);
                         <div class="timer-display">
                             <i class="bi bi-clock-fill me-2"></i><span id="exam-timer">--:--:--</span>
                         </div>
-                        <button class="btn btn-outline-primary btn-lg" data-bs-toggle="modal" data-bs-target="#questionListModal">
+                        <button class="btn btn-outline-primary btn-daftar-soal" data-bs-toggle="modal" data-bs-target="#questionListModal">
                             <i class="bi bi-list-ol me-2"></i>Daftar Soal
                         </button>
                     </div>
