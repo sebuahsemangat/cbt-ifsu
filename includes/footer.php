@@ -2,6 +2,65 @@
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
+    <!-- SortableJS for drag-and-drop subject reordering -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script>
+    function initSortableSubjects() {
+        document.querySelectorAll('.sortable-subjects').forEach(function(tbody) {
+            // Cegah inisialisasi ganda
+            if (tbody.dataset.sortableInit) return;
+            // Jangan inisialisasi jika terkunci (ujian sedang berlangsung)
+            if (tbody.dataset.locked === 'true') return;
+            tbody.dataset.sortableInit = 'true';
+
+            new Sortable(tbody, {
+                animation: 200,
+                handle: '.drag-handle',
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                filter: '.no-sort',
+                onEnd: function(evt) {
+                    const rows = tbody.querySelectorAll('tr[data-id]');
+                    const order = Array.from(rows).map(row => row.dataset.id);
+                    
+                    fetch('modules/subjects/process.php?action=reorder', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ order: order })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            const movedRow = rows[evt.newIndex];
+                            if (movedRow) {
+                                movedRow.style.transition = 'background-color 0.5s';
+                                movedRow.style.backgroundColor = '#d1e7dd';
+                                setTimeout(() => { movedRow.style.backgroundColor = ''; }, 800);
+                            }
+                        } else {
+                            alert('Gagal menyimpan urutan: ' + (data.message || ''));
+                            window.location.reload();
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Reorder error:', err);
+                        alert('Terjadi kesalahan saat menyimpan urutan.');
+                        window.location.reload();
+                    });
+                }
+            });
+        });
+    }
+
+    // Inisialisasi saat DOM ready
+    document.addEventListener('DOMContentLoaded', initSortableSubjects);
+
+    // Re-inisialisasi saat collapse panel dibuka (agar SortableJS bisa menghitung ukuran elemen)
+    document.addEventListener('shown.bs.collapse', function(e) {
+        initSortableSubjects();
+    });
+    </script>
+
     <script>
         $(document).ready(function() {
             // Logika Toggle Sidebar untuk Mobile

@@ -43,8 +43,8 @@ $exam = $stmtExam->fetch();
 if (!$exam) die("Exam not found");
 
 // 3. Tentukan Mata Pelajaran Saat Ini
-// Ambil semua subject urut ID Desc
-$stmtSub = $pdo->prepare("SELECT * FROM subjects WHERE exam_id = ? ORDER BY id DESC");
+// Ambil semua subject urut sort_order ASC (sesuai urutan yang diatur admin)
+$stmtSub = $pdo->prepare("SELECT * FROM subjects WHERE exam_id = ? ORDER BY sort_order ASC, id ASC");
 $stmtSub->execute([$exam_id]);
 $subjects = $stmtSub->fetchAll(PDO::FETCH_ASSOC);
 

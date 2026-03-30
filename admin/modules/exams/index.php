@@ -100,26 +100,51 @@ $exams = $stmt->fetchAll();
                                 </button>
                             </div>
                             
+                            <?php 
+                            // Cek apakah ada siswa yang sedang mengerjakan ujian ini
+                            $stmtOngoing = $pdo->prepare("
+                                SELECT COUNT(*) FROM exam_sessions 
+                                WHERE exam_id = ? AND status = 'ongoing'
+                            ");
+                            $stmtOngoing->execute([$e['id']]);
+                            $hasOngoing = $stmtOngoing->fetchColumn();
+                            ?>
+                            
+                            <?php if ($hasOngoing > 0): ?>
+                            <div class="alert alert-warning py-2 px-3 mb-3 d-flex align-items-center small">
+                                <i class="bi bi-lock-fill me-2"></i>
+                                <span>Urutan mapel <strong>terkunci</strong> — ada <strong><?= $hasOngoing ?></strong> siswa sedang mengerjakan ujian.</span>
+                            </div>
+                            <?php endif; ?>
+
                             <table class="table table-sm table-bordered bg-white shadow-sm">
                                 <thead class="table-secondary">
                                     <tr>
+                                        <th style="width: 40px;" class="text-center">#</th>
                                         <th>Nama Mata Pelajaran</th>
                                         <th>Durasi</th>
                                         <th>Skor Maksimal</th>
                                         <th class="text-center">Aksi</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody class="sortable-subjects" data-exam-id="<?= $e['id'] ?>" <?= $hasOngoing > 0 ? 'data-locked="true"' : '' ?>>
                                     <?php 
-                                    $stmtSub = $pdo->prepare("SELECT * FROM subjects WHERE exam_id = ?");
+                                    $stmtSub = $pdo->prepare("SELECT * FROM subjects WHERE exam_id = ? ORDER BY sort_order ASC, id ASC");
                                     $stmtSub->execute([$e['id']]);
                                     $subjects = $stmtSub->fetchAll();
                                     
                                     if(empty($subjects)):
                                     ?>
-                                        <tr><td colspan="3" class="text-center text-muted">Belum ada mata pelajaran.</td></tr>
-                                    <?php else: foreach($subjects as $s): ?>
-                                        <tr>
+                                        <tr><td colspan="5" class="text-center text-muted">Belum ada mata pelajaran.</td></tr>
+                                    <?php else: foreach($subjects as $si => $s): ?>
+                                        <tr data-id="<?= $s['id'] ?>">
+                                            <td class="text-center <?= $hasOngoing > 0 ? '' : 'drag-handle' ?>" <?= $hasOngoing > 0 ? '' : 'title="Drag untuk mengubah urutan"' ?>>
+                                                <?php if ($hasOngoing > 0): ?>
+                                                    <i class="bi bi-lock text-muted" title="Terkunci — ujian sedang berlangsung"></i>
+                                                <?php else: ?>
+                                                    <i class="bi bi-grip-vertical text-muted"></i>
+                                                <?php endif; ?>
+                                            </td>
                                             <td class="px-3"><?= htmlspecialchars($s['name']) ?></td>
                                             <td><?= $s['duration'] ?> Menit</td>
                                             <td><?= $s['max_score'] ?></td>
@@ -139,7 +164,7 @@ $exams = $stmt->fetchAll();
                                         </tr>
                                     <?php endforeach; endif; ?>
                                     <?php if(!empty($subjects)): ?>
-                                        <tr><td colspan="4" class="text-center p-2 text-muted small">Total Mapel: <?= count($subjects) ?></td></tr>
+                                        <tr class="no-sort"><td colspan="5" class="text-center p-2 text-muted small">Total Mapel: <?= count($subjects) ?><?= $hasOngoing > 0 ? ' — <i class="bi bi-lock"></i> Terkunci' : ' — <i class="bi bi-grip-vertical"></i> Drag untuk ubah urutan' ?></td></tr>
                                     <?php endif; ?>
                                 </tbody>
                             </table>
@@ -378,3 +403,10 @@ function startTimer(examId, duration) {
 //    Cek local storage atau panggil API untuk cek status token yang sedang aktif
 // });
 </script>
+
+<style>
+.drag-handle { cursor: grab; }
+.drag-handle:active { cursor: grabbing !important; }
+.sortable-ghost { opacity: 0.4; background-color: #cfe2ff !important; }
+.sortable-chosen { background-color: #e8f5e9 !important; }
+</style>

@@ -48,6 +48,7 @@ if ($exam_id):
             s.class,
             e.exam_name,
             sb.name AS subject_name,
+            sb.max_score,
             es.score,
             es.status,
             es.start_time,
@@ -130,9 +131,11 @@ if ($exam_id):
                                     <td><?= htmlspecialchars($row['subject_name']) ?></td>
                                     <td>
                                         <?php 
+                                        $maxScore = $row['max_score'] > 0 ? $row['max_score'] : 100;
+                                        $percentage = ($row['score'] / $maxScore) * 100;
                                         $scoreClass = 'text-success';
-                                        if ($row['score'] < 50) $scoreClass = 'text-danger';
-                                        elseif ($row['score'] < 75) $scoreClass = 'text-warning';
+                                        if ($percentage < 50) $scoreClass = 'text-danger';
+                                        elseif ($percentage < 75) $scoreClass = 'text-warning';
                                         ?>
                                         <span class="fw-bold <?= $scoreClass ?>"><?= number_format($row['score'], 2) ?></span>
                                     </td>
