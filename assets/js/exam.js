@@ -24,6 +24,12 @@ document.addEventListener("DOMContentLoaded", () => {
   updateGrid();
   startTimer();
 
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted) {
+      window.location.reload();
+    }
+  });
+
   window.addEventListener("offline", () => {
     updateConnectionStatus(false);
   });
