@@ -129,6 +129,27 @@ $exams = $stmt->fetchAll();
             background-color: #2d6161;
             box-shadow: 0 4px 12px rgba(58, 121, 122, 0.3);
         }
+        .btn-review {
+            border-radius: 12px;
+            padding: 0.6rem 1.2rem;
+            font-weight: 600;
+            font-size: 0.88rem;
+            transition: all 0.3s;
+            background: linear-gradient(135deg, #0369a1, #0284c7);
+            color: white;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            width: 100%;
+        }
+        .btn-review:hover {
+            background: linear-gradient(135deg, #075985, #0369a1);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(3, 105, 161, 0.30);
+        }
         .progress {
             height: 8px;
             border-radius: 10px;
@@ -293,12 +314,18 @@ $exams = $stmt->fetchAll();
                             </div>
                             <?php endif; ?>
                             
-                            <div class="d-grid">
-                                <?php if ($btnDisabled): ?>
+                            <div class="d-grid gap-2">
+                                <?php if ($progress >= 100 && $totalSubjects > 0): ?>
+                                    <button class="btn btn-secondary btn-start disabled" disabled>
+                                        <i class='bi bi-check-circle-fill me-2'></i>Sudah Selesai
+                                    </button>
+                                    <a href="review_exam.php?exam_id=<?= $exam['id'] ?>" class="btn-review">
+                                        <i class="bi bi-journal-text"></i> Lihat Pembahasan
+                                    </a>
+                                <?php elseif ($btnDisabled): ?>
                                     <button class="btn btn-secondary btn-start disabled" disabled>
                                         <?php 
-                                            if ($progress >= 100) echo "<i class='bi bi-check-circle-fill me-2'></i>Sudah Selesai";
-                                            elseif ($now < $start) echo "Menunggu Jadwal";
+                                            if ($now < $start) echo "Menunggu Jadwal";
                                             else echo "Ujian Ditutup";
                                         ?>
                                     </button>
