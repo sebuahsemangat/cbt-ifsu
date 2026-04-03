@@ -142,13 +142,13 @@ foreach ($questions as $q) {
 
 // Shuffle blocks
 $blockKeys = array_keys($blocks);
-shuffle($blockKeys);
+// shuffle($blockKeys); // Disabled: no random sorting
 
 $finalQuestions = [];
 foreach ($blockKeys as $k) {
     $blk = $blocks[$k];
     $qs = $blk['questions'];
-    shuffle($qs); // Shuffle questions inside the block
+    // shuffle($qs); // Disabled: no random sorting (Shuffle questions inside the block)
     foreach ($qs as $q) {
         $q['ref_data'] = $blk['data']; // Attach ref data to question for easy access
         $finalQuestions[] = $q;

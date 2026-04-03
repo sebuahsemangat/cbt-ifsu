@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Mar 03, 2026 at 05:07 AM
+-- Generation Time: Apr 02, 2026 at 05:31 AM
 -- Server version: 8.0.30
 -- PHP Version: 8.3.6
 
@@ -63,7 +63,7 @@ CREATE TABLE `exams` (
 --
 
 INSERT INTO `exams` (`id`, `exam_name`, `start_date`, `end_date`, `is_active`, `created_at`) VALUES
-(9, 'Simulasi UTBK', '2026-02-23 11:00:00', '2026-02-28 11:00:00', 1, '2026-02-23 04:13:01'),
+(9, 'Simulasi UTBK', '2026-02-23 11:00:00', '2026-04-03 16:00:00', 1, '2026-02-23 04:13:01'),
 (10, 'English Exam Narrative Text', '2026-03-02 07:59:00', '2026-03-07 07:59:00', 1, '2026-03-02 01:00:01');
 
 -- --------------------------------------------------------
@@ -88,7 +88,6 @@ CREATE TABLE `exam_sessions` (
 --
 
 INSERT INTO `exam_sessions` (`id`, `student_id`, `exam_id`, `subject_id`, `start_time`, `end_time`, `score`, `status`) VALUES
-(100, 26, 9, 12, '2026-02-26 13:34:01', '2026-02-26 13:34:58', 531.67, 'finished'),
 (106, 39, 10, 13, '2026-03-02 10:00:50', '2026-03-02 10:39:17', 80.00, 'finished'),
 (107, 54, 10, 13, '2026-03-02 10:00:50', '2026-03-02 10:28:56', 95.00, 'finished'),
 (108, 65, 10, 13, '2026-03-02 10:00:51', '2026-03-02 10:28:03', 100.00, 'finished'),
@@ -130,7 +129,9 @@ INSERT INTO `exam_sessions` (`id`, `student_id`, `exam_id`, `subject_id`, `start
 (148, 105, 10, 13, '2026-03-03 10:43:53', '2026-03-03 11:09:10', 80.00, 'finished'),
 (149, 124, 10, 13, '2026-03-03 11:05:07', '2026-03-03 11:16:38', 80.00, 'finished'),
 (150, 107, 10, 13, '2026-03-03 11:05:18', '2026-03-03 11:16:39', 90.00, 'finished'),
-(151, 26, 10, 13, '2026-03-03 11:23:45', '2026-03-03 11:41:31', 100.00, 'finished');
+(166, 127, 9, 15, '2026-04-02 11:59:17', '2026-04-02 11:59:32', 0.00, 'finished'),
+(167, 127, 9, 14, '2026-04-02 11:59:36', '2026-04-02 11:59:52', 0.00, 'finished'),
+(168, 127, 9, 12, '2026-04-02 11:59:55', '2026-04-02 12:00:58', 265.84, 'finished');
 
 -- --------------------------------------------------------
 
@@ -195,7 +196,9 @@ INSERT INTO `questions` (`id`, `subject_id`, `reference_id`, `question_text`, `c
 (70, 13, 18, '<p>Why did the Lion wake up?</p>', '2026-03-02 01:56:07', 'pg', '{\"type\": \"single_choice\", \"correct\": \"B\", \"options\": {\"A\": \"<p>Because he was hungry</p>\", \"B\": \"<p>Because a Mouse ran on him</p>\", \"C\": \"<p>Because it was morning</p>\", \"D\": \"<p>Because the hunters arrived</p>\", \"E\": \"<p>Because the forest was loud</p>\"}}'),
 (71, 13, 18, '<p>What did the Mouse promise to the Lion?</p>', '2026-03-02 01:56:55', 'pg', '{\"type\": \"single_choice\", \"correct\": \"C\", \"options\": {\"A\": \"<p>To give him food</p>\", \"B\": \"<p>To show him the way</p>\", \"C\": \"<p>To help him one day</p>\", \"D\": \"<p>To leave the forest</p>\", \"E\": \"<p>To be his best friend</p>\"}}'),
 (72, 13, 18, '<p>How did the Mouse help the Lion?</p>', '2026-03-02 01:57:38', 'pg', '{\"type\": \"single_choice\", \"correct\": \"D\", \"options\": {\"A\": \"<p>By calling the hunters</p>\", \"B\": \"<p>By biting the hunters\' legs</p>\", \"C\": \"<p>By bringing a big knife</p>\", \"D\": \"<p>By cutting the rope with his teeth</p>\", \"E\": \"<p>By hiding the Lion in a cave</p>\"}}'),
-(73, 13, 18, '<p>What is the moral value of the story?</p>', '2026-03-02 01:58:17', 'pg', '{\"type\": \"single_choice\", \"correct\": \"B\", \"options\": {\"A\": \"<p>Don\'t wake up a sleeping lion</p>\", \"B\": \"<p>Small friends can be great helpers</p>\", \"C\": \"<p>Lions are the kings of the forest</p>\", \"D\": \"<p>Hunters are very dangerous</p>\", \"E\": \"<p>Teeth must be sharp to eat rope</p>\"}}');
+(73, 13, 18, '<p>What is the moral value of the story?</p>', '2026-03-02 01:58:17', 'pg', '{\"type\": \"single_choice\", \"correct\": \"B\", \"options\": {\"A\": \"<p>Don\'t wake up a sleeping lion</p>\", \"B\": \"<p>Small friends can be great helpers</p>\", \"C\": \"<p>Lions are the kings of the forest</p>\", \"D\": \"<p>Hunters are very dangerous</p>\", \"E\": \"<p>Teeth must be sharp to eat rope</p>\"}}'),
+(74, 14, NULL, '<p>sfdsf</p>', '2026-03-30 04:32:46', 'pg', '{\"type\": \"single_choice\", \"correct\": \"E\", \"options\": {\"A\": \"<p>sdf</p>\", \"B\": \"<p>sdf</p>\", \"C\": \"<p>sdf</p>\", \"D\": \"<p>sdf</p>\", \"E\": \"<p>sdf</p>\"}}'),
+(75, 15, NULL, '<p>sdf</p>', '2026-03-30 04:33:02', 'pg', '{\"type\": \"single_choice\", \"correct\": \"D\", \"options\": {\"A\": \"<p>sdf</p>\", \"B\": \"<p>sdf</p>\", \"C\": \"<p>sdf</p>\", \"D\": \"<p>sdf</p>\", \"E\": \"<p>sdf</p>\"}}');
 
 -- --------------------------------------------------------
 
@@ -268,39 +271,39 @@ CREATE TABLE `students` (
 --
 
 INSERT INTO `students` (`id`, `username`, `password`, `full_name`, `class`, `is_logged_in`, `last_login`, `created_at`) VALUES
-(26, 'siswa42', '$2y$10$.lVCLtG2lS0OginKWeoHEerfxyYBNTzdO/9aMLSJbvCwaYwdRuldO', 'Apep Wahyudin', 'XII IPA 1', 1, '2026-03-03 11:22:57', '2026-02-23 04:31:34'),
+(26, 'siswa42', '$2y$10$.lVCLtG2lS0OginKWeoHEerfxyYBNTzdO/9aMLSJbvCwaYwdRuldO', 'Apep Wahyudin', 'XII IPA 1', 0, '2026-03-04 14:50:34', '2026-02-23 04:31:34'),
 (37, 'aditia78', '$2y$10$MMazaTPGBWM5HeK16aYNEe2ms0SPovJTw7pGdXFv3q48WYRWKvysa', 'ADITIA TRI SUBAGJA', 'XI-RPL 9', 0, NULL, '2026-03-02 01:08:20'),
-(38, 'alia56', '$2y$10$DP.4MNZZWgIh8GQWp9jWl./kwTHP3wPbEzKxnkWkjrIrYfRCAcxgW', 'ALIA RAHAYU', 'XI-RPL 9', 1, '2026-03-02 10:48:08', '2026-03-02 01:08:20'),
-(39, 'alif65', '$2y$10$A1UzmLvneQSO5vpp8RpJA.09qc4s8KtXiNkFyCXzThH8TM37X1Vdm', 'ALIF RIZQI RAMDHANI', 'XI-RPL 9', 1, '2026-03-02 09:58:57', '2026-03-02 01:08:20'),
-(40, 'amila64', '$2y$10$3mlvXfThid.3BCIYKyqrWeYGSgemQQwQEG9y.s3JzXWXfKF0Hhhpe', 'AMILA PRATIWI', 'XI-RPL 9', 1, '2026-03-02 10:18:39', '2026-03-02 01:08:20'),
-(41, 'arya99', '$2y$10$RNVMtqsJ/FJMXqjAMKNcROXZuVcZByXK8V6DZNfO/Fz5WLYQA0q52', 'ARYA MAULANA MALIK IBRAHIM', 'XI-RPL 9', 1, '2026-03-02 09:59:09', '2026-03-02 01:08:21'),
-(42, 'bimo73', '$2y$10$M8bKXxv2enJAG5u.ugFtZOLcaFgXIv3dz4VkNz8BipKlmNN8/opIK', 'BIMO SANDY SANTOSO', 'XI-RPL 9', 1, '2026-03-02 09:59:13', '2026-03-02 01:08:21'),
+(38, 'alia56', '$2y$10$DP.4MNZZWgIh8GQWp9jWl./kwTHP3wPbEzKxnkWkjrIrYfRCAcxgW', 'ALIA RAHAYU', 'XI-RPL 9', 0, '2026-03-02 10:48:08', '2026-03-02 01:08:20'),
+(39, 'alif65', '$2y$10$A1UzmLvneQSO5vpp8RpJA.09qc4s8KtXiNkFyCXzThH8TM37X1Vdm', 'ALIF RIZQI RAMDHANI', 'XI-RPL 9', 0, '2026-03-02 09:58:57', '2026-03-02 01:08:20'),
+(40, 'amila64', '$2y$10$3mlvXfThid.3BCIYKyqrWeYGSgemQQwQEG9y.s3JzXWXfKF0Hhhpe', 'AMILA PRATIWI', 'XI-RPL 9', 0, '2026-03-02 10:18:39', '2026-03-02 01:08:20'),
+(41, 'arya99', '$2y$10$RNVMtqsJ/FJMXqjAMKNcROXZuVcZByXK8V6DZNfO/Fz5WLYQA0q52', 'ARYA MAULANA MALIK IBRAHIM', 'XI-RPL 9', 0, '2026-03-02 09:59:09', '2026-03-02 01:08:21'),
+(42, 'bimo73', '$2y$10$M8bKXxv2enJAG5u.ugFtZOLcaFgXIv3dz4VkNz8BipKlmNN8/opIK', 'BIMO SANDY SANTOSO', 'XI-RPL 9', 0, '2026-03-02 09:59:13', '2026-03-02 01:08:21'),
 (43, 'bitta88', '$2y$10$4sMa4l3cJz7Sk8x0yEsbDergUn.f1cCjoeqntUuqq8ipPS38.Oa7e', 'BITTA YULIDA', 'XI-RPL 9', 0, NULL, '2026-03-02 01:08:21'),
-(44, 'dani69', '$2y$10$KS3Qa2ZacZ.LRHVuZ/PfguQTZTJWj7DrdM/UdYbFDWdyByVTBNVfa', 'DANI DANIAL', 'XI-RPL 9', 1, '2026-03-02 10:00:47', '2026-03-02 01:08:21'),
+(44, 'dani69', '$2y$10$KS3Qa2ZacZ.LRHVuZ/PfguQTZTJWj7DrdM/UdYbFDWdyByVTBNVfa', 'DANI DANIAL', 'XI-RPL 9', 0, '2026-03-02 10:00:47', '2026-03-02 01:08:21'),
 (45, 'dirly28', '$2y$10$sUhqW5ltRvdMuhsgHeLhM.dMjEaDm0XGL67EnLA8iyfwwt..ZdLaC', 'DIRLY FUJIYANA', 'XI-RPL 9', 0, NULL, '2026-03-02 01:08:21'),
-(46, 'diva37', '$2y$10$WX5FoVwa6nf2qhXndg1OquglXGSVOW.3bYaQqqjQ1wqmxzDb.ET8O', 'DIVA NUGRAHA', 'XI-RPL 9', 1, '2026-03-02 10:46:50', '2026-03-02 01:08:21'),
+(46, 'diva37', '$2y$10$WX5FoVwa6nf2qhXndg1OquglXGSVOW.3bYaQqqjQ1wqmxzDb.ET8O', 'DIVA NUGRAHA', 'XI-RPL 9', 0, '2026-03-02 10:46:50', '2026-03-02 01:08:21'),
 (47, 'eka11', '$2y$10$MnJ/KAw3ofOBnOoRKIRoi.G15MgV5KF0MqLu.wEWc0ka/n/MWK3Ya', 'EKA NURDIANSYAH', 'XI-RPL 9', 0, NULL, '2026-03-02 01:08:21'),
-(48, 'ergan97', '$2y$10$ZV2q6RuM1UQ3FbCknyB7VOrRc9MuB3uAf2POFzKAzqVtytPJgg/Xa', 'ERGAN ERLANA', 'XI-RPL 9', 1, '2026-03-02 10:46:50', '2026-03-02 01:08:21'),
-(49, 'erik47', '$2y$10$MJfyneIOPnizD/NTW5299.yNYJdywJBKaC9zA8nm72t1GxfSKOMWa', 'ERIK LUKMAN', 'XI-RPL 9', 1, '2026-03-02 09:59:41', '2026-03-02 01:08:21'),
+(48, 'ergan97', '$2y$10$ZV2q6RuM1UQ3FbCknyB7VOrRc9MuB3uAf2POFzKAzqVtytPJgg/Xa', 'ERGAN ERLANA', 'XI-RPL 9', 0, '2026-03-02 10:46:50', '2026-03-02 01:08:21'),
+(49, 'erik47', '$2y$10$MJfyneIOPnizD/NTW5299.yNYJdywJBKaC9zA8nm72t1GxfSKOMWa', 'ERIK LUKMAN', 'XI-RPL 9', 0, '2026-03-02 09:59:41', '2026-03-02 01:08:21'),
 (50, 'fachri82', '$2y$10$EIVJV515y8hKwJb7rapolet6ZLKHEQ.9U0AJol5kgUkMDmGWP3BgC', 'FACHRI FARIANSYAH AGUSTIN', 'XI-RPL 9', 0, NULL, '2026-03-02 01:08:21'),
-(51, 'fairus33', '$2y$10$b5Kr1fZmmZMrOdlqbAmyAuus9y/i7xGHogCfJmxdGaE4DYultdr7.', 'FAIRUS ADIL MUZAKY', 'XI-RPL 9', 1, '2026-03-02 09:59:54', '2026-03-02 01:08:21'),
-(52, 'firman18', '$2y$10$jq322qtqj.rXo29Kr9ReIOaVufE3uBlXWDqj/qILNcSnf9EHgkvL.', 'FIRMAN MUHAMAD NASRULLOH', 'XI-RPL 9', 1, '2026-03-02 10:00:33', '2026-03-02 01:08:21'),
-(53, 'ganip56', '$2y$10$lNfCpl1hg8KjRwgKMrGZsOQ08s3D9pKdIoAA4M09gl/B3Lg/GFCb2', 'GANIP ADIWINATA', 'XI-RPL 9', 1, '2026-03-02 10:00:26', '2026-03-02 01:08:21'),
-(54, 'ghadis99', '$2y$10$YqtCTYnw8FkSoRZsJDlO/O.x9nYeCfuDUlw9XSW/HBXMmF3hue3lm', 'GHADIS LIDIA FIRANALLAH', 'XI-RPL 9', 1, '2026-03-02 09:59:32', '2026-03-02 01:08:21'),
+(51, 'fairus33', '$2y$10$b5Kr1fZmmZMrOdlqbAmyAuus9y/i7xGHogCfJmxdGaE4DYultdr7.', 'FAIRUS ADIL MUZAKY', 'XI-RPL 9', 0, '2026-03-02 09:59:54', '2026-03-02 01:08:21'),
+(52, 'firman18', '$2y$10$jq322qtqj.rXo29Kr9ReIOaVufE3uBlXWDqj/qILNcSnf9EHgkvL.', 'FIRMAN MUHAMAD NASRULLOH', 'XI-RPL 9', 0, '2026-03-02 10:00:33', '2026-03-02 01:08:21'),
+(53, 'ganip56', '$2y$10$lNfCpl1hg8KjRwgKMrGZsOQ08s3D9pKdIoAA4M09gl/B3Lg/GFCb2', 'GANIP ADIWINATA', 'XI-RPL 9', 0, '2026-03-02 10:00:26', '2026-03-02 01:08:21'),
+(54, 'ghadis99', '$2y$10$YqtCTYnw8FkSoRZsJDlO/O.x9nYeCfuDUlw9XSW/HBXMmF3hue3lm', 'GHADIS LIDIA FIRANALLAH', 'XI-RPL 9', 0, '2026-03-02 09:59:32', '2026-03-02 01:08:21'),
 (55, 'gustiar38', '$2y$10$q24MoHQ4fRrV2CACp6SGZujdJLcyTjq6LeHGamB0GijPMhdXxJayu', 'GUSTIAR HENDRAWAN', 'XI-RPL 9', 0, NULL, '2026-03-02 01:08:21'),
-(56, 'ina25', '$2y$10$Qb.hlBrXjDEVTkmtZEoKdeHX0JK7F9d9FB8vx02pLRmuYjMwodKSe', 'INA MEILANI', 'XI-RPL 9', 1, '2026-03-02 10:00:12', '2026-03-02 01:08:21'),
-(57, 'kiki53', '$2y$10$7/.hjzHSDUKz7PJGZNOwKeTQ/nnsN9KCO4xeqfHyguGQQegUFE7Ze', 'KIKI ADITIA PRATAMA', 'XI-RPL 9', 1, '2026-03-02 09:59:19', '2026-03-02 01:08:22'),
+(56, 'ina25', '$2y$10$Qb.hlBrXjDEVTkmtZEoKdeHX0JK7F9d9FB8vx02pLRmuYjMwodKSe', 'INA MEILANI', 'XI-RPL 9', 0, '2026-03-02 10:00:12', '2026-03-02 01:08:21'),
+(57, 'kiki53', '$2y$10$7/.hjzHSDUKz7PJGZNOwKeTQ/nnsN9KCO4xeqfHyguGQQegUFE7Ze', 'KIKI ADITIA PRATAMA', 'XI-RPL 9', 0, '2026-03-02 09:59:19', '2026-03-02 01:08:22'),
 (58, 'm.fachry46', '$2y$10$RFuLhYoDgKaIJSfqE7Y/eueQRm1RAM.yoFMTd1dI6oVSr9rYi.qMm', 'M. FACHRY AL-FARIZI', 'XI-RPL 9', 0, NULL, '2026-03-02 01:08:22'),
-(59, 'muhamad90', '$2y$10$gXkcF.eolW0ah6HitIgSZepmaVKAvbcR0IUquMmhGfsBl2PJc.5iO', 'MUHAMAD FAHMI NUR IMAN', 'XI-RPL 9', 1, '2026-03-02 10:47:11', '2026-03-02 01:08:22'),
-(60, 'muhamad38', '$2y$10$JHmLiTmpg14Oi6vlbS1XhOOpFIE8Hkj02PW5INlpXjwgV2BlaNrE.', 'MUHAMAD FAJAR GEMILANG RAMADHAN', 'XI-RPL 9', 1, '2026-03-02 09:59:30', '2026-03-02 01:08:22'),
-(61, 'muhammad43', '$2y$10$DfRbKGpDff6LNvn76McRAuBFsfTjUg0HBfF7E8PChbPY6FUFzsOxy', 'MUHAMMAD IQBAL RAMADAN', 'XI-RPL 9', 1, '2026-03-02 10:47:08', '2026-03-02 01:08:22'),
+(59, 'muhamad90', '$2y$10$gXkcF.eolW0ah6HitIgSZepmaVKAvbcR0IUquMmhGfsBl2PJc.5iO', 'MUHAMAD FAHMI NUR IMAN', 'XI-RPL 9', 0, '2026-03-02 10:47:11', '2026-03-02 01:08:22'),
+(60, 'muhamad38', '$2y$10$JHmLiTmpg14Oi6vlbS1XhOOpFIE8Hkj02PW5INlpXjwgV2BlaNrE.', 'MUHAMAD FAJAR GEMILANG RAMADHAN', 'XI-RPL 9', 0, '2026-03-02 09:59:30', '2026-03-02 01:08:22'),
+(61, 'muhammad43', '$2y$10$DfRbKGpDff6LNvn76McRAuBFsfTjUg0HBfF7E8PChbPY6FUFzsOxy', 'MUHAMMAD IQBAL RAMADAN', 'XI-RPL 9', 0, '2026-03-02 10:47:08', '2026-03-02 01:08:22'),
 (62, 'muhammad18', '$2y$10$mnG4MIuIfKSs1B1HdDQyQ.cMDZ5w07o4gJ3GyUa.9w1OUCmVO93Jm', 'MUHAMMAD RAJIL MAHASIN GUNAWAN', 'XI-RPL 9', 0, NULL, '2026-03-02 01:08:22'),
 (63, 'muhammad96', '$2y$10$0D9MK2sqoh3DuZ9WNZ1I2.7ei84juWnSQTfKIrDUXZOH9jzuT6f2C', 'MUHAMMAD RIZKA AL-FATH', 'XI-RPL 9', 0, NULL, '2026-03-02 01:08:22'),
-(64, 'novianti89', '$2y$10$FjHHGMUiKOZEu9ooH3Zsge5hpgSnj4tJqfuCBxZm6KggmSD0p.wdG', 'NOVIANTI ADRILIA', 'XI-RPL 9', 1, '2026-03-02 10:10:31', '2026-03-02 01:08:22'),
-(65, 'poppy95', '$2y$10$vzJCNlSprxw0d8uUzLPME..Yv7Ibiyk./XWbXlv1.cLepsYb5RDfu', 'POPPY ARINI', 'XI-RPL 9', 1, '2026-03-02 09:59:05', '2026-03-02 01:08:22'),
-(66, 'reva95', '$2y$10$6JmqIxTuXukGefsr8OpGO.TsWHZpRDDiYeAJ9tM/xYamxsmsAgdKW', 'REVA NURAINI', 'XI-RPL 9', 1, '2026-03-02 10:03:05', '2026-03-02 01:08:22'),
-(67, 'risma63', '$2y$10$NYYqVKwm8lzZH.HJ28RgGeNqTJIX0DkQbjZqnNBRYycVVD5RlCWSW', 'RISMA', 'XI-RPL 9', 1, '2026-03-02 10:47:20', '2026-03-02 01:08:22'),
-(68, 'sonia25', '$2y$10$E6OQNjAIwEbhGO/.ADGzDOLFSWqYZbBHFi6XqMPvmOyatYrpKy.M6', 'SONIA MAYZURA', 'XI-RPL 9', 1, '2026-03-02 10:48:03', '2026-03-02 01:08:22'),
+(64, 'novianti89', '$2y$10$FjHHGMUiKOZEu9ooH3Zsge5hpgSnj4tJqfuCBxZm6KggmSD0p.wdG', 'NOVIANTI ADRILIA', 'XI-RPL 9', 0, '2026-03-02 10:10:31', '2026-03-02 01:08:22'),
+(65, 'poppy95', '$2y$10$vzJCNlSprxw0d8uUzLPME..Yv7Ibiyk./XWbXlv1.cLepsYb5RDfu', 'POPPY ARINI', 'XI-RPL 9', 0, '2026-03-02 09:59:05', '2026-03-02 01:08:22'),
+(66, 'reva95', '$2y$10$6JmqIxTuXukGefsr8OpGO.TsWHZpRDDiYeAJ9tM/xYamxsmsAgdKW', 'REVA NURAINI', 'XI-RPL 9', 0, '2026-03-02 10:03:05', '2026-03-02 01:08:22'),
+(67, 'risma63', '$2y$10$NYYqVKwm8lzZH.HJ28RgGeNqTJIX0DkQbjZqnNBRYycVVD5RlCWSW', 'RISMA', 'XI-RPL 9', 0, '2026-03-02 10:47:20', '2026-03-02 01:08:22'),
+(68, 'sonia25', '$2y$10$E6OQNjAIwEbhGO/.ADGzDOLFSWqYZbBHFi6XqMPvmOyatYrpKy.M6', 'SONIA MAYZURA', 'XI-RPL 9', 0, '2026-03-02 10:48:03', '2026-03-02 01:08:22'),
 (69, 'syarifah82', '$2y$10$9IdUxtXFA2RARGPbzAGUj.lGSKJtR0YDooc7L/kdOXByBMgzTExcC', 'SYARIFAH RAMADANI', 'XI-RPL 9', 0, NULL, '2026-03-02 01:08:22'),
 (70, 'andri27', '$2y$10$uu9vZNEa/u8h.vJMJN10lutnl2EN5J/OLK/AzUTyAixpHyrLcZFne', 'ANDRI FIRMANSYAH', 'XI-DKV 2', 0, NULL, '2026-03-03 00:33:39'),
 (71, 'ari85', '$2y$10$AMcL.4rW.ooZ3vXk2I42fe0dnXQsIoA5ra0zgH9Wr/nBVyDuUJT8y', 'ARI SLAMET RIYADI', 'XI-DKV 2', 0, NULL, '2026-03-03 00:33:39'),
@@ -330,35 +333,36 @@ INSERT INTO `students` (`id`, `username`, `password`, `full_name`, `class`, `is_
 (95, 'rahman49', '$2y$10$Yx7Hvfj3jFQSLZy5UbmqVeeqdFuv/FiSqJD89wzvnXDorQX88.FtS', 'RAHMAN NUR HIDAYAT', 'XI-DKV 2', 0, NULL, '2026-03-03 00:33:41'),
 (96, 'vauzan36', '$2y$10$MsgNmv8ka372E0y79WeG.ewJ/OhmM0rYAgrQYwicTX.YnC1eg7HTC', 'VAUZAN FAHRI FAZRULOH', 'XI-DKV 2', 0, NULL, '2026-03-03 00:33:41'),
 (97, 'yesi13', '$2y$10$81FR/PmwQsHQOPi1t4i4/OeMWJ3HJPbNNRxzbCRfJjfa19nwnpZ6a', 'YESI NURMEILANI CANTIKA', 'XI-DKV 2', 0, NULL, '2026-03-03 00:33:41'),
-(98, 'aditia87', '$2y$10$5Q6.wEm9kCJizBYzRz8YN.ELfT8dKV.JEwNPodAgJNkUdJS4FnmuW', 'ADITIA RIZKI PRATAMA PUTRA', 'XI-DKV 3', 1, '2026-03-03 10:42:12', '2026-03-03 03:10:21'),
+(98, 'aditia87', '$2y$10$5Q6.wEm9kCJizBYzRz8YN.ELfT8dKV.JEwNPodAgJNkUdJS4FnmuW', 'ADITIA RIZKI PRATAMA PUTRA', 'XI-DKV 3', 0, '2026-03-03 10:42:12', '2026-03-03 03:10:21'),
 (99, 'alif98', '$2y$10$RYEn0n0vlguGd3KLXiRVD.56vDpd.UUiJGCv1knqClTp0NB/f56cS', 'ALIF PUTRA', 'XI-DKV 3', 0, NULL, '2026-03-03 03:10:21'),
 (100, 'cica60', '$2y$10$4TGSqe427QnYPjfIYONQxeAh/RogRulVHwHe6.l2TVZ2cdUnNjcJK', 'CICA CINTIA', 'XI-DKV 3', 0, NULL, '2026-03-03 03:10:21'),
-(101, 'daffa65', '$2y$10$m6wHNkD2SmYPnoA6fEbGD.l6DwzMjmDAvn/IQJhMFo2R5ol9U0cVW', 'DAFFA AHMAD MUDOFFAR', 'XI-DKV 3', 1, '2026-03-03 10:34:44', '2026-03-03 03:10:21'),
-(102, 'elfira75', '$2y$10$ncYG/GiBjyjPN1679S6X0uBMbnrrpSpVSlk0dvu54too/dynvmLmO', 'ELFIRA RUDIASTIRA ERVANEZ', 'XI-DKV 3', 1, '2026-03-03 10:33:53', '2026-03-03 03:10:21'),
+(101, 'daffa65', '$2y$10$m6wHNkD2SmYPnoA6fEbGD.l6DwzMjmDAvn/IQJhMFo2R5ol9U0cVW', 'DAFFA AHMAD MUDOFFAR', 'XI-DKV 3', 0, '2026-03-03 10:34:44', '2026-03-03 03:10:21'),
+(102, 'elfira75', '$2y$10$ncYG/GiBjyjPN1679S6X0uBMbnrrpSpVSlk0dvu54too/dynvmLmO', 'ELFIRA RUDIASTIRA ERVANEZ', 'XI-DKV 3', 0, '2026-03-03 10:33:53', '2026-03-03 03:10:21'),
 (103, 'lucky92', '$2y$10$uerPrajXAstyESpT9QwFd.QwIRADhA9KNz/vMgJFKVREnwc7O5MMS', 'LUCKY NUGRAHA', 'XI-DKV 3', 0, NULL, '2026-03-03 03:10:22'),
-(104, 'm.achbar48', '$2y$10$/XlhC8ObLwaQZcELBfbUVelhB9hrqybq7siOz87WDoW8D3rFOcl7G', 'M. ACHBAR ZHAKARIA', 'XI-DKV 3', 1, '2026-03-03 10:33:47', '2026-03-03 03:10:22'),
-(105, 'muhamad20', '$2y$10$AzTl23kvGA4JO8XrQLODGuZng.CaublNWDxhE/kCA3iTV4fr.d38y', 'MUHAMAD GALANG ADIANSAH', 'XI-DKV 3', 1, '2026-03-03 10:33:47', '2026-03-03 03:10:22'),
+(104, 'm.achbar48', '$2y$10$/XlhC8ObLwaQZcELBfbUVelhB9hrqybq7siOz87WDoW8D3rFOcl7G', 'M. ACHBAR ZHAKARIA', 'XI-DKV 3', 0, '2026-03-03 10:33:47', '2026-03-03 03:10:22'),
+(105, 'muhamad20', '$2y$10$AzTl23kvGA4JO8XrQLODGuZng.CaublNWDxhE/kCA3iTV4fr.d38y', 'MUHAMAD GALANG ADIANSAH', 'XI-DKV 3', 0, '2026-03-03 10:33:47', '2026-03-03 03:10:22'),
 (106, 'muhammad79', '$2y$10$ohDlYgJ2/p6dMKwjJHR7Zuv4VG7y9JzKgayljjMpF9y8gJuCXVeUe', 'MUHAMMAD HABIBI', 'XI-DKV 3', 0, NULL, '2026-03-03 03:10:22'),
-(107, 'muhammad81', '$2y$10$zLrGHybEAhTMqclOHo8hSuGwqAWGZdaK7tsWaY5l3CQrVM4ZIVrzq', 'MUHAMMAD NURUL IKHSAN', 'XI-DKV 3', 1, '2026-03-03 11:04:47', '2026-03-03 03:10:22'),
-(108, 'nadia59', '$2y$10$3goH3DSd4xC/7RMpFpLLxObBoXTkH04aSYMsuJ8uPnufna9/R/Vzq', 'NADIA LEDISTA', 'XI-DKV 3', 1, '2026-03-03 10:34:00', '2026-03-03 03:10:22'),
-(109, 'nailah91', '$2y$10$FHe7BCJPkDFHTXUhLVbQDOF3fOmCw2vlxEYKPmsfbhe2qHwmWuAHq', 'NAILAH NUR HANIFAH', 'XI-DKV 3', 1, '2026-03-03 10:34:10', '2026-03-03 03:10:22'),
-(110, 'nindian45', '$2y$10$SuYX6d.5oWjSY9YlAcSeTu8/L/9UdmhlZVvAHCjei2MM7znMyMFuO', 'NINDIAN NOVITRI', 'XI-DKV 3', 1, '2026-03-03 10:33:48', '2026-03-03 03:10:22'),
-(111, 'nurul88', '$2y$10$86GY5sX6.2rUl41OL9HqJOJtpnBv63cnbuqLCXJkU3WNqu71akhFC', 'NURUL HILMI AMALYA', 'XI-DKV 3', 1, '2026-03-03 10:33:42', '2026-03-03 03:10:22'),
-(112, 'puspa71', '$2y$10$beydCt/CWRII9hNhC4a/3uDlf0hRFBTt5Rml11NOpUvmToeVCMche', 'PUSPA AYU SAFITRI', 'XI-DKV 3', 1, '2026-03-03 10:34:54', '2026-03-03 03:10:22'),
-(113, 'rendi94', '$2y$10$FMlN00FikXZNjUJQsSmUGeT0th62wfhwdWUM0TM.fBCdkb/O7e8ie', 'RENDI SAEPUDIN', 'XI-DKV 3', 1, '2026-03-03 11:09:47', '2026-03-03 03:10:22'),
+(107, 'muhammad81', '$2y$10$zLrGHybEAhTMqclOHo8hSuGwqAWGZdaK7tsWaY5l3CQrVM4ZIVrzq', 'MUHAMMAD NURUL IKHSAN', 'XI-DKV 3', 0, '2026-03-03 11:04:47', '2026-03-03 03:10:22'),
+(108, 'nadia59', '$2y$10$3goH3DSd4xC/7RMpFpLLxObBoXTkH04aSYMsuJ8uPnufna9/R/Vzq', 'NADIA LEDISTA', 'XI-DKV 3', 0, '2026-03-03 10:34:00', '2026-03-03 03:10:22'),
+(109, 'nailah91', '$2y$10$FHe7BCJPkDFHTXUhLVbQDOF3fOmCw2vlxEYKPmsfbhe2qHwmWuAHq', 'NAILAH NUR HANIFAH', 'XI-DKV 3', 0, '2026-03-03 10:34:10', '2026-03-03 03:10:22'),
+(110, 'nindian45', '$2y$10$SuYX6d.5oWjSY9YlAcSeTu8/L/9UdmhlZVvAHCjei2MM7znMyMFuO', 'NINDIAN NOVITRI', 'XI-DKV 3', 0, '2026-03-03 10:33:48', '2026-03-03 03:10:22'),
+(111, 'nurul88', '$2y$10$86GY5sX6.2rUl41OL9HqJOJtpnBv63cnbuqLCXJkU3WNqu71akhFC', 'NURUL HILMI AMALYA', 'XI-DKV 3', 0, '2026-03-03 10:33:42', '2026-03-03 03:10:22'),
+(112, 'puspa71', '$2y$10$beydCt/CWRII9hNhC4a/3uDlf0hRFBTt5Rml11NOpUvmToeVCMche', 'PUSPA AYU SAFITRI', 'XI-DKV 3', 0, '2026-03-03 10:34:54', '2026-03-03 03:10:22'),
+(113, 'rendi94', '$2y$10$FMlN00FikXZNjUJQsSmUGeT0th62wfhwdWUM0TM.fBCdkb/O7e8ie', 'RENDI SAEPUDIN', 'XI-DKV 3', 0, '2026-03-03 11:09:47', '2026-03-03 03:10:22'),
 (114, 'rendy54', '$2y$10$Kw0EyAi4/ODetb12rP/yMeTTXQlbNpA1QPXnyf.WrtOxX6Kvp5LdO', 'RENDY EVAN PRATAMA', 'XI-DKV 3', 0, NULL, '2026-03-03 03:10:22'),
 (115, 'rivaldi64', '$2y$10$JSAuQH293K7h3XQoKHpwX.gULpfItY7U7C3BjNmMGpinTt7lHjlPy', 'RIVALDI PUTRA', 'XI-DKV 3', 0, NULL, '2026-03-03 03:10:22'),
-(116, 'ryan90', '$2y$10$v3MY.oe6OR76DW8a/AVKq.6TYzIP8RnmYSZUsRIJheRJaAj8ZDMQi', 'RYAN FAJAR NUGRAHA', 'XI-DKV 3', 1, '2026-03-03 10:33:53', '2026-03-03 03:10:22'),
-(117, 'ryofan22', '$2y$10$hSEMgRKlctZS34XiF8NZOuLxVHDTFMyfoUtsfYXUsrTHvUC3Rp/kS', 'RYOFAN ANAZRIL', 'XI-DKV 3', 1, '2026-03-03 10:37:10', '2026-03-03 03:10:22'),
-(118, 'salma90', '$2y$10$WFjEQS2V.SUc6Vj7FlLO1Ow/.ithErxknb4eriJMMWDvUSoRxxlXi', 'SALMA NUR\'AINI', 'XI-DKV 3', 1, '2026-03-03 10:36:54', '2026-03-03 03:10:22'),
-(119, 'sani98', '$2y$10$BwJoXWYXOD0HOmcE76SWXudpqLU9KhGShr/c2t6hyXzBzjBN1l2Ie', 'SANI AGINA SOLIHAT', 'XI-DKV 3', 1, '2026-03-03 10:34:30', '2026-03-03 03:10:23'),
-(120, 'teguh53', '$2y$10$hfN.9KrZU8o4Yk9AHifEa.z7K26kJ2h2z6IElwkzj01fQX/BvOGN6', 'TEGUH ZAELANI', 'XI-DKV 3', 1, '2026-03-03 10:34:09', '2026-03-03 03:10:23'),
-(121, 'ulfah50', '$2y$10$CFSPX.tfp8NJJ0sZsdIAjuy9UWhyl5swoVx/WE8OwRfQLWPTWZflG', 'ULFAH OCTIVIANI', 'XI-DKV 3', 1, '2026-03-03 10:36:59', '2026-03-03 03:10:23'),
-(122, 'widiana77', '$2y$10$clf4yQ0aylP.j9thM0f.LunA0Dg3.URKV0NCIDxqFX0FlmBti0KrW', 'WIDIANA', 'XI-DKV 3', 1, '2026-03-03 10:34:25', '2026-03-03 03:10:23'),
+(116, 'ryan90', '$2y$10$v3MY.oe6OR76DW8a/AVKq.6TYzIP8RnmYSZUsRIJheRJaAj8ZDMQi', 'RYAN FAJAR NUGRAHA', 'XI-DKV 3', 0, '2026-03-03 10:33:53', '2026-03-03 03:10:22'),
+(117, 'ryofan22', '$2y$10$hSEMgRKlctZS34XiF8NZOuLxVHDTFMyfoUtsfYXUsrTHvUC3Rp/kS', 'RYOFAN ANAZRIL', 'XI-DKV 3', 0, '2026-03-03 10:37:10', '2026-03-03 03:10:22'),
+(118, 'salma90', '$2y$10$WFjEQS2V.SUc6Vj7FlLO1Ow/.ithErxknb4eriJMMWDvUSoRxxlXi', 'SALMA NUR\'AINI', 'XI-DKV 3', 0, '2026-03-03 10:36:54', '2026-03-03 03:10:22'),
+(119, 'sani98', '$2y$10$BwJoXWYXOD0HOmcE76SWXudpqLU9KhGShr/c2t6hyXzBzjBN1l2Ie', 'SANI AGINA SOLIHAT', 'XI-DKV 3', 0, '2026-03-03 10:34:30', '2026-03-03 03:10:23'),
+(120, 'teguh53', '$2y$10$hfN.9KrZU8o4Yk9AHifEa.z7K26kJ2h2z6IElwkzj01fQX/BvOGN6', 'TEGUH ZAELANI', 'XI-DKV 3', 0, '2026-03-03 10:34:09', '2026-03-03 03:10:23'),
+(121, 'ulfah50', '$2y$10$CFSPX.tfp8NJJ0sZsdIAjuy9UWhyl5swoVx/WE8OwRfQLWPTWZflG', 'ULFAH OCTIVIANI', 'XI-DKV 3', 0, '2026-03-03 10:36:59', '2026-03-03 03:10:23'),
+(122, 'widiana77', '$2y$10$clf4yQ0aylP.j9thM0f.LunA0Dg3.URKV0NCIDxqFX0FlmBti0KrW', 'WIDIANA', 'XI-DKV 3', 0, '2026-03-03 10:34:25', '2026-03-03 03:10:23'),
 (123, 'willyam80', '$2y$10$m4AAgZ33aYGGIAhiZte8X..DvXtwiG.OA7gTUzsoy5cyDE8GNzGti', 'WILLYAM NURDIANSYAH', 'XI-DKV 3', 0, NULL, '2026-03-03 03:10:23'),
-(124, 'yana29', '$2y$10$TLF0jj4ws13V62f.zS7l9eau2z94/ukisvsdKKswDBxuj.7yWsuD6', 'YANA CAHYANA JULIAN', 'XI-DKV 3', 1, '2026-03-03 11:04:35', '2026-03-03 03:10:23'),
-(125, 'yeni39', '$2y$10$ypKGTR57aVB3CoM26XSureMNqWOR6vTDNQMXMbyRbiPOiYBFV7/ta', 'YENI FITRIYANI', 'XI-DKV 3', 1, '2026-03-03 10:34:14', '2026-03-03 03:10:23'),
-(126, 'yosep48', '$2y$10$GnApBj9DYVX/EvQhB3P2oO6VkOyZP29kWa9nLcz0ASjKnFuzsZqdq', 'YOSEP NUR FADILLAH', 'XI-DKV 3', 1, '2026-03-03 10:35:35', '2026-03-03 03:10:23');
+(124, 'yana29', '$2y$10$TLF0jj4ws13V62f.zS7l9eau2z94/ukisvsdKKswDBxuj.7yWsuD6', 'YANA CAHYANA JULIAN', 'XI-DKV 3', 0, '2026-03-03 11:04:35', '2026-03-03 03:10:23'),
+(125, 'yeni39', '$2y$10$ypKGTR57aVB3CoM26XSureMNqWOR6vTDNQMXMbyRbiPOiYBFV7/ta', 'YENI FITRIYANI', 'XI-DKV 3', 0, '2026-03-03 10:34:14', '2026-03-03 03:10:23'),
+(126, 'yosep48', '$2y$10$GnApBj9DYVX/EvQhB3P2oO6VkOyZP29kWa9nLcz0ASjKnFuzsZqdq', 'YOSEP NUR FADILLAH', 'XI-DKV 3', 0, '2026-03-03 10:35:35', '2026-03-03 03:10:23'),
+(127, 'apep85', '$2y$10$LbuK0MiUJbetLCL/N0WI5Oy6vQvKIa47G/a/trjktkVONl/sUe..O', 'Apep', 'XI-RPL 1', 1, '2026-04-02 12:05:51', '2026-03-04 07:47:45');
 
 -- --------------------------------------------------------
 
@@ -382,16 +386,6 @@ CREATE TABLE `student_answers` (
 --
 
 INSERT INTO `student_answers` (`id`, `session_id`, `question_id`, `answer_data`, `is_doubt`, `time_spent`, `option_id`, `answered_at`) VALUES
-(455, 100, 44, '\"C\"', 1, 0, 0, '2026-02-26 06:34:12'),
-(457, 100, 45, '[\"S\",\"B\",\"B\",\"B\",\"S\"]', 0, 0, 0, '2026-02-26 06:34:24'),
-(462, 100, 46, '\"E\"', 0, 0, 0, '2026-02-26 06:34:33'),
-(463, 100, 50, '\"D\"', 0, 0, 0, '2026-02-26 06:34:36'),
-(464, 100, 47, '\"D\"', 0, 0, 0, '2026-02-26 06:34:38'),
-(465, 100, 53, '\"E\"', 0, 0, 0, '2026-02-26 06:34:46'),
-(466, 100, 51, '\"E\"', 0, 0, 0, '2026-02-26 06:34:49'),
-(467, 100, 52, '\"E\"', 0, 0, 0, '2026-02-26 06:34:51'),
-(468, 100, 48, '\"E\"', 0, 0, 0, '2026-02-26 06:34:53'),
-(469, 100, 49, '\"E\"', 0, 0, 0, '2026-02-26 06:34:56'),
 (557, 119, 56, '\"C\"', 0, 0, 0, '2026-03-02 03:01:18'),
 (558, 123, 55, '\"C\"', 0, 0, 0, '2026-03-02 03:01:30'),
 (559, 108, 58, '\"A\"', 0, 0, 0, '2026-03-02 03:01:47'),
@@ -1210,26 +1204,13 @@ INSERT INTO `student_answers` (`id`, `session_id`, `question_id`, `answer_data`,
 (1846, 149, 60, '\"A\"', 0, 0, 0, '2026-03-03 04:16:14'),
 (1847, 149, 62, '\"B\"', 0, 0, 0, '2026-03-03 04:16:18'),
 (1848, 149, 61, '\"B\"', 0, 0, 0, '2026-03-03 04:16:24'),
-(1851, 151, 68, '\"A\"', 0, 0, 0, '2026-03-03 04:24:29'),
-(1852, 151, 65, '\"D\"', 0, 0, 0, '2026-03-03 04:28:09'),
-(1853, 151, 63, '\"C\"', 0, 0, 0, '2026-03-03 04:28:28'),
-(1854, 151, 67, '\"E\"', 0, 0, 0, '2026-03-03 04:28:47'),
-(1855, 151, 66, '\"C\"', 0, 0, 0, '2026-03-03 04:29:07'),
-(1856, 151, 64, '\"B\"', 0, 0, 0, '2026-03-03 04:29:39'),
-(1857, 151, 60, '\"C\"', 0, 0, 0, '2026-03-03 04:30:16'),
-(1858, 151, 55, '\"C\"', 0, 0, 0, '2026-03-03 04:30:45'),
-(1859, 151, 58, '\"A\"', 0, 0, 0, '2026-03-03 04:31:00'),
-(1860, 151, 72, '\"D\"', 0, 0, 0, '2026-03-03 04:36:33'),
-(1861, 151, 71, '\"C\"', 0, 0, 0, '2026-03-03 04:36:56'),
-(1862, 151, 73, '\"B\"', 0, 0, 0, '2026-03-03 04:37:36'),
-(1863, 151, 69, '\"C\"', 0, 0, 0, '2026-03-03 04:38:29'),
-(1864, 151, 70, '\"B\"', 0, 0, 0, '2026-03-03 04:38:55'),
-(1865, 151, 54, '\"B\"', 0, 0, 0, '2026-03-03 04:39:16'),
-(1866, 151, 57, '\"B\"', 0, 0, 0, '2026-03-03 04:39:34'),
-(1867, 151, 62, '\"B\"', 0, 0, 0, '2026-03-03 04:40:06'),
-(1868, 151, 59, '\"B\"', 0, 0, 0, '2026-03-03 04:40:21'),
-(1869, 151, 56, '\"C\"', 0, 0, 0, '2026-03-03 04:40:47'),
-(1870, 151, 61, '\"D\"', 0, 0, 0, '2026-03-03 04:41:27');
+(1892, 166, 75, '\"C\"', 0, 0, 0, '2026-04-02 04:59:23'),
+(1893, 167, 74, '\"D\"', 1, 0, 0, '2026-04-02 04:59:47'),
+(1895, 168, 46, '\"A\"', 0, 0, 0, '2026-04-02 05:00:02'),
+(1896, 168, 47, '\"C\"', 0, 0, 0, '2026-04-02 05:00:19'),
+(1897, 168, 44, '\"C\"', 0, 0, 0, '2026-04-02 05:00:27'),
+(1898, 168, 52, '\"E\"', 0, 0, 0, '2026-04-02 05:00:41'),
+(1899, 168, 49, '\"E\"', 0, 0, 0, '2026-04-02 05:00:47');
 
 -- --------------------------------------------------------
 
@@ -1243,6 +1224,7 @@ CREATE TABLE `subjects` (
   `name` varchar(100) NOT NULL,
   `duration` int NOT NULL,
   `max_score` decimal(10,2) DEFAULT '100.00',
+  `sort_order` int NOT NULL DEFAULT '0',
   `is_active` tinyint(1) DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -1251,9 +1233,11 @@ CREATE TABLE `subjects` (
 -- Dumping data for table `subjects`
 --
 
-INSERT INTO `subjects` (`id`, `exam_id`, `name`, `duration`, `max_score`, `is_active`, `created_at`) VALUES
-(12, 9, 'Penalaran Umum', 30, 886.12, 1, '2026-02-23 04:13:37'),
-(13, 10, 'English', 90, 100.00, 1, '2026-03-02 01:01:41');
+INSERT INTO `subjects` (`id`, `exam_id`, `name`, `duration`, `max_score`, `sort_order`, `is_active`, `created_at`) VALUES
+(12, 9, 'Penalaran Umum', 30, 886.12, 3, 1, '2026-02-23 04:13:37'),
+(13, 10, 'English', 90, 100.00, 13, 1, '2026-03-02 01:01:41'),
+(14, 9, 'Matematika', 30, 100.00, 2, 1, '2026-03-30 04:22:08'),
+(15, 9, 'IPA', 20, 200.00, 1, 1, '2026-03-30 04:30:50');
 
 -- --------------------------------------------------------
 
@@ -1295,7 +1279,12 @@ INSERT INTO `tokens` (`id`, `exam_id`, `token_code`, `created_at`, `expires_at`)
 (60, 10, 'VU73', '2026-03-03 03:34:46', '2026-03-03 03:44:46'),
 (61, 10, 'YL36', '2026-03-03 03:50:38', '2026-03-03 04:00:37'),
 (62, 10, 'MQCJ', '2026-03-03 04:00:45', '2026-03-03 04:10:45'),
-(63, 10, '5EB6', '2026-03-03 04:15:08', '2026-03-03 04:25:08');
+(63, 10, '5EB6', '2026-03-03 04:15:08', '2026-03-03 04:25:08'),
+(64, 10, 'GVK8', '2026-03-04 07:50:07', '2026-03-04 08:00:07'),
+(65, 9, 'XP37', '2026-03-30 04:34:05', '2026-03-30 04:44:05'),
+(66, 9, '9WQY', '2026-03-30 04:52:43', '2026-03-30 05:02:43'),
+(67, 9, 'EMH5', '2026-04-02 04:45:59', '2026-04-02 04:55:59'),
+(68, 9, '2UDZ', '2026-04-02 04:59:11', '2026-04-02 05:09:11');
 
 --
 -- Indexes for dumped tables
@@ -1404,7 +1393,7 @@ ALTER TABLE `exams`
 -- AUTO_INCREMENT for table `exam_sessions`
 --
 ALTER TABLE `exam_sessions`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=152;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=169;
 
 --
 -- AUTO_INCREMENT for table `options`
@@ -1416,7 +1405,7 @@ ALTER TABLE `options`
 -- AUTO_INCREMENT for table `questions`
 --
 ALTER TABLE `questions`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=74;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=76;
 
 --
 -- AUTO_INCREMENT for table `references`
@@ -1434,25 +1423,25 @@ ALTER TABLE `scores`
 -- AUTO_INCREMENT for table `students`
 --
 ALTER TABLE `students`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=127;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=128;
 
 --
 -- AUTO_INCREMENT for table `student_answers`
 --
 ALTER TABLE `student_answers`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1871;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1900;
 
 --
 -- AUTO_INCREMENT for table `subjects`
 --
 ALTER TABLE `subjects`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `tokens`
 --
 ALTER TABLE `tokens`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=64;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=69;
 
 --
 -- Constraints for dumped tables
