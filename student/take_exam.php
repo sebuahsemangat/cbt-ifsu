@@ -31,7 +31,18 @@ if (isset($_POST['exam_id'])) {
     }
     // Jika valid, set session
     $_SESSION['active_exam'] = $exam_id;
-} 
+    
+    // PRG Pattern: Redirect ke GET request (HTTP 303) dengan query param unik
+    // untuk memaksa browser benar-benar membuang riwayat POST
+    header("Location: take_exam.php?ref=" . time(), true, 303);
+    exit;
+}
+    
+// Redirect kembali jika ada POST dummy (pencegahan ekstra)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['exam_id']) && !isset($_POST['session_id'])) {
+    header("Location: take_exam.php", true, 303);
+    exit;
+}
 
 // 2. Ambil dari session jika tidak ada POST
 $exam_id = $_SESSION['active_exam'] ?? null;
@@ -167,11 +178,15 @@ foreach ($savedAnswers as $sa) {
     ];
 }
 
-// Timer Calculation
+// Timer Calculation (Diselesaikan lewat DB agar kebal dari beda Timezone PHP vs MySQL)
+$stmtTime = $pdo->prepare("SELECT TIMESTAMPDIFF(SECOND, start_time, NOW()) as elapsed FROM exam_sessions WHERE id = ?");
+$stmtTime->execute([$sessionId]);
+$timeData = $stmtTime->fetch();
+
 $durationSec = $currentSubject['duration'] * 60;
-$startTime = strtotime($currentSession['start_time']);
-$now = time();
-$elapsed = $now - $startTime;
+$elapsed = $timeData ? (int)$timeData['elapsed'] : 0;
+if ($elapsed < 0) $elapsed = 0; // Guard if server times drift
+
 $remainingSec = max(0, $durationSec - $elapsed);
 
 ?>

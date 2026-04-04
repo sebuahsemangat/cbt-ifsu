@@ -484,11 +484,21 @@ function setFontSize(size) {
 
 function startTimer() {
   const display = document.getElementById("exam-timer");
+  
+  // Guard: Jika halaman direload saat waktu sudah habis dari perhitungan server,
+  // kumpulkan otomatis secara diam-diam tanpa memunculkan alert berulang.
+  if (remainingSeconds <= 0) {
+    display.textContent = "00:00:00";
+    submitExamForce();
+    return;
+  }
+
   const interval = setInterval(() => {
     remainingSeconds--;
     if (remainingSeconds <= 0) {
       clearInterval(interval);
-      alert("Waktu Habis!");
+      display.textContent = "00:00:00";
+      alert("Waktu Habis! Mengumpulkan jawaban otomatis.");
       submitExamForce();
       return;
     }
