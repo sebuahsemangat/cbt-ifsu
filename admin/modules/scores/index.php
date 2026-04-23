@@ -65,6 +65,18 @@ if ($exam_id):
         $stmt = $pdo->prepare($query);
         $stmt->execute(['exam_id' => $exam_id]);
         $scores = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Ambil daftar kelas yang ada di ujian ini untuk filter export
+        $stmt_classes = $pdo->prepare("
+            SELECT DISTINCT s.class 
+            FROM exam_sessions es 
+            JOIN students s ON es.student_id = s.id 
+            WHERE es.exam_id = ?
+            ORDER BY s.class ASC
+        ");
+        $stmt_classes->execute([$exam_id]);
+        $classes = $stmt_classes->fetchAll(PDO::FETCH_COLUMN);
+
     } catch (PDOException $e) {
         echo "Error: " . $e->getMessage();
         exit;
@@ -93,9 +105,9 @@ if ($exam_id):
                 <i class="bi bi-trash-fill"></i> Hapus Semua
             </button>
 
-            <a href="modules/scores/export.php?exam_id=<?= $exam_id ?>" class="btn btn-success text-white">
+            <button type="button" class="btn btn-success text-white" onclick="openExportModal()">
                 <i class="bi bi-file-earmark-excel"></i> Export Excel
-            </a>
+            </button>
             <div class="input-group" style="width: 250px;">
                 <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
                 <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Cari nama siswa...">
@@ -286,6 +298,12 @@ if ($exam_id):
     function executeDeleteAll() {
         window.location.href = 'modules/scores/process.php?action=delete_all&exam_id=<?= $exam_id ?>';
     }
+
+    // Fungsi untuk membuka modal export
+    function openExportModal() {
+        const myModal = new bootstrap.Modal(document.getElementById('exportModal'));
+        myModal.show();
+    }
     </script>
 
     <!-- Modal Konfirmasi Hapus Semua -->
@@ -314,6 +332,38 @@ if ($exam_id):
                     <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Batal</button>
                     <button type="button" id="btnConfirmDeleteAll" class="btn btn-danger px-4" disabled onclick="executeDeleteAll()">Iya, Hapus Semua Data</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Pilih Kelas untuk Export -->
+    <div class="modal fade" id="exportModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-success text-white border-0">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-file-earmark-excel me-2"></i>Export Nilai</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="modules/scores/export.php" method="GET">
+                    <input type="hidden" name="exam_id" value="<?= $exam_id ?>">
+                    <div class="modal-body p-4">
+                        <p class="text-muted mb-4">Pilih kelas yang akan dikonversi ke file Excel:</p>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Pilih Kelas</label>
+                            <select name="class" class="form-select border-2" required>
+                                <option value="all">Semua Kelas</option>
+                                <?php foreach ($classes as $class): ?>
+                                    <option value="<?= htmlspecialchars($class) ?>"><?= htmlspecialchars($class) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 p-3 pt-0">
+                        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-success px-4">Export Sekarang</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

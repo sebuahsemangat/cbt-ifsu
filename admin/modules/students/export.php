@@ -4,10 +4,17 @@ require_once '../../../config/database.php';
 require_once '../../../includes/auth_check.php';
 
 // Ambil data siswa
-$stmt = $pdo->query("SELECT * FROM students ORDER BY class ASC, full_name ASC");
-$students = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$filter_class = isset($_GET['class']) ? $_GET['class'] : 'all';
 
-$filename = "Data_Siswa_" . date('Ymd_His') . ".xls";
+if ($filter_class !== 'all') {
+    $stmt = $pdo->prepare("SELECT * FROM students WHERE class = ? ORDER BY full_name ASC");
+    $stmt->execute([$filter_class]);
+    $filename = "Data_Siswa_" . str_replace(' ', '_', $filter_class) . "_" . date('Ymd_His') . ".xls";
+} else {
+    $stmt = $pdo->query("SELECT * FROM students ORDER BY class ASC, full_name ASC");
+    $filename = "Data_Siswa_Semua_" . date('Ymd_His') . ".xls";
+}
+$students = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 header("Content-Type: application/vnd.ms-excel");
 header("Content-Disposition: attachment; filename=\"$filename\"");
@@ -27,7 +34,7 @@ header("Expires: 0");
     </style>
 </head>
 <body>
-    <h3>Daftar Siswa CBT</h3>
+    <h3>Daftar Siswa CBT <?= $filter_class !== 'all' ? '- Kelas ' . htmlspecialchars($filter_class) : '(Semua Kelas)' ?></h3>
     <p>Tanggal Export: <?= date('d M Y H:i') ?></p>
     
     <table>

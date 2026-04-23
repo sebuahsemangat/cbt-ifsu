@@ -10,6 +10,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $exam_id = isset($_GET['exam_id']) ? $_GET['exam_id'] : null;
+$class_filter = isset($_GET['class']) ? $_GET['class'] : 'all';
 
 if (!$exam_id) {
     die("ID Ujian tidak ditemukan.");
@@ -28,6 +29,7 @@ if (!$exam) {
 $query = "
     SELECT 
         s.full_name,
+        s.class,
         e.exam_name,
         sb.name AS subject_name,
         es.score,
@@ -39,19 +41,30 @@ $query = "
     JOIN exams e ON es.exam_id = e.id
     JOIN subjects sb ON es.subject_id = sb.id
     WHERE es.exam_id = :exam_id
-    ORDER BY es.start_time DESC
 ";
+
+if ($class_filter !== 'all') {
+    $query .= " AND s.class = :class ";
+}
+
+$query .= " ORDER BY s.class ASC, s.full_name ASC";
 
 try {
     $stmt = $pdo->prepare($query);
-    $stmt->execute(['exam_id' => $exam_id]);
+    $params = ['exam_id' => $exam_id];
+    if ($class_filter !== 'all') {
+        $params['class'] = $class_filter;
+    }
+    $stmt->execute($params);
     $scores = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     die("Error: " . $e->getMessage());
 }
 
 // Set Header untuk Download Excel
-$filename = "Nilai_" . preg_replace('/[^A-Za-z0-9]/', '_', $exam['exam_name']) . "_" . date('Ymd') . ".xls";
+// Set Header untuk Download Excel
+$class_suffix = ($class_filter !== 'all') ? "_" . preg_replace('/[^A-Za-z0-9]/', '_', $class_filter) : "";
+$filename = "Nilai_" . preg_replace('/[^A-Za-z0-9]/', '_', $exam['exam_name']) . $class_suffix . "_" . date('Ymd') . ".xls";
 
 header("Content-Type: application/vnd.ms-excel");
 header("Content-Disposition: attachment; filename=\"$filename\"");
@@ -74,6 +87,11 @@ header("Expires: 0");
 </head>
 <body>
     <h3>Laporan Nilai Ujian: <?= htmlspecialchars($exam['exam_name']) ?></h3>
+    <?php if ($class_filter !== 'all'): ?>
+        <p>Kelas: <?= htmlspecialchars($class_filter) ?></p>
+    <?php else: ?>
+        <p>Kelas: Semua Kelas</p>
+    <?php endif; ?>
     <p>Periode: <?= date('d M Y', strtotime($exam['start_date'])) ?> - <?= date('d M Y', strtotime($exam['end_date'])) ?></p>
     
     <table>
@@ -81,6 +99,7 @@ header("Expires: 0");
             <tr>
                 <th class="text-center">No</th>
                 <th>Nama Siswa</th>
+                <th>Kelas</th>
                 <th>Ujian</th>
                 <th>Mata Pelajaran</th>
                 <th class="text-center">Nilai</th>
@@ -94,6 +113,7 @@ header("Expires: 0");
             <tr>
                 <td class="text-center"><?= $index + 1 ?></td>
                 <td><?= htmlspecialchars($row['full_name']) ?></td>
+                <td><?= htmlspecialchars($row['class']) ?></td>
                 <td><?= htmlspecialchars($row['exam_name']) ?></td>
                 <td><?= htmlspecialchars($row['subject_name']) ?></td>
                 <td class="text-center"><?= number_format($row['score'], 2) ?></td>

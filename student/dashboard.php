@@ -59,6 +59,13 @@ FROM exams e
 ORDER BY e.start_date DESC");
 $stmt->execute([$student_id]);
 $exams = $stmt->fetchAll();
+
+// === AMBIL SETTING DARI DATABASE ===
+$stmt_settings = $pdo->query("SELECT setting_key, setting_value FROM settings");
+$settings = $stmt_settings->fetchAll(PDO::FETCH_KEY_PAIR);
+
+$bimbel_name = $settings['bimbel_name'] ?? 'BIMBINGAN BELAJAR LITA';
+$app_name    = $settings['app_name'] ?? 'CBT Simulation';
 ?>
 
 <!DOCTYPE html>
@@ -66,7 +73,7 @@ $exams = $stmt->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CBT - Bimbel Lita</title>
+    <title>CBT - <?= htmlspecialchars($bimbel_name) ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -88,6 +95,11 @@ $exams = $stmt->fetchAll();
         }
         .navbar-brand, .nav-link {
             color: #fff !important;
+        }
+        .navbar-brand {
+            white-space: normal;
+            max-width: 80%;
+            font-size: 1.1rem;
         }
         .card-exam {
             border: 2px solid transparent;
@@ -176,7 +188,7 @@ $exams = $stmt->fetchAll();
 <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
     <div class="container">
         <a class="navbar-brand fw-bold" href="#">
-            <i class="bi bi-mortarboard-fill me-2"></i>CBT - BIMBEL LITA
+            <i class="bi bi-mortarboard-fill me-2"></i>CBT - <?= htmlspecialchars($bimbel_name) ?>
         </a>
         <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon" style="filter: invert(1);"></span>

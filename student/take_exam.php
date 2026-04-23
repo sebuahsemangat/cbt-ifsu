@@ -16,6 +16,13 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'student') {
 
 $student_id = $_SESSION['user_id'];
 
+// === AMBIL SETTING DARI DATABASE ===
+$stmt_settings = $pdo->query("SELECT setting_key, setting_value FROM settings");
+$settings = $stmt_settings->fetchAll(PDO::FETCH_KEY_PAIR);
+
+$bimbel_name = $settings['bimbel_name'] ?? 'BIMBINGAN BELAJAR LITA';
+$app_name    = $settings['app_name'] ?? 'CBT Simulation';
+
 // 1. Cek apakah ada input POST (Attempt Masuk Ujian Baru)
 if (isset($_POST['exam_id'])) {
     $exam_id = $_POST['exam_id'];
@@ -210,7 +217,12 @@ $remainingSec = max(0, $durationSec - $elapsed);
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background-color: var(--soft-mint); font-family: 'Poppins', sans-serif; overflow-x: hidden; color: #334155; }
         .navbar-exam { background: linear-gradient(135deg, var(--primary-teal) 0%, #4b8b8c 100%); box-shadow: 0 4px 12px rgba(58, 121, 122, 0.2); padding: 0.8rem 0; }
-        .navbar-brand { color: #fff !important; }
+        .navbar-brand { 
+            color: #fff !important; 
+            white-space: normal;
+            max-width: 80%;
+            font-size: 1.1rem;
+        }
         .logo-bimbel { width: 45px; height: 45px; object-fit: contain; }
         .bimbel-name { font-size: 1.25rem; font-weight: 700; color: white; margin: 0; letter-spacing: 0.5px; }
         .student-name { color: rgba(255,255,255,0.9); font-weight: 500; font-size: 0.95rem; }
@@ -291,7 +303,7 @@ $remainingSec = max(0, $durationSec - $elapsed);
 <nav class="navbar navbar-exam">
     <div class="container-fluid px-4">
         <a class="navbar-brand fw-bold d-flex align-items-center" href="#">
-            <i class="bi bi-mortarboard-fill me-2"></i>CBT - BIMBEL LITA
+            <i class="bi bi-mortarboard-fill me-2"></i>CBT - <?= htmlspecialchars($bimbel_name) ?>
         </a>
         <div class="d-flex align-items-center gap-3">
             <div id="connection-indicator" class="student-name d-flex align-items-center gap-2">

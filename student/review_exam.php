@@ -91,13 +91,20 @@ foreach ($subjects as $sub) {
 }
 
 $avgScore = count($subjectData) > 0 ? $totalScoreSum / count($subjectData) : 0;
+
+// === AMBIL SETTING DARI DATABASE ===
+$stmt_settings = $pdo->query("SELECT setting_key, setting_value FROM settings");
+$settings = $stmt_settings->fetchAll(PDO::FETCH_KEY_PAIR);
+
+$bimbel_name = $settings['bimbel_name'] ?? 'BIMBINGAN BELAJAR LITA';
+$app_name    = $settings['app_name'] ?? 'CBT Simulation';
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pembahasan Ujian - <?= htmlspecialchars($exam['exam_name']) ?></title>
+    <title>Pembahasan Ujian - <?= htmlspecialchars($bimbel_name) ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -123,7 +130,13 @@ $avgScore = count($subjectData) > 0 ? $totalScoreSum / count($subjectData) : 0;
             box-shadow: 0 4px 15px rgba(58, 121, 122, 0.25);
             padding: 0.9rem 0;
         }
-        .navbar-brand { color: #fff !important; font-weight: 700; font-size: 1.1rem; }
+        .navbar-brand { 
+            color: #fff !important; 
+            font-weight: 700; 
+            font-size: 1.1rem; 
+            white-space: normal;
+            max-width: 80%;
+        }
 
         /* ===== SUMMARY CARD ===== */
         .summary-hero {
@@ -376,7 +389,7 @@ $avgScore = count($subjectData) > 0 ? $totalScoreSum / count($subjectData) : 0;
 <nav class="navbar navbar-custom sticky-top">
     <div class="container">
         <a class="navbar-brand" href="#">
-            <i class="bi bi-mortarboard-fill me-2"></i>CBT - BIMBEL LITA
+            <i class="bi bi-mortarboard-fill me-2"></i>CBT - <?= htmlspecialchars($bimbel_name) ?>
         </a>
         <div class="d-flex align-items-center gap-3">
             <a href="dashboard.php" class="btn btn-sm btn-outline-light rounded-pill d-print-none">

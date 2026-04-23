@@ -3,9 +3,13 @@ require_once '../config/database.php';
 require_once '../includes/auth_check.php';
 
 // Ambil data siswa
-$stmt = $pdo->query("SELECT * FROM students ORDER BY full_name ASC");
+$stmt = $pdo->query("SELECT * FROM students ORDER BY class ASC, full_name ASC");
 $students = $stmt->fetchAll();
 $nomor = 0;
+
+// Ambil daftar kelas untuk filter export
+$stmt_classes = $pdo->query("SELECT DISTINCT class FROM students WHERE class IS NOT NULL AND class != '' ORDER BY class ASC");
+$classes = $stmt_classes->fetchAll(PDO::FETCH_COLUMN);
 ?>
 
 
@@ -36,9 +40,9 @@ $nomor = 0;
         <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addSingleModal">
             <i class="bi bi-person-plus"></i> Tambah Siswa
         </button>
-        <a href="modules/students/export.php" class="btn btn-sm btn-outline-success">
+        <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#exportModalStudents">
             <i class="bi bi-file-earmark-excel"></i> Export Excel
-        </a>
+        </button>
         <button class="btn btn-sm btn-outline-primary" onclick="location.href='modules/students/download_template.php'">
             <i class="bi bi-download"></i> Template
         </button>
@@ -140,6 +144,34 @@ $nomor = 0;
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-success">Simpan Data</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="exportModalStudents" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form action="modules/students/export.php" method="GET">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Export Data Siswa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Pilih Kelas</label>
+                        <select name="class" class="form-select">
+                            <option value="all">Semua Kelas</option>
+                            <?php foreach ($classes as $c): ?>
+                                <option value="<?= htmlspecialchars($c) ?>"><?= htmlspecialchars($c) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success">Download Excel</button>
                 </div>
             </form>
         </div>

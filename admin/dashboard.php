@@ -34,6 +34,9 @@ $page = $_GET['page'] ?? 'main';
         case 'scores':
             include 'modules/scores/index.php';
             break;
+        case 'settings':
+            include 'modules/settings/index.php';
+            break;
         case 'references':
             include 'modules/references/index.php';
             break;
