@@ -29,6 +29,12 @@ if (!$exam) {
     exit;
 }
 
+// Cek apakah fitur review diizinkan untuk ujian ini
+if (empty($exam['allow_review'])) {
+    header("Location: dashboard.php?error=review_disabled");
+    exit;
+}
+
 // Pastikan ujian sudah selesai semua untuk siswa ini
 $stmtTotal = $pdo->prepare("SELECT COUNT(*) FROM subjects WHERE exam_id = ?");
 $stmtTotal->execute([$examId]);

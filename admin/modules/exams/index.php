@@ -35,7 +35,9 @@ $exams = $stmt->fetchAll();
                         <th width="50px"></th> 
                         <th class="px-4">Nama Ujian</th>
                         <th>Waktu</th>
-                        <th class="text-center">Token Ujian</th> <th>Status</th>
+                        <th class="text-center">Token Ujian</th> 
+                        <th>Status</th>
+                        <th class="text-center">Review Siswa</th>
                         <th class="text-center">Aksi</th>
                     </tr>
                 </thead>
@@ -80,6 +82,23 @@ $exams = $stmt->fetchAll();
                             ?>
                         </td>
                         <td class="text-center">
+                            <?php if (!empty($e['allow_review'])): ?>
+                                <a href="modules/exams/process.php?action=toggle_review&id=<?= $e['id'] ?>" 
+                                   class="badge bg-success text-decoration-none" 
+                                   title="Klik untuk nonaktifkan review siswa"
+                                   onclick="return confirm('Nonaktifkan akses review untuk ujian ini?')">
+                                    <i class="bi bi-eye me-1"></i> Aktif
+                                </a>
+                            <?php else: ?>
+                                <a href="modules/exams/process.php?action=toggle_review&id=<?= $e['id'] ?>" 
+                                   class="badge bg-secondary text-decoration-none" 
+                                   title="Klik untuk aktifkan review siswa"
+                                   onclick="return confirm('Aktifkan akses review untuk ujian ini?')">
+                                    <i class="bi bi-eye-slash me-1"></i> Nonaktif
+                                </a>
+                            <?php endif; ?>
+                        </td>
+                        <td class="text-center">
                             <button class="btn btn-sm btn-outline-warning me-1" data-bs-toggle="modal" data-bs-target="#editExamModal<?= $e['id'] ?>">
                                 <i class="bi bi-pencil"></i>
                             </button>
@@ -92,7 +111,7 @@ $exams = $stmt->fetchAll();
                     </tr>
                     
                     <tr class="collapse" id="subject-<?= $e['id'] ?>">
-                        <td colspan="6" class="bg-light p-4">
+                        <td colspan="7" class="bg-light p-4">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h6 class="fw-bold mb-0"><i class="bi bi-book me-2"></i>Daftar Mata Pelajaran</h6>
                                 <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addSubjectModal<?= $e['id'] ?>">
@@ -268,6 +287,11 @@ $exams = $stmt->fetchAll();
                                                 <input type="datetime-local" name="end_date" class="form-control" required value="<?= date('Y-m-d\TH:i', strtotime($e['end_date'])) ?>">
                                             </div>
                                         </div>
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" name="allow_review" id="editAllowReview<?= $e['id'] ?>" value="1" <?= !empty($e['allow_review']) ? 'checked' : '' ?>>
+                                            <label class="form-check-label fw-semibold" for="editAllowReview<?= $e['id'] ?>">Izinkan Siswa Melihat Pembahasan / Review</label>
+                                            <div class="form-text">Jika aktif, siswa yang telah selesai ujian dapat melihat pembahasan dan jawaban.</div>
+                                        </div>
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
@@ -280,7 +304,7 @@ $exams = $stmt->fetchAll();
                     <?php endforeach; ?>
 
                     <?php if (empty($exams)): ?>
-                        <tr><td colspan="6" class="text-center p-4 text-muted">Belum ada jadwal ujian.</td></tr>
+                        <tr><td colspan="7" class="text-center p-4 text-muted">Belum ada jadwal ujian.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -310,6 +334,11 @@ $exams = $stmt->fetchAll();
                             <label class="form-label">Waktu Selesai</label>
                             <input type="datetime-local" name="end_date" class="form-control" required>
                         </div>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" name="allow_review" id="addAllowReview" value="1">
+                        <label class="form-check-label fw-semibold" for="addAllowReview">Izinkan Siswa Melihat Pembahasan / Review (Default: Nonaktif)</label>
+                        <div class="form-text">Jika tidak dicentang, siswa tidak dapat membuka halaman pembahasan setelah ujian selesai.</div>
                     </div>
                 </div>
                 <div class="modal-footer">

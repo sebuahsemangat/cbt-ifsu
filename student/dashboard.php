@@ -223,6 +223,12 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
 
 <div class="container py-5">
     <?= $message ?>
+    <?php if (isset($_GET['error']) && $_GET['error'] === 'review_disabled'): ?>
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-circle me-2"></i>Fitur pembahasan dan review untuk ujian ini belum diaktifkan oleh administrator.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
 
     <div class="row mb-4">
         <div class="col-md-8">
@@ -331,9 +337,11 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
                                     <button class="btn btn-secondary btn-start disabled" disabled>
                                         <i class='bi bi-check-circle-fill me-2'></i>Sudah Selesai
                                     </button>
-                                    <a href="review_exam.php?exam_id=<?= $exam['id'] ?>" class="btn-review">
-                                        <i class="bi bi-journal-text"></i> Lihat Pembahasan
-                                    </a>
+                                    <?php if (!empty($exam['allow_review'])): ?>
+                                        <a href="review_exam.php?exam_id=<?= $exam['id'] ?>" class="btn-review">
+                                            <i class="bi bi-journal-text"></i> Lihat Pembahasan
+                                        </a>
+                                    <?php endif; ?>
                                 <?php elseif ($btnDisabled): ?>
                                     <button class="btn btn-secondary btn-start disabled" disabled>
                                         <?php 
