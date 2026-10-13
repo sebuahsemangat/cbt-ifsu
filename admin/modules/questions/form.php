@@ -26,13 +26,38 @@ if ($id) {
 // Decode answer_data for JS usage
 $answerData = [];
 if ($data && !empty($data['answer_data'])) {
-    $answerData = json_decode($data['answer_data'], true);
+    $decoded = json_decode($data['answer_data'], true);
+    if (is_array($decoded)) {
+        $answerData = $decoded;
+    }
+}
+
+// Proteksi jika data question_text terpotong di database (misal MySQL TEXT 64KB)
+$questionText = $data['question_text'] ?? '';
+if (preg_match('/<img[^>]*$/', $questionText)) {
+    $questionText .= '" alt="Gambar terpotong" class="img-fluid" />';
 }
 ?>
 
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/quill-image-resize-module@3.0.0/image-resize.min.js"></script>
+
+<style>
+    /* Cegah gambar besar merusak layout flexbox grid Bootstrap */
+    #editor img, .ql-editor img {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+    .ql-editor {
+        min-height: 200px;
+        max-height: 500px;
+        overflow-y: auto;
+    }
+    .col-md-7, .col-md-5 {
+        min-width: 0; /* Mengatasi flexbox auto min-width overflow */
+    }
+</style>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h3 class="fw-bold"><?= $id ? 'Edit' : 'Tambah' ?> Soal</h3>
@@ -62,7 +87,7 @@ if ($data && !empty($data['answer_data'])) {
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">Pertanyaan</label>
-                        <div id="editor" style="height: 300px;"><?= $data['question_text'] ?? '' ?></div>
+                        <div id="editor" style="height: 300px;"><?= $questionText ?></div>
                     </div>
                 </div>
             </div>
@@ -147,8 +172,8 @@ function renderOptions() {
             optionQuills[`input_pg_${let}`] = q;
         });
     } else if (type === 'bs') {
-        const posLabel = (savedType === 'bs' && savedData && savedData.labels) ? savedData.labels.pos : 'Benar';
-        const negLabel = (savedType === 'bs' && savedData && savedData.labels) ? savedData.labels.neg : 'Salah';
+        const posLabel = (savedType === 'bs' && savedData && savedData.labels && savedData.labels.pos) ? savedData.labels.pos : 'Benar';
+        const negLabel = (savedType === 'bs' && savedData && savedData.labels && savedData.labels.neg) ? savedData.labels.neg : 'Salah';
         
         container.innerHTML = `
             <div class="row mb-3">
@@ -166,7 +191,7 @@ function renderOptions() {
             <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addBSRow()">+ Tambah Pernyataan</button>`;
         
         if (savedType === 'bs') {
-            const items = Array.isArray(savedData) ? savedData : (savedData.items || []);
+            const items = Array.isArray(savedData) ? savedData : ((savedData && Array.isArray(savedData.items)) ? savedData.items : []);
             if (items.length > 0) {
                 items.forEach(item => addBSRow(item.text, item.is_correct));
             } else {
@@ -294,5 +319,9 @@ document.getElementById('questionForm').onsubmit = function() {
 };
 
 // Start
-renderOptions();
+try {
+    renderOptions();
+} catch (err) {
+    console.error('Gagal me-render opsi jawaban:', err);
+}
 </script>

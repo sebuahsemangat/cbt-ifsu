@@ -72,6 +72,8 @@ $settings = $stmt_settings->fetchAll(PDO::FETCH_KEY_PAIR);
 $app_name = $settings['app_name'] ?? 'Sistem Ujian Computer Based Test (CBT)';
 $bimbel_name = $settings['bimbel_name'] ?? 'BIMBINGAN BELAJAR LITA';
 $bimbel_logo = $settings['bimbel_logo'] ?? 'logo-bimbel.png';
+$login_logo_path = 'assets/img/' . $bimbel_logo;
+$login_logo_version = (file_exists($login_logo_path) && is_file($login_logo_path)) ? '?v=' . filemtime($login_logo_path) : '';
 ?>
 
 <!DOCTYPE html>
@@ -84,7 +86,7 @@ $bimbel_logo = $settings['bimbel_logo'] ?? 'logo-bimbel.png';
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="icon" href="assets/img/<?= htmlspecialchars($bimbel_logo) ?>">
+    <link rel="icon" href="assets/img/<?= htmlspecialchars($bimbel_logo) . $login_logo_version ?>">
     <style>
         * {
             margin: 0;
@@ -219,7 +221,7 @@ $bimbel_logo = $settings['bimbel_logo'] ?? 'logo-bimbel.png';
     <div class="container">
         <div class="card login-card">
             <div class="card-header-custom">
-                <img src="assets/img/<?= htmlspecialchars($bimbel_logo) ?>" alt="Logo Bimbel"
+                <img src="assets/img/<?= htmlspecialchars($bimbel_logo) . $login_logo_version ?>" alt="Logo Bimbel"
                     class="logo-placeholder rounded-circle shadow-sm">
 
                 <h4 class="bimbel-name mb-0"><?= htmlspecialchars($bimbel_name) ?></h4>

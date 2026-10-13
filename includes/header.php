@@ -76,7 +76,11 @@ $site_bimbel_logo = $app_settings['bimbel_logo'] ?? 'logo-bimbel.png';
 
 <div class="sidebar" id="sidebar">
     <div class="p-4 text-center">
-        <img src="../assets/img/<?= $site_bimbel_logo ?>" alt="Logo" class="rounded-circle bg-white p-1 mb-3 shadow-sm" style="width: 70px; height: 70px; object-fit: contain;">
+        <?php
+        $site_logo_path = '../assets/img/' . $site_bimbel_logo;
+        $site_logo_version = (file_exists($site_logo_path) && is_file($site_logo_path)) ? '?v=' . filemtime($site_logo_path) : '';
+        ?>
+        <img src="../assets/img/<?= htmlspecialchars($site_bimbel_logo) . $site_logo_version ?>" alt="Logo" class="rounded-circle bg-white p-1 mb-3 shadow-sm" style="width: 70px; height: 70px; object-fit: contain;">
         <h6 class="fw-bold mb-0" style="letter-spacing: 1px;"><?= strtoupper($site_app_name) ?></h6>
         <small class="opacity-75"><?= $site_bimbel_name ?></small>
         <hr class="bg-white opacity-25 mt-3">

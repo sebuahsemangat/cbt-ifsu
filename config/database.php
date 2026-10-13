@@ -26,6 +26,8 @@ $options = [
 try {
     // Inisialisasi Koneksi
     $pdo = new PDO($dsn, $username, $password, $options);
+    // Sinkronisasi timezone MySQL ke Asia/Jakarta (+07:00 WIB)
+    $pdo->exec("SET time_zone = '+07:00'");
 } catch (PDOException $e) {
     // Jika gagal, tampilkan pesan tanpa membocorkan detail sensitif
     // Di tahap produksi, sebaiknya simpan error ke log file

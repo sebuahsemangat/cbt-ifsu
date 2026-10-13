@@ -409,8 +409,11 @@ else:
         
         <?php if (count($exams) == 0): ?>
             <div class="col-12 text-center py-5">
-                <img src="../assets/img/empty.svg" alt="No Data" class="mb-3" style="max-width: 200px; opacity: 0.5;"> <!-- Placeholder image -->
-                <h5 class="text-muted">Belum ada ujian yang dibuat.</h5>
+                <div class="mb-3 text-muted opacity-50">
+                    <i class="bi bi-journal-x" style="font-size: 4rem;"></i>
+                </div>
+                <h5 class="text-muted fw-semibold">Belum ada ujian yang dibuat.</h5>
+                <p class="text-muted small">Data nilai akan ditampilkan di sini setelah jadwal ujian dibuat.</p>
             </div>
         <?php endif; ?>
     </div>

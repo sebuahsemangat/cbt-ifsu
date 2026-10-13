@@ -26,31 +26,41 @@ $bimbel_logo = $settings['bimbel_logo'] ?? 'logo-bimbel.png';
     <div class="col-12">
         <div class="card border-0 shadow-sm p-4">
             <h4 class="fw-bold mb-4">Pengaturan Aplikasi</h4>
-            
+
             <form action="modules/settings/process.php" method="POST" enctype="multipart/form-data">
                 <div class="row">
                     <div class="col-md-8">
                         <div class="mb-3">
                             <label for="app_name" class="form-label">Nama Aplikasi</label>
-                            <input type="text" class="form-control" id="app_name" name="app_name" value="<?= htmlspecialchars($app_name) ?>" required>
+                            <input type="text" class="form-control" id="app_name" name="app_name"
+                                value="<?= htmlspecialchars($app_name) ?>" required>
                             <div class="form-text">Nama yang muncul di judul halaman dan login.</div>
                         </div>
-                        
+
                         <div class="mb-3">
-                            <label for="bimbel_name" class="form-label">Nama Bimbel</label>
-                            <input type="text" class="form-control" id="bimbel_name" name="bimbel_name" value="<?= htmlspecialchars($bimbel_name) ?>" required>
-                            <div class="form-text">Nama instansi atau bimbel Anda.</div>
+                            <label for="bimbel_name" class="form-label">Nama Sekolah</label>
+                            <input type="text" class="form-control" id="bimbel_name" name="bimbel_name"
+                                value="<?= htmlspecialchars($bimbel_name) ?>" required>
+                            <div class="form-text">Nama instansi atau sekolah Anda.</div>
                         </div>
 
+                        <?php
+                        $logo_path = '../assets/img/' . $bimbel_logo;
+                        $logo_version = (file_exists($logo_path) && is_file($logo_path)) ? '?v=' . filemtime($logo_path) : '';
+                        ?>
                         <div class="mb-4">
-                            <label for="bimbel_logo" class="form-label">Logo Bimbel</label>
+                            <label for="bimbel_logo" class="form-label">Logo Sekolah</label>
                             <div class="d-flex align-items-start gap-3">
-                                <div class="bg-light p-2 rounded border" style="width: 100px; height: 100px; display: flex; align-items: center; justify-content: center;">
-                                    <img src="../assets/img/<?= $bimbel_logo ?>" alt="Current Logo" id="preview-logo" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                                <div class="p-2 rounded border"
+                                    style="width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; background: repeating-conic-gradient(#f8f9fa 0% 25%, #fff 0% 50%) 50% / 16px 16px;">
+                                    <img src="../assets/img/<?= htmlspecialchars($bimbel_logo) . $logo_version ?>" alt="Current Logo" id="preview-logo"
+                                        style="max-width: 100%; max-height: 100%; object-fit: contain;">
                                 </div>
                                 <div class="flex-grow-1">
-                                    <input type="file" class="form-control" id="bimbel_logo" name="bimbel_logo" accept="image/*">
-                                    <div class="form-text">Format: PNG, JPG, JPEG (Max 2MB). Sistem akan mengompres gambar secara otomatis.</div>
+                                    <input type="file" class="form-control" id="bimbel_logo" name="bimbel_logo"
+                                        accept="image/png, image/jpeg, .png, .jpg, .jpeg">
+                                    <div class="form-text">Format: PNG, JPG, JPEG (Max 2MB). Disarankan PNG transparan untuk hasil terbaik.</div>
+                                    <div id="file-error" class="text-danger small mt-1" style="display: none;"></div>
                                 </div>
                             </div>
                         </div>
@@ -68,14 +78,38 @@ $bimbel_logo = $settings['bimbel_logo'] ?? 'logo-bimbel.png';
 </div>
 
 <script>
-    // Preview logo before upload
-    document.getElementById('bimbel_logo').addEventListener('change', function(e) {
+    // Preview logo before upload and validate file
+    document.getElementById('bimbel_logo').addEventListener('change', function (e) {
         const file = e.target.files[0];
+        const errorDiv = document.getElementById('file-error');
+        errorDiv.style.display = 'none';
+        errorDiv.textContent = '';
+
         if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById('preview-logo').src = e.target.result;
+            // Validasi format
+            const validTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+            const validExtensions = ['png', 'jpg', 'jpeg'];
+            const ext = file.name.split('.').pop().toLowerCase();
+
+            if (!validTypes.includes(file.type) && !validExtensions.includes(ext)) {
+                errorDiv.textContent = 'Format file tidak didukung! Pilih file PNG atau JPG/JPEG.';
+                errorDiv.style.display = 'block';
+                this.value = '';
+                return;
             }
+
+            // Validasi ukuran (2MB = 2097152 bytes)
+            if (file.size > 2 * 1024 * 1024) {
+                errorDiv.textContent = 'Ukuran file terlalu besar! Maksimal 2MB (File Anda: ' + (file.size / 1024 / 1024).toFixed(2) + 'MB).';
+                errorDiv.style.display = 'block';
+                this.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                document.getElementById('preview-logo').src = e.target.result;
+            };
             reader.readAsDataURL(file);
         }
     });
