@@ -119,13 +119,13 @@ if (!$currentSession) {
     $stmtIns = $pdo->prepare("INSERT INTO exam_sessions (student_id, exam_id, subject_id, start_time, end_time, status) VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL ? MINUTE), 'ongoing')");
     $stmtIns->execute([$student_id, $exam_id, $currentSubject['id'], $duration]);
     $sessionId = $pdo->lastInsertId();
-    $currentSession = ['id' => $sessionId, 'start_time' => date('Y-m-d H:i:s')];
+    $currentSession = ['id' => $sessionId, 'start_time' => date('Y-m-d H:i:s'), 'question_order' => null];
 } else {
     $sessionId = $currentSession['id'];
 }
 
 // 5. Fetch Data (Questions, References, Answers)
-$stmtQ = $pdo->prepare("SELECT * FROM questions WHERE subject_id = ?");
+$stmtQ = $pdo->prepare("SELECT * FROM questions WHERE subject_id = ? ORDER BY id ASC");
 $stmtQ->execute([$currentSubject['id']]);
 $questions = $stmtQ->fetchAll(PDO::FETCH_ASSOC);
 
@@ -135,41 +135,79 @@ $references = $stmtRef->fetchAll(PDO::FETCH_ASSOC);
 $refMap = [];
 foreach ($references as $r) $refMap[$r['id']] = $r;
 
-// Group & Shuffle
-$blocks = [];
-foreach ($questions as $q) {
-    $rid = $q['reference_id'];
-    if ($rid) {
-        if (!isset($blocks["ref_$rid"])) {
-            $blocks["ref_$rid"] = [
-                'type' => 'ref',
-                'data' => $refMap[$rid] ?? null,
-                'questions' => []
-            ];
-        }
-        $blocks["ref_$rid"]['questions'][] = $q;
-    } else {
-        // Orphan
-        $blocks["q_" . $q['id']] = [
-            'type' => 'single',
-            'data' => null,
-            'questions' => [$q]
-        ];
-    }
-}
-
-// Shuffle blocks
-$blockKeys = array_keys($blocks);
-// shuffle($blockKeys); // Disabled: no random sorting
+// Pengaturan Acak / Berurutan (Default: Random / Acak)
+$isRandom = !isset($exam['randomize_questions']) || $exam['randomize_questions'] == 1;
+$savedOrder = !empty($currentSession['question_order']) ? json_decode($currentSession['question_order'], true) : null;
 
 $finalQuestions = [];
-foreach ($blockKeys as $k) {
-    $blk = $blocks[$k];
-    $qs = $blk['questions'];
-    // shuffle($qs); // Disabled: no random sorting (Shuffle questions inside the block)
-    foreach ($qs as $q) {
-        $q['ref_data'] = $blk['data']; // Attach ref data to question for easy access
+
+if (is_array($savedOrder) && !empty($savedOrder)) {
+    // Gunakan urutan yang sudah tersimpan untuk sesi ini (konsisten saat reload/refresh)
+    $qMap = [];
+    foreach ($questions as $q) {
+        $qMap[$q['id']] = $q;
+    }
+    foreach ($savedOrder as $qid) {
+        if (isset($qMap[$qid])) {
+            $q = $qMap[$qid];
+            $rid = $q['reference_id'];
+            $q['ref_data'] = ($rid && isset($refMap[$rid])) ? $refMap[$rid] : null;
+            $finalQuestions[] = $q;
+            unset($qMap[$qid]);
+        }
+    }
+    // Jika ada soal baru yang belum terdaftar di urutan sesi sebelumnya
+    foreach ($qMap as $q) {
+        $rid = $q['reference_id'];
+        $q['ref_data'] = ($rid && isset($refMap[$rid])) ? $refMap[$rid] : null;
         $finalQuestions[] = $q;
+    }
+} else {
+    // Buat urutan baru untuk sesi ini
+    $blocks = [];
+    foreach ($questions as $q) {
+        $rid = $q['reference_id'];
+        if ($rid) {
+            if (!isset($blocks["ref_$rid"])) {
+                $blocks["ref_$rid"] = [
+                    'type' => 'ref',
+                    'data' => $refMap[$rid] ?? null,
+                    'questions' => []
+                ];
+            }
+            $blocks["ref_$rid"]['questions'][] = $q;
+        } else {
+            // Orphan
+            $blocks["q_" . $q['id']] = [
+                'type' => 'single',
+                'data' => null,
+                'questions' => [$q]
+            ];
+        }
+    }
+
+    $blockKeys = array_keys($blocks);
+    if ($isRandom) {
+        shuffle($blockKeys); // Acak blok referensi & soal tunggal
+    }
+
+    foreach ($blockKeys as $k) {
+        $blk = $blocks[$k];
+        $qs = $blk['questions'];
+        if ($isRandom) {
+            shuffle($qs); // Acak soal di dalam referensi yang sama
+        }
+        foreach ($qs as $q) {
+            $q['ref_data'] = $blk['data'];
+            $finalQuestions[] = $q;
+        }
+    }
+
+    // Simpan urutan soal ke exam_sessions agar tidak berubah jika halaman di-reload
+    if (!empty($finalQuestions)) {
+        $orderedIds = array_column($finalQuestions, 'id');
+        $stmtSaveOrder = $pdo->prepare("UPDATE exam_sessions SET question_order = ? WHERE id = ?");
+        $stmtSaveOrder->execute([json_encode($orderedIds), $sessionId]);
     }
 }
 

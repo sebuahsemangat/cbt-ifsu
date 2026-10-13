@@ -65,9 +65,22 @@ foreach ($subjects as $sub) {
     if (!$session) continue;
 
     // Get questions
-    $stmtQ = $pdo->prepare("SELECT * FROM questions WHERE subject_id = ?");
+    $stmtQ = $pdo->prepare("SELECT * FROM questions WHERE subject_id = ? ORDER BY id ASC");
     $stmtQ->execute([$sub['id']]);
     $questions = $stmtQ->fetchAll(PDO::FETCH_ASSOC);
+
+    // Jika sesi memiliki urutan soal tersimpan, sesuaikan urutan tampilannya
+    if (!empty($session['question_order'])) {
+        $savedOrder = json_decode($session['question_order'], true);
+        if (is_array($savedOrder) && !empty($savedOrder)) {
+            $orderMap = array_flip($savedOrder);
+            usort($questions, function ($a, $b) use ($orderMap) {
+                $posA = $orderMap[$a['id']] ?? 999999;
+                $posB = $orderMap[$b['id']] ?? 999999;
+                return $posA <=> $posB;
+            });
+        }
+    }
 
     // Get answers (latest per question)
     $stmtAns = $pdo->prepare("
