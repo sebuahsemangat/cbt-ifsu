@@ -21,7 +21,7 @@ if (!$sessionId) {
 
 // Get Session Info
 $stmt = $pdo->prepare("
-    SELECT qs.*, s.name as subject_name, e.exam_name, e.allow_review 
+    SELECT qs.*, s.name as subject_name, e.exam_name, e.allow_review, e.show_score 
     FROM exam_sessions qs
     JOIN subjects s ON qs.subject_id = s.id
     JOIN exams e ON qs.exam_id = e.id
@@ -81,14 +81,25 @@ $studentId = $_SESSION['user_id'];
 // Total subjects
 $stmtTotal = $pdo->prepare("SELECT COUNT(*) FROM subjects WHERE exam_id = ?");
 $stmtTotal->execute([$examId]);
-$totalSubjects = $stmtTotal->fetchColumn();
+$totalSubjects = (int)$stmtTotal->fetchColumn();
 
 // Finished sessions
 $stmtDone = $pdo->prepare("SELECT COUNT(*) FROM exam_sessions WHERE exam_id = ? AND student_id = ? AND status = 'finished'");
 $stmtDone->execute([$examId, $studentId]);
-$finishedSubjects = $stmtDone->fetchColumn();
+$finishedSubjects = (int)$stmtDone->fetchColumn();
 
 $isAllDone = ($finishedSubjects >= $totalSubjects);
+
+// Jika pengaturan show_score nonaktif:
+if (empty($session['show_score'])) {
+    // Jika dalam 1 ujian hanya terdapat 1 mata pelajaran ATAU semua mata pelajaran sudah selesai:
+    // Langsung arahkan siswa ke halaman dashboard
+    if ($totalSubjects <= 1 || $isAllDone) {
+        unset($_SESSION['active_exam']);
+        header("Location: dashboard.php?msg=exam_finished");
+        exit;
+    }
+}
 
 ?>
 <!DOCTYPE html>
@@ -120,6 +131,7 @@ $isAllDone = ($finishedSubjects >= $totalSubjects);
 <body>
     <div class="container py-5">
         <!-- Print Only Header -->
+        <?php if (!empty($session['show_score'])): ?>
         <div class="d-none d-print-block text-center mb-4">
             <h2 class="fw-bold">LAPORAN HASIL UJIAN</h2>
             <hr>
@@ -165,9 +177,25 @@ $isAllDone = ($finishedSubjects >= $totalSubjects);
             </div>
             </div>
         </div>
+        <?php else: ?>
+        <!-- Jika show_score nonaktif dan ada lebih dari 1 mata pelajaran (belum selesai semua) -->
+        <div class="score-card py-5">
+            <div class="mb-3">
+                <i class="bi bi-check-circle-fill text-success" style="font-size: 3.5rem;"></i>
+            </div>
+            <h4 class="fw-bold mb-1">Mata Pelajaran Selesai</h4>
+            <p class="text-secondary mb-4"><?= htmlspecialchars($session['subject_name']) ?></p>
+            
+            <div class="d-grid mt-3">
+                <a href="take_exam.php" class="btn btn-primary btn-lg py-3 fw-bold">
+                    Lanjut Mata Pelajaran Berikutnya <i class="bi bi-arrow-right ms-2"></i>
+                </a>
+            </div>
+        </div>
+        <?php endif; ?>
 
         <!-- Optional: Detailed Review -->
-        <?php if (!empty($session['allow_review'])): ?>
+        <?php if (!empty($session['show_score']) && !empty($session['allow_review'])): ?>
         <div class="card mt-4 mx-auto" style="max-width: 800px;">
             <div class="card-header bg-white fw-bold">Review Jawaban</div>
             <div class="card-body">

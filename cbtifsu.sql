@@ -56,6 +56,7 @@ CREATE TABLE `exams` (
   `is_active` tinyint(1) DEFAULT '1',
   `allow_review` tinyint(1) DEFAULT '0',
   `randomize_questions` tinyint(1) DEFAULT '1',
+  `show_score` tinyint(1) DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 

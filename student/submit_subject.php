@@ -150,11 +150,58 @@ if ($totalQuestions > 0) {
 $stmtUpd = $pdo->prepare("UPDATE exam_sessions SET score = ?, status = 'finished', end_time = NOW() WHERE id = ?");
 $stmtUpd->execute([$score, $sessionId]);
 
-// Check if all subjects for this exam are finished
-// ... (Logic to determine if we should update 'scores' table now or later)
-// For now, let's just finish this subject.
+// Cek pengaturan tampilkan nilai pada ujian
+$stmtExam = $pdo->prepare("SELECT show_score FROM exams WHERE id = ?");
+$stmtExam->execute([$examId]);
+$showScore = $stmtExam->fetchColumn();
 
-// Redirect to Result/Summary Page
-header("Location: exam_result.php?session_id=" . $sessionId);
-exit;
+// Total mata pelajaran dalam ujian ini
+$stmtTotal = $pdo->prepare("SELECT COUNT(*) FROM subjects WHERE exam_id = ?");
+$stmtTotal->execute([$examId]);
+$totalSubjects = (int)$stmtTotal->fetchColumn();
+
+// Jumlah mata pelajaran yang sudah selesai untuk siswa ini
+$stmtDone = $pdo->prepare("SELECT COUNT(*) FROM exam_sessions WHERE exam_id = ? AND student_id = ? AND status = 'finished'");
+$stmtDone->execute([$examId, $_SESSION['user_id']]);
+$finishedSubjects = (int)$stmtDone->fetchColumn();
+
+$isAllDone = ($finishedSubjects >= $totalSubjects);
+
+// Jika semua mata pelajaran selesai, simpan total skor ke tabel scores
+if ($isAllDone) {
+    $stmtAgg = $pdo->prepare("SELECT SUM(score) as total, COUNT(*) as cnt FROM exam_sessions WHERE exam_id = ? AND student_id = ?");
+    $stmtAgg->execute([$examId, $_SESSION['user_id']]);
+    $agg = $stmtAgg->fetch();
+    $avgScore = $agg['cnt'] > 0 ? $agg['total'] / $agg['cnt'] : 0;
+
+    $chkScore = $pdo->prepare("SELECT id FROM scores WHERE student_id = ? AND exam_id = ?");
+    $chkScore->execute([$_SESSION['user_id'], $examId]);
+    if (!$chkScore->fetch()) {
+        $pdo->prepare("INSERT INTO scores (student_id, exam_id, total_score) VALUES (?, ?, ?)")
+            ->execute([$_SESSION['user_id'], $examId, $avgScore]);
+    }
+}
+
+// Logika Pengalihan Berdasarkan Pengaturan show_score:
+if (empty($showScore)) {
+    // Jika nonaktif:
+    // Jika hanya terdapat 1 mata pelajaran ATAU seluruh mata pelajaran sudah selesai:
+    // Langsung arahkan siswa ke halaman dashboard
+    if ($totalSubjects <= 1 || $isAllDone) {
+        unset($_SESSION['active_exam']);
+        header("Location: dashboard.php?msg=exam_finished");
+        exit;
+    } else {
+        // Jika ada lebih dari 1 mata pelajaran dan masih ada mapel berikutnya:
+        // Arahkan ke exam_result.php (hanya tombol menuju mapel berikutnya)
+        header("Location: exam_result.php?session_id=" . $sessionId);
+        exit;
+    }
+} else {
+    if ($isAllDone) {
+        unset($_SESSION['active_exam']);
+    }
+    header("Location: exam_result.php?session_id=" . $sessionId);
+    exit;
+}
 ?>

@@ -39,6 +39,7 @@ $exams = $stmt->fetchAll();
                         <th>Status</th>
                         <th class="text-center">Review Siswa</th>
                         <th class="text-center">Urutan Soal</th>
+                        <th class="text-center">Tampilkan Nilai</th>
                         <th class="text-center">Aksi</th>
                     </tr>
                 </thead>
@@ -117,6 +118,23 @@ $exams = $stmt->fetchAll();
                             <?php endif; ?>
                         </td>
                         <td class="text-center">
+                            <?php if (!empty($e['show_score'])): ?>
+                                <a href="modules/exams/process.php?action=toggle_score&id=<?= $e['id'] ?>" 
+                                   class="badge bg-success text-decoration-none" 
+                                   title="Klik untuk sembunyikan nilai dari siswa"
+                                   onclick="return confirm('Nonaktifkan tampilan nilai untuk ujian ini?')">
+                                    <i class="bi bi-eye me-1"></i> Aktif
+                                </a>
+                            <?php else: ?>
+                                <a href="modules/exams/process.php?action=toggle_score&id=<?= $e['id'] ?>" 
+                                   class="badge bg-secondary text-decoration-none" 
+                                   title="Klik untuk tampilkan nilai kepada siswa"
+                                   onclick="return confirm('Aktifkan tampilan nilai untuk ujian ini?')">
+                                    <i class="bi bi-eye-slash me-1"></i> Nonaktif
+                                </a>
+                            <?php endif; ?>
+                        </td>
+                        <td class="text-center">
                             <button class="btn btn-sm btn-outline-warning me-1" data-bs-toggle="modal" data-bs-target="#editExamModal<?= $e['id'] ?>">
                                 <i class="bi bi-pencil"></i>
                             </button>
@@ -129,7 +147,7 @@ $exams = $stmt->fetchAll();
                     </tr>
                     
                     <tr class="collapse" id="subject-<?= $e['id'] ?>">
-                        <td colspan="8" class="bg-light p-4">
+                        <td colspan="9" class="bg-light p-4">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h6 class="fw-bold mb-0"><i class="bi bi-book me-2"></i>Daftar Mata Pelajaran</h6>
                                 <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addSubjectModal<?= $e['id'] ?>">
@@ -315,6 +333,11 @@ $exams = $stmt->fetchAll();
                                             <label class="form-check-label fw-semibold" for="editRandomizeQuestions<?= $e['id'] ?>">Acak Tampilan Soal Siswa</label>
                                             <div class="form-text">Jika aktif, urutan soal diacak untuk setiap siswa. Jika nonaktif, soal ditampilkan berurutan.</div>
                                         </div>
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" name="show_score" id="editShowScore<?= $e['id'] ?>" value="1" <?= !empty($e['show_score']) ? 'checked' : '' ?>>
+                                            <label class="form-check-label fw-semibold" for="editShowScore<?= $e['id'] ?>">Tampilkan Nilai ke Siswa</label>
+                                            <div class="form-text">Jika aktif, nilai akan ditampilkan ke siswa setelah mengerjakan ujian.</div>
+                                        </div>
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
@@ -327,7 +350,7 @@ $exams = $stmt->fetchAll();
                     <?php endforeach; ?>
 
                     <?php if (empty($exams)): ?>
-                        <tr><td colspan="8" class="text-center p-4 text-muted">Belum ada jadwal ujian.</td></tr>
+                        <tr><td colspan="9" class="text-center p-4 text-muted">Belum ada jadwal ujian.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -367,6 +390,11 @@ $exams = $stmt->fetchAll();
                         <input class="form-check-input" type="checkbox" name="randomize_questions" id="addRandomizeQuestions" value="1" checked>
                         <label class="form-check-label fw-semibold" for="addRandomizeQuestions">Acak Tampilan Soal Siswa (Default: Acak)</label>
                         <div class="form-text">Jika aktif, urutan soal diacak untuk setiap siswa. Jika nonaktif, soal ditampilkan berurutan.</div>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" name="show_score" id="addShowScore" value="1">
+                        <label class="form-check-label fw-semibold" for="addShowScore">Tampilkan Nilai ke Siswa (Default: Nonaktif)</label>
+                        <div class="form-text">Jika tidak dicentang, nilai tidak akan diperlihatkan kepada siswa setelah ujian selesai.</div>
                     </div>
                 </div>
                 <div class="modal-footer">

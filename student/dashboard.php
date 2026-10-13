@@ -223,6 +223,12 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
 
 <div class="container py-5">
     <?= $message ?>
+    <?php if (isset($_GET['msg']) && in_array($_GET['msg'], ['exam_finished', 'all_done'])): ?>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>Ujian telah selesai dikerjakan. Terima kasih!
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endif; ?>
     <?php if (isset($_GET['error']) && $_GET['error'] === 'review_disabled'): ?>
         <div class="alert alert-warning alert-dismissible fade show" role="alert">
             <i class="bi bi-exclamation-circle me-2"></i>Fitur pembahasan dan review untuk ujian ini belum diaktifkan oleh administrator.
