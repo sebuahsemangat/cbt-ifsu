@@ -44,6 +44,7 @@ if ($exam_id):
     $query = "
         SELECT 
             es.id,
+            s.nis,
             s.full_name,
             s.class,
             e.exam_name,
@@ -138,6 +139,7 @@ if ($exam_id):
                                     <td class="text-center"><?= $index + 1 ?></td>
                                     <td>
                                         <div class="fw-semibold student-name"><?= htmlspecialchars($row['full_name']) ?></div>
+                                        <small class="text-muted">NIS: <?= htmlspecialchars($row['nis'] ?? '-') ?></small>
                                     </td>
                                     <td><?= htmlspecialchars($row['class']) ?></td>
                                     <td><?= htmlspecialchars($row['subject_name']) ?></td>

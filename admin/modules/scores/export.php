@@ -28,6 +28,7 @@ if (!$exam) {
 // Query data nilai
 $query = "
     SELECT 
+        s.nis,
         s.full_name,
         s.class,
         e.exam_name,
@@ -98,6 +99,7 @@ header("Expires: 0");
         <thead>
             <tr>
                 <th class="text-center">No</th>
+                <th>NIS</th>
                 <th>Nama Siswa</th>
                 <th>Kelas</th>
                 <th>Ujian</th>
@@ -112,6 +114,7 @@ header("Expires: 0");
             <?php foreach ($scores as $index => $row): ?>
             <tr>
                 <td class="text-center"><?= $index + 1 ?></td>
+                <td><?= htmlspecialchars($row['nis'] ?? '-') ?></td>
                 <td><?= htmlspecialchars($row['full_name']) ?></td>
                 <td><?= htmlspecialchars($row['class']) ?></td>
                 <td><?= htmlspecialchars($row['exam_name']) ?></td>

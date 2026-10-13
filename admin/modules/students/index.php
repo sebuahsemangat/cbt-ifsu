@@ -23,6 +23,7 @@ $classes = $stmt_classes->fetchAll(PDO::FETCH_COLUMN);
             case 'resetted': echo "Status login berhasil direset!"; break;
             case 'pw_resetted': echo "Password siswa berhasil direset ke 123456!"; break;
             case 'all_resetted': echo "Status login semua siswa berhasil direset!"; break;
+            case 'nis_exists': echo "NIS sudah terdaftar! Gunakan NIS lain."; break;
             case 'error': echo "Terjadi kesalahan dalam memproses data."; break;
         }
         ?>
@@ -33,9 +34,9 @@ $classes = $stmt_classes->fetchAll(PDO::FETCH_COLUMN);
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h3 class="fw-bold">Data Siswa</h3>
     <div class="d-flex gap-2 align-items-center flex-wrap">
-        <div class="input-group input-group-sm" style="width: 200px;">
+        <div class="input-group input-group-sm" style="width: 220px;">
             <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted small"></i></span>
-            <input type="text" id="searchInput" class="form-control form-control-sm border-start-0" placeholder="Cari nama siswa...">
+            <input type="text" id="searchInput" class="form-control form-control-sm border-start-0" placeholder="Cari nama atau NIS...">
         </div>
         <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addSingleModal">
             <i class="bi bi-person-plus"></i> Tambah Siswa
@@ -63,11 +64,11 @@ $classes = $stmt_classes->fetchAll(PDO::FETCH_COLUMN);
                 <thead class="table-light">
                     <tr>
                         <th style="width: 60px;" class="text-center">No</th>
+                        <th>NIS</th>
                         <th class="px-4">Nama Siswa</th>
                         <th style="cursor: pointer;" id="sortClass">
                             Kelas <i class="bi bi-arrow-down-up ms-1 small text-muted"></i>
                         </th>
-                        <th>Username</th>
                         <th>Status Login</th>
                         <th class="text-center">Aksi</th>
                     </tr>
@@ -76,9 +77,9 @@ $classes = $stmt_classes->fetchAll(PDO::FETCH_COLUMN);
                     <?php foreach ($students as $s): $nomor++; ?>
                     <tr class="student-row">
                         <td class="text-center nomor-urut"><?= $nomor ?></td>
+                        <td><code class="student-nis"><?= htmlspecialchars($s['nis']) ?></code></td>
                         <td class="px-4 fw-bold student-name"><?= htmlspecialchars($s['full_name']) ?></td>
                         <td><span class="badge bg-primary student-class"><?= htmlspecialchars($s['class'] ?? '-') ?></span></td>
-                        <td><code><?= htmlspecialchars($s['username']) ?></code></td>
                         <td>
                             <?php if ($s['is_logged_in']): ?>
                                 <span class="badge bg-warning text-dark">Aktif</span>
@@ -95,6 +96,7 @@ $classes = $stmt_classes->fetchAll(PDO::FETCH_COLUMN);
                             </a>
                             <button class="btn btn-sm btn-outline-primary edit-btn" 
                                     data-id="<?= $s['id'] ?>" 
+                                    data-nis="<?= htmlspecialchars($s['nis']) ?>"
                                     data-name="<?= htmlspecialchars($s['full_name']) ?>" 
                                     data-class="<?= htmlspecialchars($s['class'] ?? '') ?>"
                                     data-bs-toggle="modal" 
@@ -132,13 +134,17 @@ $classes = $stmt_classes->fetchAll(PDO::FETCH_COLUMN);
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
+                        <label class="form-label">NIS (Nomor Induk Siswa)</label>
+                        <input type="text" name="nis" class="form-control" required placeholder="Contoh: 1001 atau 202601001">
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Nama Lengkap Siswa</label>
                         <input type="text" name="full_name" class="form-control" required placeholder="Masukkan nama lengkap">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Kelas</label>
                         <input type="text" name="class" class="form-control" required placeholder="Contoh: XII IPA 1">
-                        <small class="text-muted">Username & password otomatis digenerate sistem.</small>
+                        <small class="text-muted d-block mt-1">Password login default: <strong>123456</strong>.</small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -190,7 +196,7 @@ $classes = $stmt_classes->fetchAll(PDO::FETCH_COLUMN);
                     <div class="mb-3">
                         <label class="form-label">Pilih File Template (.csv)</label>
                         <input type="file" name="file_excel" class="form-control" required accept=".csv">
-                        <small class="text-muted">Gunakan file yang diunduh dari tombol "Template" di atas.</small>
+                        <small class="text-muted">Format kolom: <strong>NIS ; Nama Lengkap ; Kelas</strong>. Gunakan file yang diunduh dari tombol "Template" di atas. Password default otomatis <strong>123456</strong>.</small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -211,6 +217,10 @@ $classes = $stmt_classes->fetchAll(PDO::FETCH_COLUMN);
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">NIS (Nomor Induk Siswa)</label>
+                        <input type="text" name="nis" id="edit_nis" class="form-control" required placeholder="Masukkan NIS">
+                    </div>
                     <div class="mb-3">
                         <label class="form-label">Nama Lengkap Siswa</label>
                         <input type="text" name="full_name" id="edit_name" class="form-control" required placeholder="Masukkan nama lengkap">
@@ -245,7 +255,9 @@ function displayTable() {
     const filter = searchInput.value.toLowerCase();
     const filteredRows = allRows.filter(row => {
         const name = row.querySelector('.student-name').textContent.toLowerCase();
-        return name.includes(filter);
+        const nisEl = row.querySelector('.student-nis');
+        const nis = nisEl ? nisEl.textContent.toLowerCase() : '';
+        return name.includes(filter) || nis.includes(filter);
     });
 
     const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
@@ -326,6 +338,7 @@ document.addEventListener('click', function(e) {
     if (e.target.closest('.edit-btn')) {
         const btn = e.target.closest('.edit-btn');
         document.getElementById('edit_id').value = btn.dataset.id;
+        document.getElementById('edit_nis').value = btn.dataset.nis;
         document.getElementById('edit_name').value = btn.dataset.name;
         document.getElementById('edit_class').value = btn.dataset.class;
     }

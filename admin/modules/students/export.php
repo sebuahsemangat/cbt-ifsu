@@ -41,9 +41,9 @@ header("Expires: 0");
         <thead>
             <tr>
                 <th class="text-center">No</th>
+                <th>NIS</th>
                 <th>Nama Lengkap</th>
                 <th>Kelas</th>
-                <th>Username</th>
                 <th>Password (Default)</th>
             </tr>
         </thead>
@@ -51,9 +51,9 @@ header("Expires: 0");
             <?php foreach ($students as $index => $s): ?>
             <tr>
                 <td class="text-center"><?= $index + 1 ?></td>
+                <td><?= htmlspecialchars($s['nis']) ?></td>
                 <td><?= htmlspecialchars($s['full_name']) ?></td>
                 <td><?= htmlspecialchars($s['class'] ?? '-') ?></td>
-                <td><?= htmlspecialchars($s['username']) ?></td>
                 <td>123456</td>
             </tr>
             <?php endforeach; ?>

@@ -4,38 +4,26 @@ require_once '../../../includes/auth_check.php';
 
 $action = $_GET['action'] ?? '';
 
-// --- FITUR BARU: TAMBAH 1 SISWA ---
+// --- FITUR: TAMBAH 1 SISWA DENGAN NIS ---
 if ($action == 'add_single' && $_SERVER['REQUEST_METHOD'] == 'POST') {
-    $nama = trim($_POST['full_name']);
-    $kelas = trim($_POST['class']);
+    $nis = trim($_POST['nis'] ?? '');
+    $nama = trim($_POST['full_name'] ?? '');
+    $kelas = trim($_POST['class'] ?? '');
     
-    if (!empty($nama)) {
-        // Generate Username (nama kecil, tanpa spasi + angka acak)
-        $parts = explode(" ", $nama);
-        $firstName = $parts[0];
-        
-        // Aturan: Jika nama depan <= 2 huruf, gunakan kata ke-1 dan ke-2
-        if (strlen($firstName) <= 2 && count($parts) > 1) {
-            $usernameBase = strtolower($parts[0] . $parts[1]);
-        } else {
-            $usernameBase = strtolower($firstName);
-        }
-        
-        $usernameBase = str_replace(' ', '', $usernameBase);
-        $username = $usernameBase . rand(10, 99);
-
-        // Proteksi duplikat username
-        $check = $pdo->prepare("SELECT COUNT(*) FROM students WHERE username = ?");
-        $check->execute([$username]);
+    if (!empty($nis) && !empty($nama)) {
+        // Proteksi duplikat NIS
+        $check = $pdo->prepare("SELECT COUNT(*) FROM students WHERE nis = ?");
+        $check->execute([$nis]);
         if ($check->fetchColumn() > 0) {
-            $username = $usernameBase . rand(100, 999);
+            header("Location: ../../dashboard.php?page=students&status=nis_exists");
+            exit;
         }
 
         // Password Default: 123456
         $password = password_hash('123456', PASSWORD_DEFAULT);
 
-        $stmt = $pdo->prepare("INSERT INTO students (username, password, full_name, class) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$username, $password, $nama, $kelas]);
+        $stmt = $pdo->prepare("INSERT INTO students (nis, password, full_name, class) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$nis, $password, $nama, $kelas]);
         
         header("Location: ../../dashboard.php?page=students&status=success");
     } else {
@@ -44,15 +32,24 @@ if ($action == 'add_single' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     exit;
 }
 
-// --- FITUR BARU: EDIT DATA SISWA ---
+// --- FITUR: EDIT DATA SISWA & NIS ---
 if ($action == 'edit' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     $id = (int)$_POST['id'];
-    $nama = trim($_POST['full_name']);
-    $kelas = trim($_POST['class']);
+    $nis = trim($_POST['nis'] ?? '');
+    $nama = trim($_POST['full_name'] ?? '');
+    $kelas = trim($_POST['class'] ?? '');
     
-    if (!empty($id) && !empty($nama)) {
-        $stmt = $pdo->prepare("UPDATE students SET full_name = ?, class = ? WHERE id = ?");
-        $stmt->execute([$nama, $kelas, $id]);
+    if (!empty($id) && !empty($nis) && !empty($nama)) {
+        // Cek duplikasi NIS untuk siswa lain
+        $check = $pdo->prepare("SELECT COUNT(*) FROM students WHERE nis = ? AND id != ?");
+        $check->execute([$nis, $id]);
+        if ($check->fetchColumn() > 0) {
+            header("Location: ../../dashboard.php?page=students&status=nis_exists");
+            exit;
+        }
+
+        $stmt = $pdo->prepare("UPDATE students SET nis = ?, full_name = ?, class = ? WHERE id = ?");
+        $stmt->execute([$nis, $nama, $kelas, $id]);
         header("Location: ../../dashboard.php?page=students&status=updated");
     } else {
         header("Location: ../../dashboard.php?page=students&status=error");
@@ -60,7 +57,7 @@ if ($action == 'edit' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     exit;
 }
 
-// Logika Import Excel
+// Logika Import CSV dengan NIS
 if ($action == 'import' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_FILES['file_excel']) && $_FILES['file_excel']['error'] == 0) {
         $file = $_FILES['file_excel']['tmp_name'];
@@ -71,34 +68,18 @@ if ($action == 'import' && $_SERVER['REQUEST_METHOD'] == 'POST') {
         $delimiter = (strpos($firstLine, ';') !== false) ? ';' : ',';
         rewind($handle); // Kembali ke awal file
 
-        fgetcsv($handle, 1000, $delimiter); // Skip header
+        fgetcsv($handle, 1000, $delimiter); // Skip baris header
+
+        $password = password_hash('123456', PASSWORD_DEFAULT);
+        $stmt = $pdo->prepare("INSERT INTO students (nis, password, full_name, class) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE full_name = VALUES(full_name), class = VALUES(class)");
 
         while (($data = fgetcsv($handle, 1000, $delimiter)) !== FALSE) {
-            $nama = trim($data[0] ?? '');
-            $kelas = trim($data[1] ?? ''); // Kolom kedua untuk kelas
-            if (empty($nama)) continue;
+            $nis = trim($data[0] ?? '');
+            $nama = trim($data[1] ?? '');
+            $kelas = trim($data[2] ?? '');
+            if (empty($nis) || empty($nama)) continue;
 
-            $parts = explode(" ", $nama);
-            $firstName = $parts[0];
-            
-            // Aturan: Jika nama depan <= 2 huruf, gunakan kata ke-1 dan ke-2
-            if (strlen($firstName) <= 2 && count($parts) > 1) {
-                $usernameBase = strtolower($parts[0] . $parts[1]);
-            } else {
-                $usernameBase = strtolower($firstName);
-            }
-            
-            $usernameBase = str_replace(' ', '', $usernameBase);
-            $username = $usernameBase . rand(10, 99);
-            
-            // Cek duplikat
-            $check = $pdo->prepare("SELECT COUNT(*) FROM students WHERE username = ?");
-            $check->execute([$username]);
-            if ($check->fetchColumn() > 0) $username = $usernameBase . rand(100, 999);
-
-            $password = password_hash('123456', PASSWORD_DEFAULT);
-            $stmt = $pdo->prepare("INSERT INTO students (username, password, full_name, class) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$username, $password, $nama, $kelas]);
+            $stmt->execute([$nis, $password, $nama, $kelas]);
         }
         fclose($handle);
         header("Location: ../../dashboard.php?page=students&status=success");

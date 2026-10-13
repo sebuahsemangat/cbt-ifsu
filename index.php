@@ -23,9 +23,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt->execute([$username]);
         $user = $stmt->fetch();
 
-        // 2. Jika tidak ada di admin, cek di tabel Student
+        // 2. Jika tidak ada di admin, cek di tabel Student berdasarkan NIS
         if (!$user) {
-            $stmt = $pdo->prepare("SELECT id, password, full_name, is_logged_in, 'student' AS role FROM students WHERE username = ?");
+            $stmt = $pdo->prepare("SELECT id, password, full_name, is_logged_in, 'student' AS role FROM students WHERE nis = ?");
             $stmt->execute([$username]);
             $user = $stmt->fetch();
         }
@@ -40,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 // Set Session
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $username;
+                $_SESSION['nis'] = ($user['role'] == 'student') ? $username : null;
                 $_SESSION['full_name'] = $user['full_name'];
                 $_SESSION['role'] = $user['role'];
 
@@ -57,10 +58,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 exit;
             }
         } else {
-            $error = "Username atau Password salah!";
+            $error = "NIS / Username atau Password salah!";
         }
     } else {
-        $error = "Harap isi username dan password!";
+        $error = "Harap isi NIS / Username dan Password!";
     }
 }
 
@@ -239,11 +240,11 @@ $login_logo_version = (file_exists($login_logo_path) && is_file($login_logo_path
 
                 <form action="" method="POST">
                     <div class="mb-3">
-                        <label class="form-label text-muted small fw-bold">USERNAME</label>
+                        <label class="form-label text-muted small fw-bold">NIS</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-person text-primary"></i></span>
-                            <input type="text" name="username" class="form-control" placeholder="Masukkan username"
-                                required autocomplete="off">
+                            <input type="text" name="username" class="form-control" placeholder="Masukkan NIS" required
+                                autocomplete="off" autofocus>
                         </div>
                     </div>
 
