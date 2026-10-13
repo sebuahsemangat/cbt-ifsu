@@ -21,7 +21,7 @@ if (!$sessionId) {
 
 // Get Session Info
 $stmt = $pdo->prepare("
-    SELECT qs.*, s.name as subject_name, e.exam_name 
+    SELECT qs.*, s.name as subject_name, e.exam_name, e.allow_review 
     FROM exam_sessions qs
     JOIN subjects s ON qs.subject_id = s.id
     JOIN exams e ON qs.exam_id = e.id
@@ -34,27 +34,44 @@ if (!$session) {
     die("Session not found.");
 }
 
-// Get Questions and Answers for Review
-$stmtQ = $pdo->prepare("SELECT * FROM questions WHERE subject_id = ?");
-$stmtQ->execute([$session['subject_id']]);
-$questions = $stmtQ->fetchAll(PDO::FETCH_ASSOC);
-
-// Get Answers - ambil jawaban terbaru per soal (hindari duplikat dari bug lama)
-$stmtAns = $pdo->prepare("
-    SELECT sa.* FROM student_answers sa
-    INNER JOIN (
-        SELECT question_id, MAX(answered_at) as latest
-        FROM student_answers WHERE session_id = ?
-        GROUP BY question_id
-    ) latest_ans ON sa.question_id = latest_ans.question_id AND sa.answered_at = latest_ans.latest
-    WHERE sa.session_id = ?
-");
-$stmtAns->execute([$sessionId, $sessionId]);
-$answers = $stmtAns->fetchAll(PDO::FETCH_ASSOC);
-
+// Get Questions and Answers for Review (hanya jika fitur review diizinkan)
+$questions = [];
 $answerMap = [];
-foreach ($answers as $ans) {
-    $answerMap[$ans['question_id']] = json_decode($ans['answer_data'], true);
+
+if (!empty($session['allow_review'])) {
+    $stmtQ = $pdo->prepare("SELECT * FROM questions WHERE subject_id = ? ORDER BY id ASC");
+    $stmtQ->execute([$session['subject_id']]);
+    $questions = $stmtQ->fetchAll(PDO::FETCH_ASSOC);
+
+    // Sesuaikan urutan soal jika sesi memiliki urutan khusus (question_order)
+    if (!empty($session['question_order'])) {
+        $savedOrder = json_decode($session['question_order'], true);
+        if (is_array($savedOrder) && !empty($savedOrder)) {
+            $orderMap = array_flip($savedOrder);
+            usort($questions, function ($a, $b) use ($orderMap) {
+                $posA = $orderMap[$a['id']] ?? 999999;
+                $posB = $orderMap[$b['id']] ?? 999999;
+                return $posA <=> $posB;
+            });
+        }
+    }
+
+    // Get Answers - ambil jawaban terbaru per soal
+    $stmtAns = $pdo->prepare("
+        SELECT sa.* FROM student_answers sa
+        INNER JOIN (
+            SELECT question_id, MAX(answered_at) as latest
+            FROM student_answers WHERE session_id = ?
+            GROUP BY question_id
+        ) latest_ans ON sa.question_id = latest_ans.question_id AND sa.answered_at = latest_ans.latest
+        WHERE sa.session_id = ?
+    ");
+    $stmtAns->execute([$sessionId, $sessionId]);
+    $answers = $stmtAns->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($answers as $ans) {
+        $answerMap[$ans['question_id']] = json_decode($ans['answer_data'], true);
+    }
 }
 
 // Check if all subjects are finished
@@ -80,6 +97,7 @@ $isAllDone = ($finishedSubjects >= $totalSubjects);
     <meta charset="UTF-8">
     <title>Hasil Ujian - <?= htmlspecialchars($session['subject_name']) ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Poppins', sans-serif; background: #f0f2f5; }
@@ -149,6 +167,7 @@ $isAllDone = ($finishedSubjects >= $totalSubjects);
         </div>
 
         <!-- Optional: Detailed Review -->
+        <?php if (!empty($session['allow_review'])): ?>
         <div class="card mt-4 mx-auto" style="max-width: 800px;">
             <div class="card-header bg-white fw-bold">Review Jawaban</div>
             <div class="card-body">
@@ -244,6 +263,7 @@ $isAllDone = ($finishedSubjects >= $totalSubjects);
                 <?php endforeach; ?>
             </div>
         </div>
+        <?php endif; ?>
     </div>
 </body>
 </html>
