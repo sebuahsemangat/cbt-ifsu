@@ -108,6 +108,13 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
             background: #fff;
             overflow: hidden;
             box-shadow: 0 8px 25px rgba(58, 121, 122, 0.08);
+            display: flex;
+            flex-direction: column;
+        }
+        .card-exam .card-body {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
         }
         .card-exam:hover {
             transform: translateY(-8px);
@@ -118,6 +125,31 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
             background-color: #fff;
             border-bottom: 1px solid #f1f5f9;
             padding: 1.5rem;
+        }
+        .btn-countdown {
+            background-color: #64748b;
+            color: #fff;
+            border: none;
+            font-variant-numeric: tabular-nums;
+        }
+        .btn-countdown:disabled {
+            opacity: 0.9;
+            background-color: #64748b;
+            color: #fff;
+            border: none;
+        }
+        .countdown-display {
+            font-family: monospace;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        @keyframes pulse-ready {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(58, 121, 122, 0.6); }
+            70% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(58, 121, 122, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(58, 121, 122, 0); }
+        }
+        .btn-ready-animate {
+            animation: pulse-ready 1.8s ease-in-out infinite;
         }
         .status-badge {
             font-size: 0.75rem;
@@ -304,7 +336,7 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
                         <div class="card-header-exam d-flex justify-content-between align-items-start">
                             <div style="flex: 1;">
                                 <h5 class="fw-bold mb-1 text-primary text-truncate" title="<?= htmlspecialchars($exam['exam_name']) ?>"><?= htmlspecialchars($exam['exam_name']) ?></h5>
-                                <span class="badge <?= $badgeClass ?> status-badge"><?= $status ?></span>
+                                <span class="badge <?= $badgeClass ?> status-badge" id="badge-exam-<?= $exam['id'] ?>"><?= $status ?></span>
                             </div>
                             <!-- Icon/Decoration -->
                         </div>
@@ -320,25 +352,52 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
                                 </li>
                             </ul>
                             
-                            <!-- Progress Bar -->
-                            <?php if ($totalSubjects > 0): ?>
-                            <div class="mb-4">
-                                <div class="d-flex justify-content-between small mb-1">
-                                    <span class="text-muted">Progres Pengerjaan</span>
-                                    <span class="fw-bold text-primary"><?= $progress ?>%</span>
+                            <?php if ($now < $start): ?>
+                                <!-- Info Placeholder Saat Ujian Belum Dimulai -->
+                                <div class="mb-4 p-3 rounded-3 bg-light border border-light-subtle text-center" id="info-box-<?= $exam['id'] ?>">
+                                    <div class="text-muted small mb-1 d-flex align-items-center justify-content-center gap-1">
+                                        <i class="bi bi-hourglass-split text-warning"></i>
+                                        <span class="fw-semibold">Ujian Belum Dimulai</span>
+                                    </div>
+                                    <div class="small text-secondary">
+                                        <?= $totalSubjects > 0 ? "Total: <strong>{$totalSubjects} Mata Pelajaran</strong>" : 'Jadwal telah ditentukan' ?>
+                                    </div>
                                 </div>
-                                <div class="progress" style="height: 10px; border-radius: 5px;">
-                                    <div class="progress-bar bg-success" role="progressbar" style="width: <?= $progress ?>%"></div>
+                                <?php if ($totalSubjects > 0): ?>
+                                <div class="mb-4 d-none" id="progress-box-<?= $exam['id'] ?>">
+                                    <div class="d-flex justify-content-between small mb-1">
+                                        <span class="text-muted">Progres Pengerjaan</span>
+                                        <span class="fw-bold text-primary">0%</span>
+                                    </div>
+                                    <div class="progress" style="height: 10px; border-radius: 5px;">
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+                                    </div>
+                                    <div class="text-end mt-1">
+                                        <small class="text-muted" style="font-size: 0.75rem;">
+                                            0 dari <?= $totalSubjects ?> Mapel Selesai
+                                        </small>
+                                    </div>
                                 </div>
-                                <div class="text-end mt-1">
-                                    <small class="text-muted" style="font-size: 0.75rem;">
-                                        <?= $finishedSubjects ?> dari <?= $totalSubjects ?> Mapel Selesai
-                                    </small>
+                                <?php endif; ?>
+                            <?php elseif ($totalSubjects > 0): ?>
+                                <!-- Progress Bar Saat Ujian Sudah Berlangsung / Selesai -->
+                                <div class="mb-4">
+                                    <div class="d-flex justify-content-between small mb-1">
+                                        <span class="text-muted">Progres Pengerjaan</span>
+                                        <span class="fw-bold text-primary"><?= $progress ?>%</span>
+                                    </div>
+                                    <div class="progress" style="height: 10px; border-radius: 5px;">
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: <?= $progress ?>%"></div>
+                                    </div>
+                                    <div class="text-end mt-1">
+                                        <small class="text-muted" style="font-size: 0.75rem;">
+                                            <?= $finishedSubjects ?> dari <?= $totalSubjects ?> Mapel Selesai
+                                        </small>
+                                    </div>
                                 </div>
-                            </div>
                             <?php endif; ?>
                             
-                            <div class="d-grid gap-2">
+                            <div class="mt-auto d-grid gap-2">
                                 <?php if ($progress >= 100 && $totalSubjects > 0): ?>
                                     <button class="btn btn-secondary btn-start disabled" disabled>
                                         <i class='bi bi-check-circle-fill me-2'></i>Sudah Selesai
@@ -348,12 +407,19 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
                                             <i class="bi bi-journal-text"></i> Lihat Pembahasan
                                         </a>
                                     <?php endif; ?>
+                                <?php elseif ($now < $start): ?>
+                                    <button class="btn btn-secondary btn-start disabled btn-countdown"
+                                            id="btn-exam-<?= $exam['id'] ?>"
+                                            data-exam-id="<?= $exam['id'] ?>"
+                                            data-exam-name="<?= htmlspecialchars($exam['exam_name'], ENT_QUOTES) ?>"
+                                            data-start-time="<?= date('c', strtotime($start)) ?>"
+                                            data-progress="<?= $progress ?>"
+                                            disabled>
+                                        <i class="bi bi-clock-history me-1"></i> Menunggu Jadwal <span class="countdown-display ms-1">(--:--:--)</span>
+                                    </button>
                                 <?php elseif ($btnDisabled): ?>
                                     <button class="btn btn-secondary btn-start disabled" disabled>
-                                        <?php 
-                                            if ($now < $start) echo "Menunggu Jadwal";
-                                            else echo "Ujian Ditutup";
-                                        ?>
+                                        Ujian Ditutup
                                     </button>
                                 <?php else: ?>
                                     <button class="btn btn-primary btn-start" 
@@ -449,6 +515,91 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
         var myModal = new bootstrap.Modal(document.getElementById('tokenModal'));
         myModal.show();
     }
+
+    // --- COUNTDOWN ENGINE & AUTO-ACTIVATE BUTTON ---
+    // Sinkronisasi Waktu Server PHP dengan Browser Siswa
+    const serverTimestamp = <?= time() * 1000 ?>;
+    const clientTimestamp = Date.now();
+    const timeOffset = serverTimestamp - clientTimestamp;
+
+    function getServerNow() {
+        return Date.now() + timeOffset;
+    }
+
+    function formatCountdown(distanceMs) {
+        if (distanceMs <= 0) return '00:00:00';
+        
+        const totalSeconds = Math.floor(distanceMs / 1000);
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        
+        const pad = (n) => String(n).padStart(2, '0');
+        
+        if (days > 0) {
+            return `${days}h ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+        }
+        return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    }
+
+    function activateExam(btn) {
+        const examId = btn.getAttribute('data-exam-id');
+        const examName = btn.getAttribute('data-exam-name');
+        const progress = parseInt(btn.getAttribute('data-progress') || '0', 10);
+        
+        // Aktifkan Tombol
+        btn.classList.remove('btn-secondary', 'disabled', 'btn-countdown');
+        btn.classList.add('btn-primary', 'btn-ready-animate');
+        btn.removeAttribute('disabled');
+        btn.innerHTML = `<i class="bi bi-play-circle me-1"></i> ${progress > 0 ? 'Lanjutkan Ujian' : 'Mulai Ujian'}`;
+        btn.onclick = function() {
+            openTokenModal(examId, examName);
+        };
+        
+        // Update Badge Status di Header
+        const badge = document.getElementById(`badge-exam-${examId}`);
+        if (badge) {
+            badge.className = 'badge bg-success status-badge';
+            badge.textContent = progress > 0 ? 'Sedang Dikerjakan' : 'Berlangsung';
+        }
+        
+        // Sembunyikan Info Belum Dimulai & Munculkan Progress Box jika ada
+        const infoBox = document.getElementById(`info-box-${examId}`);
+        const progressBox = document.getElementById(`progress-box-${examId}`);
+        if (infoBox) infoBox.classList.add('d-none');
+        if (progressBox) progressBox.classList.remove('d-none');
+    }
+
+    function updateCountdowns() {
+        const countdownButtons = document.querySelectorAll('.btn-countdown');
+        if (countdownButtons.length === 0) return;
+        
+        const now = getServerNow();
+        
+        countdownButtons.forEach(btn => {
+            const startTimeStr = btn.getAttribute('data-start-time');
+            if (!startTimeStr) return;
+            
+            const startTime = new Date(startTimeStr).getTime();
+            const distance = startTime - now;
+            
+            if (distance <= 0) {
+                activateExam(btn);
+            } else {
+                const displaySpan = btn.querySelector('.countdown-display');
+                if (displaySpan) {
+                    displaySpan.textContent = `(${formatCountdown(distance)})`;
+                }
+            }
+        });
+    }
+
+    // Jalankan segera saat halaman selesai dimuat, lalu tiap detik
+    document.addEventListener('DOMContentLoaded', function() {
+        updateCountdowns();
+        setInterval(updateCountdowns, 1000);
+    });
 </script>
 
 </body>

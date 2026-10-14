@@ -28,7 +28,31 @@ if (isset($_POST['exam_id'])) {
     $exam_id = $_POST['exam_id'];
     $token_input = strtoupper(trim($_POST['token'] ?? ''));
     
-    // Verifikasi Token
+    // 1a. Validasi Jadwal Ujian Terlebih Dahulu (Anti Inspect Element / Bypass)
+    $stmtCheck = $pdo->prepare("SELECT start_date, end_date FROM exams WHERE id = ?");
+    $stmtCheck->execute([$exam_id]);
+    $examSchedule = $stmtCheck->fetch();
+    
+    $now = date('Y-m-d H:i:s');
+    if (!$examSchedule) {
+        $_SESSION['error_token'] = "Ujian tidak ditemukan.";
+        header("Location: dashboard.php");
+        exit;
+    }
+    
+    if ($now < $examSchedule['start_date']) {
+        $_SESSION['error_token'] = "Ujian belum dimulai! Akses ditolak.";
+        header("Location: dashboard.php");
+        exit;
+    }
+    
+    if ($now > $examSchedule['end_date']) {
+        $_SESSION['error_token'] = "Jadwal ujian telah berakhir. Akses ditolak.";
+        header("Location: dashboard.php");
+        exit;
+    }
+
+    // 1b. Verifikasi Token
     $stmt = $pdo->prepare("SELECT * FROM tokens WHERE exam_id = ? AND token_code = ? AND expires_at > NOW() ORDER BY id DESC LIMIT 1");
     $stmt->execute([$exam_id, $token_input]);
     if (!$stmt->fetch()) {
@@ -65,6 +89,20 @@ $stmtExam->execute([$exam_id]);
 $exam = $stmtExam->fetch();
 
 if (!$exam) die("Exam not found");
+
+$nowCheck = date('Y-m-d H:i:s');
+if ($nowCheck < $exam['start_date']) {
+    unset($_SESSION['active_exam']);
+    $_SESSION['error_token'] = "Ujian belum dimulai! Akses ditolak.";
+    header("Location: dashboard.php");
+    exit;
+}
+if ($nowCheck > $exam['end_date']) {
+    unset($_SESSION['active_exam']);
+    $_SESSION['error_token'] = "Jadwal ujian telah berakhir.";
+    header("Location: dashboard.php");
+    exit;
+}
 
 // 3. Tentukan Mata Pelajaran Saat Ini
 // Ambil semua subject urut sort_order ASC (sesuai urutan yang diatur admin)
