@@ -12,8 +12,8 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'student') {
 
 $student_id = $_SESSION['user_id'];
 
-// Validasi status login dari database
-$stmt = $pdo->prepare("SELECT is_logged_in FROM students WHERE id = ?");
+// Validasi status login dan ambil info kelas siswa dari database
+$stmt = $pdo->prepare("SELECT is_logged_in, class FROM students WHERE id = ?");
 $stmt->execute([$student_id]);
 $student_status = $stmt->fetch();
 
@@ -22,6 +22,8 @@ if (!$student_status || $student_status['is_logged_in'] == 0) {
     header("Location: ../logout.php");
     exit;
 }
+
+$student_class = trim($student_status['class'] ?? '');
 
 $message = '';
 
@@ -50,14 +52,15 @@ if (isset($_POST['change_password'])) {
     }
 }
 
-// --- AMBIL DAFTAR UJIAN ---
-// Mengambil semua ujian beserta jumlah mapel dan progress-nya dalam satu query (Optimasi N+1)
+// --- AMBIL DAFTAR UJIAN SESUAI KELAS SISWA ---
+// Siswa hanya dapat mengakses ujian yang mengizinkan kelas mereka
 $stmt = $pdo->prepare("SELECT e.*, 
     (SELECT COUNT(*) FROM subjects s WHERE s.exam_id = e.id) as total_subjects_cnt,
     (SELECT COUNT(*) FROM exam_sessions es WHERE es.exam_id = e.id AND es.student_id = ? AND es.status = 'finished') as finished_subjects_cnt
 FROM exams e
+JOIN exam_classes ec ON ec.exam_id = e.id AND ec.class_name = ?
 ORDER BY e.start_date DESC");
-$stmt->execute([$student_id]);
+$stmt->execute([$student_id, $student_class]);
 $exams = $stmt->fetchAll();
 
 // === AMBIL SETTING DARI DATABASE ===

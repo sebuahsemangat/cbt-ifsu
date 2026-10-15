@@ -5,6 +5,22 @@ require_once '../includes/auth_check.php';
 // Ambil data ujian
 $stmt = $pdo->query("SELECT * FROM exams ORDER BY start_date DESC");
 $exams = $stmt->fetchAll();
+
+// Ambil semua daftar kelas yang tersedia
+$stmt_classes = $pdo->query("
+    SELECT DISTINCT class FROM students WHERE class IS NOT NULL AND class != ''
+    UNION
+    SELECT DISTINCT class_name as class FROM exam_classes WHERE class_name IS NOT NULL AND class_name != ''
+    ORDER BY class ASC
+");
+$available_classes = $stmt_classes->fetchAll(PDO::FETCH_COLUMN);
+
+// Ambil pemetaan kelas per ujian
+$stmt_ec = $pdo->query("SELECT exam_id, class_name FROM exam_classes ORDER BY class_name ASC");
+$exam_classes_map = [];
+while ($row = $stmt_ec->fetch(PDO::FETCH_ASSOC)) {
+    $exam_classes_map[$row['exam_id']][] = $row['class_name'];
+}
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -24,6 +40,11 @@ $exams = $stmt->fetchAll();
         Waktu selesai tidak boleh lebih kecil dari waktu mulai!
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
+<?php elseif (isset($_GET['status']) && $_GET['status'] == 'error_no_class'): ?>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-1"></i> Pilih minimal 1 kelas yang diizinkan mengakses ujian!
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
 <?php endif; ?>
 
 <div class="card border-0 shadow-sm">
@@ -34,6 +55,7 @@ $exams = $stmt->fetchAll();
                     <tr>
                         <th width="50px"></th> 
                         <th class="px-4">Nama Ujian</th>
+                        <th>Akses Kelas</th>
                         <th>Waktu</th>
                         <th class="text-center">Token Ujian</th> 
                         <th>Status</th>
@@ -49,6 +71,8 @@ $exams = $stmt->fetchAll();
                         $now = date('Y-m-d H:i:s');
                         $is_started = ($now >= $e['start_date'] && $now <= $e['end_date']);
                         $is_finished = ($now > $e['end_date']);
+                        $e_classes = $exam_classes_map[$e['id']] ?? [];
+                        $total_avail = count($available_classes);
                     ?>
                     <tr>
                         <td class="text-center">
@@ -57,6 +81,28 @@ $exams = $stmt->fetchAll();
                             </button>
                         </td>
                         <td class="px-4 fw-bold text-primary"><?= htmlspecialchars($e['exam_name']) ?></td>
+                        <td>
+                            <?php if (empty($e_classes)): ?>
+                                <span class="badge bg-danger"><i class="bi bi-exclamation-circle me-1"></i>Belum Ada Kelas</span>
+                            <?php elseif (count($e_classes) === $total_avail && $total_avail > 0): ?>
+                                <span class="badge bg-success" title="<?= htmlspecialchars(implode(', ', $e_classes)) ?>">
+                                    <i class="bi bi-check-all me-1"></i>Semua Kelas (<?= count($e_classes) ?>)
+                                </span>
+                            <?php else: ?>
+                                <div class="d-flex flex-wrap gap-1" style="max-width: 200px;">
+                                    <?php 
+                                    $shown = array_slice($e_classes, 0, 2);
+                                    foreach ($shown as $cls): ?>
+                                        <span class="badge bg-info text-dark" style="font-size: 0.72rem;"><?= htmlspecialchars($cls) ?></span>
+                                    <?php endforeach; ?>
+                                    <?php if (count($e_classes) > 2): ?>
+                                        <span class="badge bg-secondary" style="font-size: 0.72rem;" title="<?= htmlspecialchars(implode(', ', $e_classes)) ?>">
+                                            +<?= count($e_classes) - 2 ?> lainnya
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
+                        </td>
                         <td>
                             <small class="d-block text-muted">Mulai: <?= date('d M Y, H:i', strtotime($e['start_date'])) ?></small>
                             <small class="d-block text-muted">Selesai: <?= date('d M Y, H:i', strtotime($e['end_date'])) ?></small>
@@ -147,7 +193,7 @@ $exams = $stmt->fetchAll();
                     </tr>
                     
                     <tr class="collapse" id="subject-<?= $e['id'] ?>">
-                        <td colspan="9" class="bg-light p-4">
+                        <td colspan="10" class="bg-light p-4">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h6 class="fw-bold mb-0"><i class="bi bi-book me-2"></i>Daftar Mata Pelajaran</h6>
                                 <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addSubjectModal<?= $e['id'] ?>">
@@ -333,10 +379,37 @@ $exams = $stmt->fetchAll();
                                             <label class="form-check-label fw-semibold" for="editRandomizeQuestions<?= $e['id'] ?>">Acak Tampilan Soal Siswa</label>
                                             <div class="form-text">Jika aktif, urutan soal diacak untuk setiap siswa. Jika nonaktif, soal ditampilkan berurutan.</div>
                                         </div>
-                                        <div class="form-check form-switch mb-2">
+                                        <div class="form-check form-switch mb-3">
                                             <input class="form-check-input" type="checkbox" name="show_score" id="editShowScore<?= $e['id'] ?>" value="1" <?= !empty($e['show_score']) ? 'checked' : '' ?>>
                                             <label class="form-check-label fw-semibold" for="editShowScore<?= $e['id'] ?>">Tampilkan Nilai ke Siswa</label>
                                             <div class="form-text">Jika aktif, nilai akan ditampilkan ke siswa setelah mengerjakan ujian.</div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <label class="form-label fw-bold mb-0">
+                                                    <i class="bi bi-people-fill text-primary me-1"></i>Kelas yang Diizinkan Mengakses
+                                                </label>
+                                                <div class="btn-group btn-group-sm">
+                                                    <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2" onclick="toggleAllClasses('editExamModal<?= $e['id'] ?>', true)">Pilih Semua</button>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" onclick="toggleAllClasses('editExamModal<?= $e['id'] ?>', false)">Hapus Semua</button>
+                                                </div>
+                                            </div>
+                                            <small class="text-muted d-block mb-2">Hanya siswa pada kelas yang dicentang yang dapat melihat dan mengerjakan ujian ini.</small>
+                                            <div class="border rounded-3 p-3 bg-light" style="max-height: 180px; overflow-y: auto;">
+                                                <div class="row row-cols-2 g-2">
+                                                    <?php foreach ($available_classes as $c): ?>
+                                                        <div class="col">
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="checkbox" name="classes[]" value="<?= htmlspecialchars($c) ?>" id="edit_cls_<?= $e['id'] ?>_<?= md5($c) ?>" <?= in_array($c, $e_classes) ? 'checked' : '' ?>>
+                                                                <label class="form-check-label small" for="edit_cls_<?= $e['id'] ?>_<?= md5($c) ?>">
+                                                                    <?= htmlspecialchars($c) ?>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="modal-footer">
@@ -350,7 +423,7 @@ $exams = $stmt->fetchAll();
                     <?php endforeach; ?>
 
                     <?php if (empty($exams)): ?>
-                        <tr><td colspan="9" class="text-center p-4 text-muted">Belum ada jadwal ujian.</td></tr>
+                        <tr><td colspan="10" class="text-center p-4 text-muted">Belum ada jadwal ujian.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -391,10 +464,37 @@ $exams = $stmt->fetchAll();
                         <label class="form-check-label fw-semibold" for="addRandomizeQuestions">Acak Tampilan Soal Siswa (Default: Acak)</label>
                         <div class="form-text">Jika aktif, urutan soal diacak untuk setiap siswa. Jika nonaktif, soal ditampilkan berurutan.</div>
                     </div>
-                    <div class="form-check form-switch mb-2">
+                    <div class="form-check form-switch mb-3">
                         <input class="form-check-input" type="checkbox" name="show_score" id="addShowScore" value="1">
                         <label class="form-check-label fw-semibold" for="addShowScore">Tampilkan Nilai ke Siswa (Default: Nonaktif)</label>
                         <div class="form-text">Jika tidak dicentang, nilai tidak akan diperlihatkan kepada siswa setelah ujian selesai.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label fw-bold mb-0">
+                                <i class="bi bi-people-fill text-primary me-1"></i>Kelas yang Diizinkan Mengakses
+                            </label>
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2" onclick="toggleAllClasses('addExamModal', true)">Pilih Semua</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" onclick="toggleAllClasses('addExamModal', false)">Hapus Semua</button>
+                            </div>
+                        </div>
+                        <small class="text-muted d-block mb-2">Pilih kelas yang diizinkan mengakses ujian ini. Default: semua kelas terpilih.</small>
+                        <div class="border rounded-3 p-3 bg-light" style="max-height: 180px; overflow-y: auto;">
+                            <div class="row row-cols-2 g-2">
+                                <?php foreach ($available_classes as $c): ?>
+                                    <div class="col">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="classes[]" value="<?= htmlspecialchars($c) ?>" id="add_cls_<?= md5($c) ?>" checked>
+                                            <label class="form-check-label small" for="add_cls_<?= md5($c) ?>">
+                                                <?= htmlspecialchars($c) ?>
+                                            </label>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -483,10 +583,12 @@ function startTimer(examId, duration) {
     tokenTimers[examId] = setInterval(updateDisplay, 1000);
 }
 
-// Cek jika ada token yang aktif saat halaman di-load (Opsional: Bisa dijalankan otomatis)
-// document.addEventListener('DOMContentLoaded', () => {
-//    Cek local storage atau panggil API untuk cek status token yang sedang aktif
-// });
+function toggleAllClasses(modalId, checkStatus) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    const checkboxes = modal.querySelectorAll('input[type="checkbox"][name="classes[]"]');
+    checkboxes.forEach(cb => cb.checked = checkStatus);
+}
 </script>
 
 <style>

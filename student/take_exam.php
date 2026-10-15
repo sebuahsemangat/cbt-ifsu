@@ -52,7 +52,20 @@ if (isset($_POST['exam_id'])) {
         exit;
     }
 
-    // 1b. Verifikasi Token
+    // 1b. Validasi Kelas Siswa (Akses hanya untuk kelas yang diizinkan)
+    $stmtClassCheck = $pdo->prepare("
+        SELECT COUNT(*) FROM exam_classes ec 
+        JOIN students s ON s.class = ec.class_name 
+        WHERE ec.exam_id = ? AND s.id = ?
+    ");
+    $stmtClassCheck->execute([$exam_id, $student_id]);
+    if ($stmtClassCheck->fetchColumn() == 0) {
+        $_SESSION['error_token'] = "Akses ditolak. Ujian ini tidak dibuka untuk kelas Anda.";
+        header("Location: dashboard.php");
+        exit;
+    }
+
+    // 1c. Verifikasi Token
     $stmt = $pdo->prepare("SELECT * FROM tokens WHERE exam_id = ? AND token_code = ? AND expires_at > NOW() ORDER BY id DESC LIMIT 1");
     $stmt->execute([$exam_id, $token_input]);
     if (!$stmt->fetch()) {
@@ -100,6 +113,20 @@ if ($nowCheck < $exam['start_date']) {
 if ($nowCheck > $exam['end_date']) {
     unset($_SESSION['active_exam']);
     $_SESSION['error_token'] = "Jadwal ujian telah berakhir.";
+    header("Location: dashboard.php");
+    exit;
+}
+
+// Validasi Kelas Siswa untuk sesi aktif
+$stmtClassCheck = $pdo->prepare("
+    SELECT COUNT(*) FROM exam_classes ec 
+    JOIN students s ON s.class = ec.class_name 
+    WHERE ec.exam_id = ? AND s.id = ?
+");
+$stmtClassCheck->execute([$exam_id, $student_id]);
+if ($stmtClassCheck->fetchColumn() == 0) {
+    unset($_SESSION['active_exam']);
+    $_SESSION['error_token'] = "Akses ditolak. Ujian ini tidak dibuka untuk kelas Anda.";
     header("Location: dashboard.php");
     exit;
 }
