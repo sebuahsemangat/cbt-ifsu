@@ -47,6 +47,18 @@ try {
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$sessionId, $questionId, $answerData, $isDoubt]);
 
+    // Sinkronisasi sisa waktu jika disertakan
+    if (isset($input['remaining_seconds']) && is_numeric($input['remaining_seconds'])) {
+        $remSec = max(0, (int)$input['remaining_seconds']);
+        $stmtSess = $pdo->prepare("
+            UPDATE exam_sessions 
+            SET remaining_seconds = ?, 
+                end_time = DATE_ADD(NOW(), INTERVAL ? SECOND) 
+            WHERE id = ? AND student_id = ? AND status = 'ongoing'
+        ");
+        $stmtSess->execute([$remSec, $remSec, $sessionId, $_SESSION['user_id']]);
+    }
+
     echo json_encode(['status' => 'success']);
 
 } catch (PDOException $e) {

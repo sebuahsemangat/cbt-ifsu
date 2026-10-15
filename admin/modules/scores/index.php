@@ -40,7 +40,7 @@ if ($exam_id):
         exit;
     }
 
-    // Query untuk mengambil data nilai berdasarkan exam_id
+    // Query untuk mengambil data nilai yang telah final berdasarkan exam_id
     $query = "
         SELECT 
             es.id,
@@ -58,8 +58,8 @@ if ($exam_id):
         JOIN students s ON es.student_id = s.id
         JOIN exams e ON es.exam_id = e.id
         JOIN subjects sb ON es.subject_id = sb.id
-        WHERE es.exam_id = :exam_id
-        ORDER BY es.start_time DESC
+        WHERE es.exam_id = :exam_id AND es.status = 'finished'
+        ORDER BY es.end_time DESC, es.start_time DESC
     ";
 
     try {
@@ -72,7 +72,7 @@ if ($exam_id):
             SELECT DISTINCT s.class 
             FROM exam_sessions es 
             JOIN students s ON es.student_id = s.id 
-            WHERE es.exam_id = ?
+            WHERE es.exam_id = ? AND es.status = 'finished'
             ORDER BY s.class ASC
         ");
         $stmt_classes->execute([$exam_id]);
@@ -127,8 +127,7 @@ if ($exam_id):
                             <th scope="col">Kelas</th>
                             <th scope="col">Mata Pelajaran</th>
                             <th scope="col">Nilai</th>
-                            <th scope="col">Status</th>
-                            <th scope="col">Waktu Mengerjakan</th>
+                            <th scope="col">Waktu Selesai</th>
                             <th scope="col" class="text-center" style="width: 100px;">Aksi</th>
                         </tr>
                     </thead>
@@ -154,25 +153,13 @@ if ($exam_id):
                                         <span class="fw-bold <?= $scoreClass ?>"><?= number_format($row['score'], 2) ?></span>
                                     </td>
                                     <td>
-                                        <?php if ($row['status'] == 'finished'): ?>
-                                            <span class="badge bg-success">Selesai</span>
-                                        <?php else: ?>
-                                            <span class="badge bg-warning text-dark">Sedang Mengerjakan</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
                                         <small class="text-muted">
-                                            <?= date('d M Y H:i', strtotime($row['start_time'])) ?>
+                                            <?= !empty($row['end_time']) ? date('d M Y H:i', strtotime($row['end_time'])) : date('d M Y H:i', strtotime($row['start_time'])) ?>
                                         </small>
                                     </td>
                                     <td class="text-center">
                                         <div class="d-flex justify-content-center gap-1">
-                                            <?php if ($row['status'] != 'finished'): ?>
-                                                <button class="btn btn-warning btn-sm text-dark" onclick="finishExam(<?= $row['id'] ?>, '<?= htmlspecialchars($row['full_name']) ?>')" title="Selesaikan Ujian">
-                                                    <i class="bi bi-check-circle"></i>
-                                                </button>
-                                            <?php endif; ?>
-                                            <button class="btn btn-danger btn-sm" onclick="deleteScore(<?= $row['id'] ?>, '<?= htmlspecialchars($row['full_name']) ?>')" title="Hapus Nilai">
+                                            <button class="btn btn-danger btn-sm" onclick="deleteScore(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['full_name'])) ?>')" title="Hapus Nilai">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </div>
@@ -269,13 +256,6 @@ if ($exam_id):
         }
     }
 
-    // Fungsi untuk menyelesaikan ujian secara paksa
-    function finishExam(id, studentName) {
-        if (confirm(`Apakah Anda yakin ingin menyelesaikan paksa ujian untuk siswa "${studentName}"?\n\nSistem akan menghitung nilai berdasarkan jawaban yang sudah tersimpan.`)) {
-            // Redirect ke process.php dengan parameter finish
-            window.location.href = 'modules/scores/process.php?action=finish&id=' + id + '&exam_id=<?= $exam_id ?>';
-        }
-    }
 
     // Fungsi untuk menghapus semua data nilai pada ujian ini
     function deleteAllScores() {

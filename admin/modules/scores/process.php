@@ -37,8 +37,13 @@ if ($action === 'delete') {
         $_SESSION['error'] = "Gagal menghapus data: " . $e->getMessage();
     }
 
-    // Redirect kembali ke halaman nilai
-    header("Location: ../../dashboard.php?page=scores" . ($exam_id ? "&exam_id=" . $exam_id : ""));
+    // Redirect
+    $redirect = $_GET['redirect'] ?? 'scores';
+    if ($redirect === 'dashboard') {
+        header("Location: ../../dashboard.php?status=session_deleted");
+    } else {
+        header("Location: ../../dashboard.php?page=scores" . ($exam_id ? "&exam_id=" . $exam_id : ""));
+    }
     exit;
 }
 
@@ -72,9 +77,15 @@ if ($action === 'finish') {
     $id = $_GET['id'] ?? null;
     $exam_id = $_GET['exam_id'] ?? null;
 
+    $redirect = $_GET['redirect'] ?? 'scores';
+
     if (!$id) {
         $_SESSION['error'] = "ID sesi tidak valid.";
-        header("Location: ../../dashboard.php?page=scores" . ($exam_id ? "&exam_id=" . $exam_id : ""));
+        if ($redirect === 'dashboard') {
+            header("Location: ../../dashboard.php");
+        } else {
+            header("Location: ../../dashboard.php?page=scores" . ($exam_id ? "&exam_id=" . $exam_id : ""));
+        }
         exit;
     }
 
@@ -86,7 +97,11 @@ if ($action === 'finish') {
 
         if (!$session) {
             $_SESSION['error'] = "Sesi ujian tidak ditemukan.";
-            header("Location: ../../dashboard.php?page=scores" . ($exam_id ? "&exam_id=" . $exam_id : ""));
+            if ($redirect === 'dashboard') {
+                header("Location: ../../dashboard.php");
+            } else {
+                header("Location: ../../dashboard.php?page=scores" . ($exam_id ? "&exam_id=" . $exam_id : ""));
+            }
             exit;
         }
 
@@ -167,7 +182,7 @@ if ($action === 'finish') {
         }
 
         // 4. Update status sesi
-        $stmtUpd = $pdo->prepare("UPDATE exam_sessions SET score = ?, status = 'finished', end_time = NOW() WHERE id = ?");
+        $stmtUpd = $pdo->prepare("UPDATE exam_sessions SET score = ?, status = 'finished', remaining_seconds = 0, end_time = NOW() WHERE id = ?");
         $stmtUpd->execute([$score, $id]);
 
         $_SESSION['success'] = "Ujian siswa berhasil diselesaikan dan nilai telah dihitung.";
@@ -175,8 +190,12 @@ if ($action === 'finish') {
         $_SESSION['error'] = "Gagal menyelesaikan ujian: " . $e->getMessage();
     }
 
-    // Redirect kembali ke halaman nilai
-    header("Location: ../../dashboard.php?page=scores" . ($exam_id ? "&exam_id=" . $exam_id : ""));
+    // Redirect
+    if ($redirect === 'dashboard') {
+        header("Location: ../../dashboard.php?status=exam_finished");
+    } else {
+        header("Location: ../../dashboard.php?page=scores" . ($exam_id ? "&exam_id=" . $exam_id : ""));
+    }
     exit;
 }
 

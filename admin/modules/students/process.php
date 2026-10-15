@@ -92,7 +92,13 @@ if ($action == 'import' && $_SERVER['REQUEST_METHOD'] == 'POST') {
 // Fitur Reset Login Semua Siswa
 if ($action == 'reset_all_login') {
     $stmt = $pdo->query("UPDATE students SET is_logged_in = 0");
-    header("Location: ../../dashboard.php?page=students&status=all_resetted");
+    $redirect = $_GET['redirect'] ?? 'students';
+    if ($redirect === 'dashboard') {
+        $_SESSION['success'] = "Status login semua siswa berhasil direset!";
+        header("Location: ../../dashboard.php?status=all_resetted");
+    } else {
+        header("Location: ../../dashboard.php?page=students&status=all_resetted");
+    }
     exit;
 }
 
@@ -101,7 +107,13 @@ if ($action == 'reset_login' && isset($_GET['id'])) {
     $id = (int)$_GET['id'];
     $stmt = $pdo->prepare("UPDATE students SET is_logged_in = 0 WHERE id = ?");
     $stmt->execute([$id]);
-    header("Location: ../../dashboard.php?page=students&status=resetted");
+    $redirect = $_GET['redirect'] ?? 'students';
+    if ($redirect === 'dashboard') {
+        $_SESSION['success'] = "Status login siswa berhasil direset!";
+        header("Location: ../../dashboard.php?status=resetted");
+    } else {
+        header("Location: ../../dashboard.php?page=students&status=resetted");
+    }
     exit;
 }
 

@@ -359,6 +359,7 @@ function _doSaveAnswer(qid, data, doubt, retryCount) {
       question_id: qid,
       answer_data: data,
       is_doubt: doubt,
+      remaining_seconds: remainingSeconds
     }),
   })
     .then((res) => {
@@ -482,6 +483,37 @@ function setFontSize(size) {
   event.target.closest("button").classList.add("active");
 }
 
+let _isSyncingTime = false;
+let _lastSyncedSeconds = null;
+
+function syncRemainingTime(force = false) {
+  if (typeof remainingSeconds === "undefined" || remainingSeconds === null || !sessionId) return;
+  if (!force && _lastSyncedSeconds === remainingSeconds) return;
+
+  _lastSyncedSeconds = remainingSeconds;
+  _isSyncingTime = true;
+
+  fetch("sync_time.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      session_id: sessionId,
+      remaining_seconds: remainingSeconds
+    })
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      // Optional logging for debugging
+      // console.log("[CBT Sync OK]", data);
+    })
+    .catch((err) => {
+      // console.warn("[CBT Sync Err]", err);
+    })
+    .finally(() => {
+      _isSyncingTime = false;
+    });
+}
+
 function startTimer() {
   const display = document.getElementById("exam-timer");
   
@@ -493,16 +525,24 @@ function startTimer() {
     return;
   }
 
+  // Sync pertama kali saat ujian dibuka
+  syncRemainingTime(true);
+
   const interval = setInterval(() => {
     remainingSeconds--;
     if (remainingSeconds <= 0) {
       clearInterval(interval);
       display.textContent = "00:00:00";
+      syncRemainingTime(true);
       alert("Waktu Habis! Mengumpulkan jawaban otomatis.");
       submitExamForce();
       return;
     }
-    // Sync logic could go here
+
+    // Sync berkala ke server setiap 3 detik agar waktu tersimpan jika komputer mati mendadak
+    if (remainingSeconds % 3 === 0) {
+      syncRemainingTime();
+    }
 
     const h = Math.floor(remainingSeconds / 3600);
     const m = Math.floor((remainingSeconds % 3600) / 60);
@@ -510,6 +550,31 @@ function startTimer() {
     display.textContent = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   }, 1000);
 }
+
+// Simpan sisa waktu saat halaman ditutup atau siswa beralih tab
+window.addEventListener("beforeunload", () => {
+  if (typeof remainingSeconds !== "undefined" && remainingSeconds !== null && sessionId) {
+    const fd = new FormData();
+    fd.append("session_id", sessionId);
+    fd.append("remaining_seconds", remainingSeconds);
+
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon("sync_time.php", fd);
+    } else {
+      fetch("sync_time.php", {
+        method: "POST",
+        body: fd,
+        keepalive: true
+      }).catch(() => {});
+    }
+  }
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    syncRemainingTime(true);
+  }
+});
 
 function finishExam() {
   if (typeof _pendingSavesSet !== "undefined" && _pendingSavesSet.size > 0)

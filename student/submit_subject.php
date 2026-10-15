@@ -147,7 +147,7 @@ if ($totalQuestions > 0) {
 }
 
 // Update Session
-$stmtUpd = $pdo->prepare("UPDATE exam_sessions SET score = ?, status = 'finished', end_time = NOW() WHERE id = ?");
+$stmtUpd = $pdo->prepare("UPDATE exam_sessions SET score = ?, status = 'finished', remaining_seconds = 0, end_time = NOW() WHERE id = ?");
 $stmtUpd->execute([$score, $sessionId]);
 
 // Cek pengaturan tampilkan nilai pada ujian

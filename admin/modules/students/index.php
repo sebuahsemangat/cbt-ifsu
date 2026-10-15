@@ -41,6 +41,9 @@ $classes = $stmt_classes->fetchAll(PDO::FETCH_COLUMN);
         <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addSingleModal">
             <i class="bi bi-person-plus"></i> Tambah Siswa
         </button>
+        <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#printCardModal">
+            <i class="bi bi-printer"></i> Cetak Kartu Ujian
+        </button>
         <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#exportModalStudents">
             <i class="bi bi-file-earmark-excel"></i> Export Excel
         </button>
@@ -50,10 +53,6 @@ $classes = $stmt_classes->fetchAll(PDO::FETCH_COLUMN);
         <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#importModal">
             <i class="bi bi-file-earmark-excel"></i> Import
         </button>
-        <a href="modules/students/process.php?action=reset_all_login" class="btn btn-sm btn-outline-danger"
-           onclick="return confirm('Reset status login SEMUA siswa? Semua sesi aktif siswa akan diakhiri.')">
-            <i class="bi bi-arrow-clockwise"></i> Reset Login Semua
-        </a>
     </div>
 </div>
 
@@ -69,7 +68,6 @@ $classes = $stmt_classes->fetchAll(PDO::FETCH_COLUMN);
                         <th style="cursor: pointer;" id="sortClass">
                             Kelas <i class="bi bi-arrow-down-up ms-1 small text-muted"></i>
                         </th>
-                        <th>Status Login</th>
                         <th class="text-center">Aksi</th>
                     </tr>
                 </thead>
@@ -80,17 +78,10 @@ $classes = $stmt_classes->fetchAll(PDO::FETCH_COLUMN);
                         <td><code class="student-nis"><?= htmlspecialchars($s['nis']) ?></code></td>
                         <td class="px-4 fw-bold student-name"><?= htmlspecialchars($s['full_name']) ?></td>
                         <td><span class="badge bg-primary student-class"><?= htmlspecialchars($s['class'] ?? '-') ?></span></td>
-                        <td>
-                            <?php if ($s['is_logged_in']): ?>
-                                <span class="badge bg-warning text-dark">Aktif</span>
-                                <a onclick="return confirm('Reset login siswa ini?')" href="modules/students/process.php?action=reset_login&id=<?= $s['id'] ?>" class="btn btn-sm btn-outline-warning" title="Reset Login Session">
-                                    <i class="bi bi-arrow-clockwise"></i>
-                                </a>
-                            <?php else: ?>
-                                <span class="badge bg-light text-muted border">Offline</span>
-                            <?php endif; ?>
-                        </td>
                         <td class="text-center">
+                            <a href="modules/students/print_card.php?id=<?= $s['id'] ?>" target="_blank" class="btn btn-sm btn-outline-danger" title="Cetak Kartu Ujian Siswa Ini">
+                                <i class="bi bi-printer"></i>
+                            </a>
                             <a href="modules/students/process.php?action=reset_password&id=<?= $s['id'] ?>" class="btn btn-sm btn-outline-info" title="Reset Password ke 123456" onclick="return confirm('Reset password siswa ini menjadi 123456?')">
                                 Reset Password
                             </a>
@@ -111,7 +102,7 @@ $classes = $stmt_classes->fetchAll(PDO::FETCH_COLUMN);
                     </tr>
                     <?php endforeach; ?>
                     <tr id="noData" style="display: none;">
-                        <td colspan="6" class="text-center p-4 text-muted">Siswa tidak ditemukan.</td>
+                        <td colspan="5" class="text-center p-4 text-muted">Siswa tidak ditemukan.</td>
                     </tr>
                 </tbody>
             </table>
@@ -178,6 +169,46 @@ $classes = $stmt_classes->fetchAll(PDO::FETCH_COLUMN);
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-success">Download Excel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="printCardModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form action="modules/students/print_card.php" method="GET" target="_blank">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold">
+                        <i class="bi bi-printer me-2"></i>Cetak Kartu Ujian Siswa
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Pilih Kelas</label>
+                        <select name="class" class="form-select">
+                            <option value="all">Semua Kelas (Seluruh Siswa)</option>
+                            <?php foreach ($classes as $c): ?>
+                                <option value="<?= htmlspecialchars($c) ?>">Kelas <?= htmlspecialchars($c) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <div class="form-text mt-2">
+                            Pilih kelas yang ingin dicetak kartu ujiannya atau pilih "Semua Kelas" untuk mencetak seluruh data siswa.
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-light border small text-muted mb-0">
+                        <i class="bi bi-info-circle text-primary me-1"></i>
+                        Dokumen dicetak dalam format <strong>PDF ukuran A4</strong> (memuat 4 kartu per lembar kertas), lengkap dengan logo sekolah, nama & alamat sekolah, data siswa, serta tanda tangan kepala sekolah.
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-danger px-4">
+                        <i class="bi bi-printer-fill me-1"></i> Cetak PDF
+                    </button>
                 </div>
             </form>
         </div>

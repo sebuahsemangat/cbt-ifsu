@@ -153,11 +153,12 @@ if ($isAllFinished) {
 
 // 4. Start Session
 if (!$currentSession) {
-    $duration = $currentSubject['duration'];
-    $stmtIns = $pdo->prepare("INSERT INTO exam_sessions (student_id, exam_id, subject_id, start_time, end_time, status) VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL ? MINUTE), 'ongoing')");
-    $stmtIns->execute([$student_id, $exam_id, $currentSubject['id'], $duration]);
+    $duration = (int)$currentSubject['duration'];
+    $durationSec = $duration * 60;
+    $stmtIns = $pdo->prepare("INSERT INTO exam_sessions (student_id, exam_id, subject_id, start_time, end_time, remaining_seconds, status) VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL ? MINUTE), ?, 'ongoing')");
+    $stmtIns->execute([$student_id, $exam_id, $currentSubject['id'], $duration, $durationSec]);
     $sessionId = $pdo->lastInsertId();
-    $currentSession = ['id' => $sessionId, 'start_time' => date('Y-m-d H:i:s'), 'question_order' => null];
+    $currentSession = ['id' => $sessionId, 'start_time' => date('Y-m-d H:i:s'), 'remaining_seconds' => $durationSec, 'question_order' => null];
 } else {
     $sessionId = $currentSession['id'];
 }
@@ -262,15 +263,25 @@ foreach ($savedAnswers as $sa) {
 }
 
 // Timer Calculation (Diselesaikan lewat DB agar kebal dari beda Timezone PHP vs MySQL)
-$stmtTime = $pdo->prepare("SELECT TIMESTAMPDIFF(SECOND, start_time, NOW()) as elapsed FROM exam_sessions WHERE id = ?");
+$stmtTime = $pdo->prepare("SELECT remaining_seconds, TIMESTAMPDIFF(SECOND, start_time, NOW()) as elapsed FROM exam_sessions WHERE id = ?");
 $stmtTime->execute([$sessionId]);
 $timeData = $stmtTime->fetch();
 
-$durationSec = $currentSubject['duration'] * 60;
-$elapsed = $timeData ? (int)$timeData['elapsed'] : 0;
-if ($elapsed < 0) $elapsed = 0; // Guard if server times drift
+$durationSec = (int)$currentSubject['duration'] * 60;
 
-$remainingSec = max(0, $durationSec - $elapsed);
+// Jika remaining_seconds sudah pernah tercatat (termasuk resume setelah komputer mati/restart)
+if ($timeData && $timeData['remaining_seconds'] !== null) {
+    $remainingSec = max(0, (int)$timeData['remaining_seconds']);
+} else {
+    // Fallback jika remaining_seconds belum tersimpan
+    $elapsed = $timeData ? (int)$timeData['elapsed'] : 0;
+    if ($elapsed < 0) $elapsed = 0;
+    $remainingSec = max(0, $durationSec - $elapsed);
+}
+
+// Perbarui end_time dan remaining_seconds saat resume/buka halaman agar sisa waktu terjaga
+$stmtSync = $pdo->prepare("UPDATE exam_sessions SET end_time = DATE_ADD(NOW(), INTERVAL ? SECOND), remaining_seconds = ? WHERE id = ?");
+$stmtSync->execute([$remainingSec, $remainingSec, $sessionId]);
 
 ?>
 <!DOCTYPE html>
@@ -554,6 +565,6 @@ $remainingSec = max(0, $durationSec - $elapsed);
         sessionId: <?= $sessionId ?>
     };
 </script>
-<script src="../assets/js/exam.js"></script>
+<script src="../assets/js/exam.js?v=<?= filemtime(__DIR__ . '/../assets/js/exam.js') ?>"></script>
 </body>
 </html>

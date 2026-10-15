@@ -41,7 +41,7 @@ $query = "
     JOIN students s ON es.student_id = s.id
     JOIN exams e ON es.exam_id = e.id
     JOIN subjects sb ON es.subject_id = sb.id
-    WHERE es.exam_id = :exam_id
+    WHERE es.exam_id = :exam_id AND es.status = 'finished'
 ";
 
 if ($class_filter !== 'all') {
