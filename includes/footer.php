@@ -136,6 +136,22 @@
                 
                 console.log('Quill.js berhasil diinisialisasi');
             }
+
+            // Auto-dismiss alert notifikasi setelah 3 detik
+            setTimeout(function() {
+                document.querySelectorAll('.alert.alert-dismissible').forEach(function(alertEl) {
+                    if (typeof bootstrap !== 'undefined' && bootstrap.Alert) {
+                        const bsAlert = bootstrap.Alert.getOrCreateInstance(alertEl);
+                        if (bsAlert) bsAlert.close();
+                    } else if (window.jQuery) {
+                        $(alertEl).fadeOut(300, function() { $(this).remove(); });
+                    } else {
+                        alertEl.style.transition = 'opacity 0.3s';
+                        alertEl.style.opacity = '0';
+                        setTimeout(() => alertEl.remove(), 300);
+                    }
+                });
+            }, 3000);
         });
     </script>
 </body>

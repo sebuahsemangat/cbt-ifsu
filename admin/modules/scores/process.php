@@ -40,7 +40,7 @@ if ($action === 'delete') {
     // Redirect
     $redirect = $_GET['redirect'] ?? 'scores';
     if ($redirect === 'dashboard') {
-        header("Location: ../../dashboard.php?status=session_deleted");
+        header("Location: ../../dashboard.php");
     } else {
         header("Location: ../../dashboard.php?page=scores" . ($exam_id ? "&exam_id=" . $exam_id : ""));
     }
@@ -192,7 +192,7 @@ if ($action === 'finish') {
 
     // Redirect
     if ($redirect === 'dashboard') {
-        header("Location: ../../dashboard.php?status=exam_finished");
+        header("Location: ../../dashboard.php");
     } else {
         header("Location: ../../dashboard.php?page=scores" . ($exam_id ? "&exam_id=" . $exam_id : ""));
     }

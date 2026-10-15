@@ -47,6 +47,7 @@ if ($exam_id):
             s.nis,
             s.full_name,
             s.class,
+            s.kelompok,
             e.exam_name,
             sb.name AS subject_name,
             sb.max_score,
@@ -67,16 +68,27 @@ if ($exam_id):
         $stmt->execute(['exam_id' => $exam_id]);
         $scores = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Ambil daftar kelas yang ada di ujian ini untuk filter export
-        $stmt_classes = $pdo->prepare("
-            SELECT DISTINCT s.class 
+        // Ambil daftar kelompok yang ada di ujian ini untuk filter export
+        $stmt_groups = $pdo->prepare("
+            SELECT DISTINCT s.kelompok 
             FROM exam_sessions es 
             JOIN students s ON es.student_id = s.id 
-            WHERE es.exam_id = ? AND es.status = 'finished'
-            ORDER BY s.class ASC
+            WHERE es.exam_id = ? AND es.status = 'finished' AND s.kelompok IS NOT NULL AND s.kelompok != ''
+            ORDER BY s.kelompok ASC
         ");
-        $stmt_classes->execute([$exam_id]);
-        $classes = $stmt_classes->fetchAll(PDO::FETCH_COLUMN);
+        $stmt_groups->execute([$exam_id]);
+        $groups = $stmt_groups->fetchAll(PDO::FETCH_COLUMN);
+
+        // Cek apakah ada siswa tanpa kelompok
+        $stmt_empty_group = $pdo->prepare("
+            SELECT 1 
+            FROM exam_sessions es 
+            JOIN students s ON es.student_id = s.id 
+            WHERE es.exam_id = ? AND es.status = 'finished' AND (s.kelompok IS NULL OR s.kelompok = '')
+            LIMIT 1
+        ");
+        $stmt_empty_group->execute([$exam_id]);
+        $has_empty_group = (bool)$stmt_empty_group->fetchColumn();
 
     } catch (PDOException $e) {
         echo "Error: " . $e->getMessage();
@@ -122,13 +134,14 @@ if ($exam_id):
                 <table class="table table-hover align-middle mb-0" id="scoreTable">
                     <thead class="table-light">
                         <tr>
-                            <th scope="col" class="text-center" style="width: 60px;">No</th>
+                            <th scope="col" class="text-center" style="width: 50px;">No</th>
                             <th scope="col">Nama Siswa</th>
                             <th scope="col">Kelas</th>
+                            <th scope="col">Kelompok</th>
                             <th scope="col">Mata Pelajaran</th>
                             <th scope="col">Nilai</th>
                             <th scope="col">Waktu Selesai</th>
-                            <th scope="col" class="text-center" style="width: 100px;">Aksi</th>
+                            <th scope="col" class="text-center" style="width: 80px;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
@@ -140,7 +153,14 @@ if ($exam_id):
                                         <div class="fw-semibold student-name"><?= htmlspecialchars($row['full_name']) ?></div>
                                         <small class="text-muted">NIS: <?= htmlspecialchars($row['nis'] ?? '-') ?></small>
                                     </td>
-                                    <td><?= htmlspecialchars($row['class']) ?></td>
+                                    <td><span class="badge bg-primary"><?= htmlspecialchars($row['class'] ?? '-') ?></span></td>
+                                    <td>
+                                        <?php if (!empty($row['kelompok'])): ?>
+                                            <span class="badge bg-info text-dark fw-semibold"><i class="bi bi-people me-1"></i><?= htmlspecialchars($row['kelompok']) ?></span>
+                                        <?php else: ?>
+                                            <span class="badge bg-light text-muted border">-</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td><?= htmlspecialchars($row['subject_name']) ?></td>
                                     <td>
                                         <?php 
@@ -195,11 +215,10 @@ if ($exam_id):
     const paginationControls = document.getElementById('paginationControls');
 
     function displayTable() {
-        const filter = searchInput.value.toLowerCase();
+        const filter = searchInput.value.toLowerCase().trim();
         
         const filteredRows = allRows.filter(row => {
-            const name = row.querySelector('.student-name').textContent.toLowerCase();
-            return name.includes(filter);
+            return row.textContent.toLowerCase().includes(filter);
         });
 
         const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
@@ -318,32 +337,35 @@ if ($exam_id):
         </div>
     </div>
 
-    <!-- Modal Pilih Kelas untuk Export -->
+    <!-- Modal Pilih Kelompok untuk Export -->
     <div class="modal fade" id="exportModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header bg-success text-white border-0">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-file-earmark-excel me-2"></i>Export Nilai</h5>
+                    <h5 class="modal-title fw-bold"><i class="bi bi-file-earmark-excel me-2"></i>Export Nilai per Kelompok</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form action="modules/scores/export.php" method="GET">
                     <input type="hidden" name="exam_id" value="<?= $exam_id ?>">
                     <div class="modal-body p-4">
-                        <p class="text-muted mb-4">Pilih kelas yang akan dikonversi ke file Excel:</p>
+                        <p class="text-muted mb-4">Pilih kelompok siswa yang akan dikonversi ke file Excel:</p>
                         
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Pilih Kelas</label>
-                            <select name="class" class="form-select border-2" required>
-                                <option value="all">Semua Kelas</option>
-                                <?php foreach ($classes as $class): ?>
-                                    <option value="<?= htmlspecialchars($class) ?>"><?= htmlspecialchars($class) ?></option>
+                            <label class="form-label fw-bold">Pilih Kelompok</label>
+                            <select name="kelompok" class="form-select border-2" required>
+                                <option value="all">Semua Kelompok</option>
+                                <?php foreach ($groups as $grp): ?>
+                                    <option value="<?= htmlspecialchars($grp) ?>">Kelompok: <?= htmlspecialchars($grp) ?></option>
                                 <?php endforeach; ?>
+                                <?php if ($has_empty_group): ?>
+                                    <option value="none">Tanpa Kelompok (Belum Ditentukan)</option>
+                                <?php endif; ?>
                             </select>
                         </div>
                     </div>
                     <div class="modal-footer border-0 p-3 pt-0">
                         <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-success px-4">Export Sekarang</button>
+                        <button type="submit" class="btn btn-success px-4 fw-bold">Export Excel</button>
                     </div>
                 </form>
             </div>

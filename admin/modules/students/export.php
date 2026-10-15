@@ -44,6 +44,7 @@ header("Expires: 0");
                 <th>NIS</th>
                 <th>Nama Lengkap</th>
                 <th>Kelas</th>
+                <th>Kelompok</th>
                 <th>Password (Default)</th>
             </tr>
         </thead>
@@ -54,6 +55,7 @@ header("Expires: 0");
                 <td><?= htmlspecialchars($s['nis']) ?></td>
                 <td><?= htmlspecialchars($s['full_name']) ?></td>
                 <td><?= htmlspecialchars($s['class'] ?? '-') ?></td>
+                <td><?= htmlspecialchars($s['kelompok'] ?? '-') ?></td>
                 <td>123456</td>
             </tr>
             <?php endforeach; ?>

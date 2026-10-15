@@ -4,11 +4,13 @@ require_once '../../../includes/auth_check.php';
 
 $action = $_GET['action'] ?? '';
 
-// --- FITUR: TAMBAH 1 SISWA DENGAN NIS ---
+// --- FITUR: TAMBAH 1 SISWA DENGAN NIS & KELOMPOK ---
 if ($action == 'add_single' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     $nis = trim($_POST['nis'] ?? '');
     $nama = trim($_POST['full_name'] ?? '');
     $kelas = trim($_POST['class'] ?? '');
+    $kelompok = trim($_POST['kelompok'] ?? '');
+    $kelompokVal = empty($kelompok) ? null : $kelompok;
     
     if (!empty($nis) && !empty($nama)) {
         // Proteksi duplikat NIS
@@ -22,8 +24,8 @@ if ($action == 'add_single' && $_SERVER['REQUEST_METHOD'] == 'POST') {
         // Password Default: 123456
         $password = password_hash('123456', PASSWORD_DEFAULT);
 
-        $stmt = $pdo->prepare("INSERT INTO students (nis, password, full_name, class) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$nis, $password, $nama, $kelas]);
+        $stmt = $pdo->prepare("INSERT INTO students (nis, password, full_name, class, kelompok) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([$nis, $password, $nama, $kelas, $kelompokVal]);
         
         header("Location: ../../dashboard.php?page=students&status=success");
     } else {
@@ -32,12 +34,14 @@ if ($action == 'add_single' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     exit;
 }
 
-// --- FITUR: EDIT DATA SISWA & NIS ---
+// --- FITUR: EDIT DATA SISWA, NIS & KELOMPOK ---
 if ($action == 'edit' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     $id = (int)$_POST['id'];
     $nis = trim($_POST['nis'] ?? '');
     $nama = trim($_POST['full_name'] ?? '');
     $kelas = trim($_POST['class'] ?? '');
+    $kelompok = trim($_POST['kelompok'] ?? '');
+    $kelompokVal = empty($kelompok) ? null : $kelompok;
     
     if (!empty($id) && !empty($nis) && !empty($nama)) {
         // Cek duplikasi NIS untuk siswa lain
@@ -48,8 +52,8 @@ if ($action == 'edit' && $_SERVER['REQUEST_METHOD'] == 'POST') {
             exit;
         }
 
-        $stmt = $pdo->prepare("UPDATE students SET nis = ?, full_name = ?, class = ? WHERE id = ?");
-        $stmt->execute([$nis, $nama, $kelas, $id]);
+        $stmt = $pdo->prepare("UPDATE students SET nis = ?, full_name = ?, class = ?, kelompok = ? WHERE id = ?");
+        $stmt->execute([$nis, $nama, $kelas, $kelompokVal, $id]);
         header("Location: ../../dashboard.php?page=students&status=updated");
     } else {
         header("Location: ../../dashboard.php?page=students&status=error");
@@ -57,7 +61,7 @@ if ($action == 'edit' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     exit;
 }
 
-// Logika Import CSV dengan NIS
+// Logika Import CSV dengan NIS & Kelompok
 if ($action == 'import' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_FILES['file_excel']) && $_FILES['file_excel']['error'] == 0) {
         $file = $_FILES['file_excel']['tmp_name'];
@@ -71,19 +75,49 @@ if ($action == 'import' && $_SERVER['REQUEST_METHOD'] == 'POST') {
         fgetcsv($handle, 1000, $delimiter); // Skip baris header
 
         $password = password_hash('123456', PASSWORD_DEFAULT);
-        $stmt = $pdo->prepare("INSERT INTO students (nis, password, full_name, class) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE full_name = VALUES(full_name), class = VALUES(class)");
+        $stmt = $pdo->prepare("INSERT INTO students (nis, password, full_name, class, kelompok) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE full_name = VALUES(full_name), class = VALUES(class), kelompok = COALESCE(VALUES(kelompok), kelompok)");
 
         while (($data = fgetcsv($handle, 1000, $delimiter)) !== FALSE) {
             $nis = trim($data[0] ?? '');
             $nama = trim($data[1] ?? '');
             $kelas = trim($data[2] ?? '');
+            $kelompok = isset($data[3]) ? trim($data[3]) : null;
+            $kelompokVal = empty($kelompok) ? null : $kelompok;
             if (empty($nis) || empty($nama)) continue;
 
-            $stmt->execute([$nis, $password, $nama, $kelas]);
+            $stmt->execute([$nis, $password, $nama, $kelas, $kelompokVal]);
         }
         fclose($handle);
         header("Location: ../../dashboard.php?page=students&status=success");
     } else {
+        header("Location: ../../dashboard.php?page=students&status=error");
+    }
+    exit;
+}
+
+// --- FITUR: BULK TERAPKAN KELOMPOK SISWA ---
+if ($action == 'bulk_set_kelompok' && $_SERVER['REQUEST_METHOD'] == 'POST') {
+    $ids = $_POST['student_ids'] ?? [];
+    $kelompokInput = trim($_POST['kelompok'] ?? '');
+    $clearKelompok = isset($_POST['clear_kelompok']) && $_POST['clear_kelompok'] == '1';
+
+    if (is_array($ids) && count($ids) > 0) {
+        $ids = array_map('intval', $ids);
+        $kelompokVal = ($clearKelompok || $kelompokInput === '') ? null : $kelompokInput;
+
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $stmt = $pdo->prepare("UPDATE students SET kelompok = ? WHERE id IN ($placeholders)");
+        $stmt->execute(array_merge([$kelompokVal], $ids));
+
+        $countUpdated = count($ids);
+        if ($kelompokVal !== null) {
+            $_SESSION['success'] = "Berhasil menetapkan kelompok \"$kelompokVal\" untuk $countUpdated siswa!";
+        } else {
+            $_SESSION['success'] = "Kelompok berhasil dikosongkan untuk $countUpdated siswa!";
+        }
+        header("Location: ../../dashboard.php?page=students&status=kelompok_updated");
+    } else {
+        $_SESSION['error'] = "Pilih minimal satu siswa untuk menerapkan kelompok.";
         header("Location: ../../dashboard.php?page=students&status=error");
     }
     exit;
@@ -95,7 +129,7 @@ if ($action == 'reset_all_login') {
     $redirect = $_GET['redirect'] ?? 'students';
     if ($redirect === 'dashboard') {
         $_SESSION['success'] = "Status login semua siswa berhasil direset!";
-        header("Location: ../../dashboard.php?status=all_resetted");
+        header("Location: ../../dashboard.php");
     } else {
         header("Location: ../../dashboard.php?page=students&status=all_resetted");
     }
@@ -110,7 +144,7 @@ if ($action == 'reset_login' && isset($_GET['id'])) {
     $redirect = $_GET['redirect'] ?? 'students';
     if ($redirect === 'dashboard') {
         $_SESSION['success'] = "Status login siswa berhasil direset!";
-        header("Location: ../../dashboard.php?status=resetted");
+        header("Location: ../../dashboard.php");
     } else {
         header("Location: ../../dashboard.php?page=students&status=resetted");
     }

@@ -186,21 +186,6 @@ $page = $_GET['page'] ?? 'main';
             }
             </style>
 
-            <?php if (isset($_GET['status']) && !isset($_SESSION['success'])): ?>
-                <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
-                    <i class="bi bi-check-circle me-1"></i>
-                    <?php 
-                    switch($_GET['status']) {
-                        case 'resetted': echo "Status login siswa berhasil direset!"; break;
-                        case 'all_resetted': echo "Status login semua siswa berhasil direset!"; break;
-                        case 'exam_finished': echo "Ujian siswa berhasil diselesaikan secara paksa dan nilai telah dihitung!"; break;
-                        case 'session_deleted': echo "Sesi ujian siswa berhasil direset/dihapus!"; break;
-                        default: echo "Operasi berhasil.";
-                    }
-                    ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            <?php endif; ?>
 
             <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
                 <div>
