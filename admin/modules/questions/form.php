@@ -23,12 +23,24 @@ if ($id) {
     $data = $stmt->fetch();
 }
 
+// Helper untuk memastikan gambar relatif uploads/questions/ muncul di editor admin
+function fixAdminImagePaths($content) {
+    if (is_array($content)) {
+        foreach ($content as $k => $v) {
+            $content[$k] = fixAdminImagePaths($v);
+        }
+        return $content;
+    }
+    if (!is_string($content) || empty($content)) return $content;
+    return preg_replace('/src=["\']uploads\/questions\//i', 'src="../uploads/questions/', $content);
+}
+
 // Decode answer_data for JS usage
 $answerData = [];
 if ($data && !empty($data['answer_data'])) {
     $decoded = json_decode($data['answer_data'], true);
     if (is_array($decoded)) {
-        $answerData = $decoded;
+        $answerData = fixAdminImagePaths($decoded);
     }
 }
 
@@ -37,6 +49,7 @@ $questionText = $data['question_text'] ?? '';
 if (preg_match('/<img[^>]*$/', $questionText)) {
     $questionText .= '" alt="Gambar terpotong" class="img-fluid" />';
 }
+$questionText = fixAdminImagePaths($questionText);
 ?>
 
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">

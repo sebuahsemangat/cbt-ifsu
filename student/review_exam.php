@@ -49,6 +49,11 @@ if ($finishedSubjects < $totalSubjects) {
     exit;
 }
 
+function resolveStudentImg($html) {
+    if (!is_string($html) || empty($html)) return $html;
+    return preg_replace('/src=["\']uploads\/questions\//i', 'src="../uploads/questions/', $html);
+}
+
 // Ambil semua subject beserta session, soal, dan jawaban siswa
 $stmtSubs = $pdo->prepare("SELECT * FROM subjects WHERE exam_id = ? ORDER BY sort_order ASC, id ASC");
 $stmtSubs->execute([$examId]);
@@ -677,7 +682,7 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
                 </div>
                 <div class="question-card-body">
                     <!-- Question Text -->
-                    <div class="question-text-content"><?= $q['question_text'] ?></div>
+                    <div class="question-text-content"><?= resolveStudentImg($q['question_text']) ?></div>
 
                     <!-- Answer Review by Type -->
                     <?php if ($type === 'pg'): 
@@ -692,7 +697,7 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
                     ?>
                         <div class="answer-row <?= $rowClass ?>">
                             <i class="ans-icon bi <?= $icon ?>"></i>
-                            <span><strong><?= htmlspecialchars($key) ?>.</strong> <?= $optText ?></span>
+                            <span><strong><?= htmlspecialchars($key) ?>.</strong> <?= resolveStudentImg($optText) ?></span>
                             <?php if ($isUserChoice && !$isCorrectChoice): ?><span class="ms-auto fw-bold" style="font-size:0.78rem; white-space:nowrap;">Jawaban Kamu</span><?php endif; ?>
                             <?php if ($isCorrectChoice): ?><span class="ms-auto fw-bold" style="font-size:0.78rem; white-space:nowrap;">Kunci Jawaban</span><?php endif; ?>
                         </div>
@@ -710,7 +715,7 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
                         ?>
                         <div class="answer-row <?= $rowClass ?>">
                             <i class="ans-icon bi <?= $isItemCorrect ? 'bi-check-circle-fill' : ($userChar === null ? 'bi-dash-circle' : 'bi-x-circle-fill') ?>"></i>
-                            <span style="flex:1;"><?= strip_tags($item['text'] ?? 'Item ' . ($idx+1)) ?></span>
+                            <span style="flex:1;"><?= resolveStudentImg($item['text'] ?? 'Item ' . ($idx+1)) ?></span>
                             <span>
                                 Kamu: <strong><?= $userChar ? (($userChar === 'B') ? $labels['pos'] : $labels['neg']) : '-' ?></strong>
                                 &nbsp;|&nbsp;
@@ -731,7 +736,7 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
                     ?>
                             <div class="answer-row <?= $rowClass ?>">
                                 <i class="ans-icon bi <?= $icon ?>"></i>
-                                <span style="flex:1;"><?= strip_tags($item['text'] ?? '') ?></span>
+                                <span style="flex:1;"><?= resolveStudentImg($item['text'] ?? '') ?></span>
                                 <?php if ($isSelected && !$should): ?><span class="ms-auto fw-bold" style="font-size:0.78rem; white-space:nowrap;">Kamu pilih (Salah)</span><?php endif; ?>
                                 <?php if ($should && !$isSelected): ?><span class="ms-auto fw-bold" style="font-size:0.78rem; white-space:nowrap;">Jawaban kunci</span><?php endif; ?>
                                 <?php if ($should && $isSelected): ?><span class="ms-auto fw-bold" style="font-size:0.78rem; white-space:nowrap;">Kamu pilih ✓</span><?php endif; ?>

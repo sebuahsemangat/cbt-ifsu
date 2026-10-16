@@ -7,6 +7,8 @@ use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\Element\Text;
 use PhpOffice\PhpWord\Element\TextRun;
 use PhpOffice\PhpWord\Element\Image;
+use PhpOffice\PhpWord\Element\ListItemRun;
+use PhpOffice\PhpWord\Element\ListItem;
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: ../../dashboard.php?page=exams");
@@ -113,10 +115,27 @@ exit;
 // ================== HELPER FUNCTIONS ==================
 
 /**
- * Extract content from PHPWord element (handles Text, TextRun, Image)
+ * Extract content from PHPWord element (handles Text, TextRun, ListItemRun, ListItem, Image)
  */
 function extractElementContent($element, $uploadDir, &$imageCounter) {
     $content = '';
+    
+    // Handle bullet / list items from Word document
+    if ($element instanceof ListItemRun || $element instanceof ListItem) {
+        $inner = '';
+        if (method_exists($element, 'getElements')) {
+            foreach ($element->getElements() as $child) {
+                $inner .= extractElementContent($child, $uploadDir, $imageCounter);
+            }
+        } elseif (method_exists($element, 'getText')) {
+            $inner = $element->getText();
+        }
+        $inner = trim($inner);
+        if ($inner !== '') {
+            $content = '• ' . $inner;
+        }
+        return $content;
+    }
     
     if ($element instanceof Text) {
         $content = $element->getText();
@@ -125,16 +144,18 @@ function extractElementContent($element, $uploadDir, &$imageCounter) {
             if ($child instanceof Text) {
                 $content .= $child->getText();
             } elseif ($child instanceof Image) {
-                $imagePath = saveImage($child, $uploadDir, $imageCounter);
-                if ($imagePath) {
-                    $content .= '<img src="' . $imagePath . '" class="img-fluid">';
+                $imageSrc = saveImage($child, $uploadDir, $imageCounter);
+                if ($imageSrc) {
+                    $content .= '<img src="' . $imageSrc . '" class="img-fluid" style="max-height: 250px;">';
                 }
+            } else {
+                $content .= extractElementContent($child, $uploadDir, $imageCounter);
             }
         }
     } elseif ($element instanceof Image) {
-        $imagePath = saveImage($element, $uploadDir, $imageCounter);
-        if ($imagePath) {
-            $content = '<img src="' . $imagePath . '" class="img-fluid">';
+        $imageSrc = saveImage($element, $uploadDir, $imageCounter);
+        if ($imageSrc) {
+            $content = '<img src="' . $imageSrc . '" class="img-fluid" style="max-height: 250px;">';
         }
     } elseif (method_exists($element, 'getElements')) {
         foreach ($element->getElements() as $child) {
@@ -148,7 +169,7 @@ function extractElementContent($element, $uploadDir, &$imageCounter) {
 }
 
 /**
- * Save embedded image from Word document
+ * Save embedded image from Word document as disk file & return Data URI for seamless display
  */
 function saveImage($imageElement, $uploadDir, &$imageCounter) {
     try {
@@ -162,14 +183,26 @@ function saveImage($imageElement, $uploadDir, &$imageCounter) {
         }
         
         if (!empty($imageData)) {
+            $rawBinary = base64_decode($imageData);
+            $mime = 'image/png';
+            if (str_starts_with($rawBinary, "\xFF\xD8\xFF")) {
+                $mime = 'image/jpeg';
+            } elseif (str_starts_with($rawBinary, "GIF")) {
+                $mime = 'image/gif';
+            } elseif (str_starts_with($rawBinary, "RIFF") && strpos($rawBinary, "WEBP") !== false) {
+                $mime = 'image/webp';
+            }
+            
+            $ext = ($mime === 'image/jpeg') ? 'jpg' : (($mime === 'image/gif') ? 'gif' : 'png');
             $imageCounter++;
-            $imageName = 'img_' . time() . '_' . $imageCounter . '.png';
+            $imageName = 'img_' . time() . '_' . $imageCounter . '.' . $ext;
             $imagePath = $uploadDir . $imageName;
             
-            file_put_contents($imagePath, base64_decode($imageData));
+            // Simpan file ke server untuk cadangan fisik
+            file_put_contents($imagePath, $rawBinary);
             
-            // Return relative path for storage in DB
-            return 'uploads/questions/' . $imageName;
+            // Kembalikan Base64 Data URI agar gambar 100% tampil di halaman admin (edit/view) maupun halaman ujian siswa tanpa terpengaruh direktori
+            return 'data:' . $mime . ';base64,' . $imageData;
         }
     } catch (Exception $e) {
         // Skip image on error
@@ -217,7 +250,7 @@ function parseQuestions($text) {
 }
 
 /**
- * Parse Pilihan Ganda (PG) question
+ * Parse Pilihan Ganda (PG) question (supports inline image & multiline options)
  */
 function parsePGQuestion($content) {
     $lines = array_filter(array_map('trim', explode("\n", $content)));
@@ -227,18 +260,25 @@ function parsePGQuestion($content) {
     $correct = '';
     
     $currentSection = 'question';
+    $currentOption = '';
     $questionLines = [];
     
     foreach ($lines as $line) {
-        // Check for option markers
+        // Check for option markers: [A] text/image or [A] alone
         if (preg_match('/^\[([A-E])\]\s*(.*)$/i', $line, $match)) {
             $letter = strtoupper($match[1]);
             $options[$letter] = trim($match[2]);
             $currentSection = 'options';
+            $currentOption = $letter;
         }
         // Check for answer marker
         elseif (preg_match('/^\[JAWABAN\]\s*([A-E])/i', $line, $match)) {
             $correct = strtoupper($match[1]);
+            $currentSection = 'answer';
+        }
+        // Part of option text or image on separate line below [A]
+        elseif ($currentSection === 'options' && !empty($currentOption)) {
+            $options[$currentOption] .= ($options[$currentOption] !== '' ? '<br>' : '') . $line;
         }
         // Part of question text
         elseif ($currentSection === 'question') {

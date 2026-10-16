@@ -87,8 +87,13 @@ function renderQuestion(index) {
     qCol.className = "col-md-12";
   }
 
+  function resolveImgPath(html) {
+    if (!html || typeof html !== "string") return html;
+    return html.replace(/src=["']uploads\/questions\//g, 'src="../uploads/questions/');
+  }
+
   // 3. Question Text
-  let qText = q.question_text;
+  let qText = resolveImgPath(q.question_text || "");
   if (q.image_path) {
     qText += `<br><img src="../assets/uploads/questions/${q.image_path}" class="review-img mt-3" style="max-height:200px;">`;
   }
@@ -106,7 +111,7 @@ function renderQuestion(index) {
   if (type === "pg") {
     const opts = ansData.options || {};
     Object.keys(opts).forEach((key) => {
-      const text = opts[key];
+      const text = resolveImgPath(opts[key]);
       const checked = myAns === key ? "checked" : "";
 
       container.innerHTML += `
@@ -136,7 +141,8 @@ function renderQuestion(index) {
                 <tbody>`;
 
     items.forEach((item, idx) => {
-      const text = typeof item === "object" && item.text ? item.text : item;
+      const rawText = typeof item === "object" && item.text ? item.text : item;
+      const text = resolveImgPath(rawText);
       const char = String.fromCharCode(65 + idx);
 
       // myAns expected to be object {index: value}
@@ -187,7 +193,7 @@ function renderQuestion(index) {
       container.innerHTML += `
                 <div class="answer-option" onclick="toggleMulti(${idx})">
                     <input type="checkbox" name="ans_${q.id}[]" value="${idx}" ${isChecked ? "checked" : ""}>
-                    <label>${item.text}</label>
+                    <label>${resolveImgPath(item.text)}</label>
                 </div>
                 `;
     });
