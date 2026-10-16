@@ -10,7 +10,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $exam_id = isset($_GET['exam_id']) ? $_GET['exam_id'] : null;
-$kelompok_filter = isset($_GET['kelompok']) ? $_GET['kelompok'] : (isset($_GET['class']) ? $_GET['class'] : 'all');
+$export_by = isset($_GET['export_by']) ? $_GET['export_by'] : (isset($_GET['class']) && !isset($_GET['kelompok']) ? 'class' : 'kelompok');
 
 if (!$exam_id) {
     die("ID Ujian tidak ditemukan.");
@@ -25,7 +25,7 @@ if (!$exam) {
     die("Ujian tidak ditemukan.");
 }
 
-// Query data nilai dengan filter kelompok
+// Query dasar data nilai
 $query = "
     SELECT 
         s.nis,
@@ -46,15 +46,43 @@ $query = "
 ";
 
 $params = ['exam_id' => $exam_id];
+$clean_exam = preg_replace('/[^A-Za-z0-9]/', '_', $exam['exam_name']);
 
-if ($kelompok_filter === 'none') {
-    $query .= " AND (s.kelompok IS NULL OR s.kelompok = '') ";
-} elseif ($kelompok_filter !== 'all') {
-    $query .= " AND s.kelompok = :kelompok ";
-    $params['kelompok'] = $kelompok_filter;
+if ($export_by === 'class') {
+    $class_filter = isset($_GET['class']) ? $_GET['class'] : 'all';
+    if ($class_filter === 'none') {
+        $query .= " AND (s.class IS NULL OR s.class = '') ";
+    } elseif ($class_filter !== 'all') {
+        $query .= " AND s.class = :class ";
+        $params['class'] = $class_filter;
+    }
+    $query .= " ORDER BY s.class ASC, s.full_name ASC";
+
+    $class_label = 'Semua_Kelas';
+    if ($class_filter === 'none') {
+        $class_label = 'Tanpa_Kelas';
+    } elseif ($class_filter !== 'all') {
+        $class_label = preg_replace('/[^A-Za-z0-9]/', '_', $class_filter);
+    }
+    $filename = "Nilai_" . $clean_exam . "_Kelas_" . $class_label . "_" . date('Ymd') . ".xls";
+} else {
+    $kelompok_filter = isset($_GET['kelompok']) ? $_GET['kelompok'] : 'all';
+    if ($kelompok_filter === 'none') {
+        $query .= " AND (s.kelompok IS NULL OR s.kelompok = '') ";
+    } elseif ($kelompok_filter !== 'all') {
+        $query .= " AND s.kelompok = :kelompok ";
+        $params['kelompok'] = $kelompok_filter;
+    }
+    $query .= " ORDER BY s.kelompok ASC, s.class ASC, s.full_name ASC";
+
+    $kel_label = 'Semua_Kelompok';
+    if ($kelompok_filter === 'none') {
+        $kel_label = 'Tanpa_Kelompok';
+    } elseif ($kelompok_filter !== 'all') {
+        $kel_label = preg_replace('/[^A-Za-z0-9]/', '_', $kelompok_filter);
+    }
+    $filename = "Nilai_" . $clean_exam . "_Kelompok_" . $kel_label . "_" . date('Ymd') . ".xls";
 }
-
-$query .= " ORDER BY s.kelompok ASC, s.class ASC, s.full_name ASC";
 
 try {
     $stmt = $pdo->prepare($query);
@@ -65,15 +93,6 @@ try {
 }
 
 // Set Header untuk Download Excel
-$kel_label = 'Semua_Kelompok';
-if ($kelompok_filter === 'none') {
-    $kel_label = 'Tanpa_Kelompok';
-} elseif ($kelompok_filter !== 'all') {
-    $kel_label = preg_replace('/[^A-Za-z0-9]/', '_', $kelompok_filter);
-}
-
-$filename = "Nilai_" . preg_replace('/[^A-Za-z0-9]/', '_', $exam['exam_name']) . "_Kelompok_" . $kel_label . "_" . date('Ymd') . ".xls";
-
 header("Content-Type: application/vnd.ms-excel");
 header("Content-Disposition: attachment; filename=\"$filename\"");
 header("Pragma: no-cache");
@@ -84,7 +103,7 @@ header("Expires: 0");
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Export Nilai per Kelompok</title>
+    <title>Export Nilai per <?= $export_by === 'class' ? 'Kelas' : 'Kelompok' ?></title>
     <style>
         table { border-collapse: collapse; width: 100%; }
         th, td { border: 1px solid #000; padding: 5px; }
@@ -95,14 +114,25 @@ header("Expires: 0");
 </head>
 <body>
     <h3>Laporan Nilai Ujian: <?= htmlspecialchars($exam['exam_name']) ?></h3>
-    <?php if ($kelompok_filter === 'none'): ?>
-        <p>Kelompok: Tanpa Kelompok (Belum Ditentukan)</p>
-    <?php elseif ($kelompok_filter !== 'all'): ?>
-        <p>Kelompok: <?= htmlspecialchars($kelompok_filter) ?></p>
+    <?php if ($export_by === 'class'): ?>
+        <?php if ($class_filter === 'none'): ?>
+            <p><strong>Filter:</strong> Tanpa Kelas (Belum Ditentukan)</p>
+        <?php elseif ($class_filter !== 'all'): ?>
+            <p><strong>Filter Kelas:</strong> <?= htmlspecialchars($class_filter) ?></p>
+        <?php else: ?>
+            <p><strong>Filter:</strong> Semua Kelas</p>
+        <?php endif; ?>
     <?php else: ?>
-        <p>Kelompok: Semua Kelompok</p>
+        <?php if ($kelompok_filter === 'none'): ?>
+            <p><strong>Filter:</strong> Tanpa Kelompok (Belum Ditentukan)</p>
+        <?php elseif ($kelompok_filter !== 'all'): ?>
+            <p><strong>Filter Kelompok:</strong> <?= htmlspecialchars($kelompok_filter) ?></p>
+        <?php else: ?>
+            <p><strong>Filter:</strong> Semua Kelompok</p>
+        <?php endif; ?>
     <?php endif; ?>
-    <p>Periode: <?= date('d M Y', strtotime($exam['start_date'])) ?> - <?= date('d M Y', strtotime($exam['end_date'])) ?></p>
+    <p><strong>Periode Ujian:</strong> <?= date('d M Y', strtotime($exam['start_date'])) ?> - <?= date('d M Y', strtotime($exam['end_date'])) ?></p>
+    <p><strong>Waktu Export:</strong> <?= date('d M Y H:i') ?></p>
     
     <table>
         <thead>
@@ -121,23 +151,29 @@ header("Expires: 0");
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($scores as $index => $row): ?>
+            <?php if (empty($scores)): ?>
             <tr>
-                <td class="text-center"><?= $index + 1 ?></td>
-                <td><?= htmlspecialchars($row['nis'] ?? '-') ?></td>
-                <td><?= htmlspecialchars($row['full_name']) ?></td>
-                <td><?= htmlspecialchars($row['class'] ?? '-') ?></td>
-                <td><?= htmlspecialchars($row['kelompok'] ?? '-') ?></td>
-                <td><?= htmlspecialchars($row['exam_name']) ?></td>
-                <td><?= htmlspecialchars($row['subject_name']) ?></td>
-                <td class="text-center"><?= number_format($row['score'], 2) ?></td>
-                <td class="text-center">
-                    <?= $row['status'] == 'finished' ? 'Selesai' : 'Sedang Mengerjakan' ?>
-                </td>
-                <td class="text-center"><?= date('d/m/Y H:i', strtotime($row['start_time'])) ?></td>
-                <td class="text-center"><?= date('d/m/Y H:i', strtotime($row['end_time'])) ?></td>
+                <td colspan="11" class="text-center">Tidak ada data nilai yang sesuai dengan filter.</td>
             </tr>
-            <?php endforeach; ?>
+            <?php else: ?>
+                <?php foreach ($scores as $index => $row): ?>
+                <tr>
+                    <td class="text-center"><?= $index + 1 ?></td>
+                    <td><?= htmlspecialchars($row['nis'] ?? '-') ?></td>
+                    <td><?= htmlspecialchars($row['full_name']) ?></td>
+                    <td><?= htmlspecialchars($row['class'] ?? '-') ?></td>
+                    <td><?= htmlspecialchars($row['kelompok'] ?? '-') ?></td>
+                    <td><?= htmlspecialchars($row['exam_name']) ?></td>
+                    <td><?= htmlspecialchars($row['subject_name']) ?></td>
+                    <td class="text-center"><?= number_format($row['score'], 2) ?></td>
+                    <td class="text-center">
+                        <?= $row['status'] == 'finished' ? 'Selesai' : 'Sedang Mengerjakan' ?>
+                    </td>
+                    <td class="text-center"><?= date('d/m/Y H:i', strtotime($row['start_time'])) ?></td>
+                    <td class="text-center"><?= date('d/m/Y H:i', strtotime($row['end_time'])) ?></td>
+                </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </tbody>
     </table>
 </body>

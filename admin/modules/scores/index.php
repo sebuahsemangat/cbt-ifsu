@@ -68,6 +68,32 @@ if ($exam_id):
         $stmt->execute(['exam_id' => $exam_id]);
         $scores = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        // Ambil daftar kelas yang ada di ujian ini untuk filter export
+        $stmt_classes = $pdo->prepare("
+            SELECT DISTINCT s.class 
+            FROM exam_sessions es 
+            JOIN students s ON es.student_id = s.id 
+            WHERE es.exam_id = ? AND es.status = 'finished' AND s.class IS NOT NULL AND s.class != ''
+            ORDER BY s.class ASC
+        ");
+        $stmt_classes->execute([$exam_id]);
+        $classes = $stmt_classes->fetchAll(PDO::FETCH_COLUMN);
+        if (empty($classes)) {
+            $stmt_all_classes = $pdo->query("SELECT DISTINCT class FROM students WHERE class IS NOT NULL AND class != '' ORDER BY class ASC");
+            $classes = $stmt_all_classes->fetchAll(PDO::FETCH_COLUMN);
+        }
+
+        // Cek apakah ada siswa tanpa kelas
+        $stmt_empty_class = $pdo->prepare("
+            SELECT 1 
+            FROM exam_sessions es 
+            JOIN students s ON es.student_id = s.id 
+            WHERE es.exam_id = ? AND es.status = 'finished' AND (s.class IS NULL OR s.class = '')
+            LIMIT 1
+        ");
+        $stmt_empty_class->execute([$exam_id]);
+        $has_empty_class = (bool)$stmt_empty_class->fetchColumn();
+
         // Ambil daftar kelompok yang ada di ujian ini untuk filter export
         $stmt_groups = $pdo->prepare("
             SELECT DISTINCT s.kelompok 
@@ -78,6 +104,10 @@ if ($exam_id):
         ");
         $stmt_groups->execute([$exam_id]);
         $groups = $stmt_groups->fetchAll(PDO::FETCH_COLUMN);
+        if (empty($groups)) {
+            $stmt_all_groups = $pdo->query("SELECT DISTINCT kelompok FROM students WHERE kelompok IS NOT NULL AND kelompok != '' ORDER BY kelompok ASC");
+            $groups = $stmt_all_groups->fetchAll(PDO::FETCH_COLUMN);
+        }
 
         // Cek apakah ada siswa tanpa kelompok
         $stmt_empty_group = $pdo->prepare("
@@ -305,6 +335,25 @@ if ($exam_id):
         const myModal = new bootstrap.Modal(document.getElementById('exportModal'));
         myModal.show();
     }
+
+    function toggleExportType(type) {
+        const classContainer = document.getElementById('filter_class_container');
+        const kelompokContainer = document.getElementById('filter_kelompok_container');
+        const classSelect = document.getElementById('class_select');
+        const kelompokSelect = document.getElementById('kelompok_select');
+        
+        if (type === 'class') {
+            classContainer.style.display = 'block';
+            kelompokContainer.style.display = 'none';
+            classSelect.disabled = false;
+            kelompokSelect.disabled = true;
+        } else {
+            classContainer.style.display = 'none';
+            kelompokContainer.style.display = 'block';
+            classSelect.disabled = true;
+            kelompokSelect.disabled = false;
+        }
+    }
     </script>
 
     <!-- Modal Konfirmasi Hapus Semua -->
@@ -337,22 +386,53 @@ if ($exam_id):
         </div>
     </div>
 
-    <!-- Modal Pilih Kelompok untuk Export -->
+    <!-- Modal Pilih Export (Berdasarkan Kelas atau Kelompok) -->
     <div class="modal fade" id="exportModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header bg-success text-white border-0">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-file-earmark-excel me-2"></i>Export Nilai per Kelompok</h5>
+                    <h5 class="modal-title fw-bold"><i class="bi bi-file-earmark-excel me-2"></i>Export Nilai Siswa</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form action="modules/scores/export.php" method="GET">
                     <input type="hidden" name="exam_id" value="<?= $exam_id ?>">
                     <div class="modal-body p-4">
-                        <p class="text-muted mb-4">Pilih kelompok siswa yang akan dikonversi ke file Excel:</p>
-                        
-                        <div class="mb-3">
+                        <label class="form-label fw-bold mb-2">Pilih Kategori Export:</label>
+                        <div class="row g-2 mb-4">
+                            <div class="col-6">
+                                <input type="radio" class="btn-check" name="export_by" id="export_by_class" value="class" onchange="toggleExportType('class')">
+                                <label class="btn btn-outline-success w-100 d-flex flex-column align-items-center py-3 rounded-3" for="export_by_class">
+                                    <i class="bi bi-mortarboard fs-2 mb-1"></i>
+                                    <span class="fw-bold">Berdasarkan Kelas</span>
+                                </label>
+                            </div>
+                            <div class="col-6">
+                                <input type="radio" class="btn-check" name="export_by" id="export_by_kelompok" value="kelompok" checked onchange="toggleExportType('kelompok')">
+                                <label class="btn btn-outline-success w-100 d-flex flex-column align-items-center py-3 rounded-3" for="export_by_kelompok">
+                                    <i class="bi bi-people fs-2 mb-1"></i>
+                                    <span class="fw-bold">Berdasarkan Kelompok</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Filter Kelas -->
+                        <div id="filter_class_container" class="mb-3" style="display: none;">
+                            <label class="form-label fw-bold">Pilih Kelas</label>
+                            <select name="class" id="class_select" class="form-select border-2" disabled>
+                                <option value="all">Semua Kelas</option>
+                                <?php foreach ($classes as $cls): ?>
+                                    <option value="<?= htmlspecialchars($cls) ?>">Kelas: <?= htmlspecialchars($cls) ?></option>
+                                <?php endforeach; ?>
+                                <?php if ($has_empty_class): ?>
+                                    <option value="none">Tanpa Kelas (Belum Ditentukan)</option>
+                                <?php endif; ?>
+                            </select>
+                        </div>
+
+                        <!-- Filter Kelompok -->
+                        <div id="filter_kelompok_container" class="mb-3">
                             <label class="form-label fw-bold">Pilih Kelompok</label>
-                            <select name="kelompok" class="form-select border-2" required>
+                            <select name="kelompok" id="kelompok_select" class="form-select border-2">
                                 <option value="all">Semua Kelompok</option>
                                 <?php foreach ($groups as $grp): ?>
                                     <option value="<?= htmlspecialchars($grp) ?>">Kelompok: <?= htmlspecialchars($grp) ?></option>
