@@ -69,6 +69,9 @@ $settings = $stmt_settings->fetchAll(PDO::FETCH_KEY_PAIR);
 
 $bimbel_name = $settings['bimbel_name'] ?? 'BIMBINGAN BELAJAR LITA';
 $app_name    = $settings['app_name'] ?? 'CBT Simulation';
+$bimbel_logo = $settings['bimbel_logo'] ?? 'logo-bimbel.png';
+$logo_path   = '../assets/img/' . $bimbel_logo;
+$logo_version = (file_exists($logo_path) && is_file($logo_path)) ? '?v=' . filemtime($logo_path) : '';
 ?>
 
 <!DOCTYPE html>
@@ -79,22 +82,35 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
     <title>CBT - <?= htmlspecialchars($bimbel_name) ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" href="../assets/img/<?= htmlspecialchars($bimbel_logo) . $logo_version ?>">
     
     <style>
         :root {
-            --primary-teal: #3a797a;
-            --mint-green: #a2d9c1;
-            --soft-bg: #f0fdf9;
+            /* Identitas Brand Sekolah: SMK Informatika Sumedang */
+            --brand-primary: #1e40af;        /* Royal Blue */
+            --brand-primary-hover: #1d4ed8;  /* Vibrant Blue */
+            --brand-primary-dark: #0f274e;   /* Deep Blue */
+            --brand-primary-subtle: #eff6ff; /* Soft Ice Blue */
+            --brand-accent: #f59e0b;         /* Golden Amber dari Logo */
+            --brand-accent-hover: #d97706;
+            --canvas-bg: #f8fafc;
+            --surface-card: #ffffff;
+            --border-subtle: #e2e8f0;
         }
         body {
-            background-color: var(--soft-bg);
-            font-family: 'Poppins', sans-serif;
-            color: #2c3e50;
+            background-color: var(--canvas-bg);
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #1e293b;
+            -webkit-font-smoothing: antialiased;
         }
         .navbar-custom {
-            background: linear-gradient(135deg, var(--primary-teal) 0%, #4b8b8c 100%);
-            box-shadow: 0 4px 15px rgba(58, 121, 122, 0.2);
+            background: linear-gradient(135deg, #0d2347 0%, #1e3a8a 100%);
+            box-shadow: 0 4px 20px rgba(13, 35, 71, 0.25);
+            border-bottom: 2px solid var(--brand-accent);
         }
         .navbar-brand, .nav-link {
             color: #fff !important;
@@ -102,15 +118,27 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
         .navbar-brand {
             white-space: normal;
             max-width: 80%;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
+            display: flex;
+            align-items: center;
+        }
+        .navbar-logo {
+            width: 36px;
+            height: 36px;
+            object-fit: contain;
+            background: #ffffff;
+            border-radius: 50%;
+            padding: 3px;
+            border: 2px solid var(--brand-accent);
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
         }
         .card-exam {
-            border: 2px solid transparent;
-            border-radius: 20px;
-            transition: all 0.3s ease;
-            background: #fff;
+            border: 1px solid var(--border-subtle);
+            border-radius: 18px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: var(--surface-card);
             overflow: hidden;
-            box-shadow: 0 8px 25px rgba(58, 121, 122, 0.08);
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
             display: flex;
             flex-direction: column;
         }
@@ -120,14 +148,14 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
             flex: 1 1 auto;
         }
         .card-exam:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 12px 30px rgba(58, 121, 122, 0.15);
-            border-color: var(--mint-green);
+            transform: translateY(-6px);
+            box-shadow: 0 14px 30px rgba(30, 64, 175, 0.12);
+            border-color: #93c5fd;
         }
         .card-header-exam {
-            background-color: #fff;
+            background-color: #ffffff;
             border-bottom: 1px solid #f1f5f9;
-            padding: 1.5rem;
+            padding: 1.25rem 1.5rem;
         }
         .btn-countdown {
             background-color: #64748b;
@@ -147,42 +175,47 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
             letter-spacing: 0.5px;
         }
         @keyframes pulse-ready {
-            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(58, 121, 122, 0.6); }
-            70% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(58, 121, 122, 0); }
-            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(58, 121, 122, 0); }
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(29, 78, 216, 0.6); }
+            70% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(29, 78, 216, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(29, 78, 216, 0); }
         }
         .btn-ready-animate {
             animation: pulse-ready 1.8s ease-in-out infinite;
         }
         .status-badge {
-            font-size: 0.75rem;
-            padding: 0.5em 1em;
+            font-size: 0.725rem;
+            padding: 0.45em 0.9em;
             border-radius: 50px;
-            font-weight: 600;
+            font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         .btn-start {
             border-radius: 12px;
-            padding: 0.7rem 1.5rem;
-            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
             transition: all 0.3s;
         }
         .btn-primary {
-            background-color: var(--primary-teal);
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
             border: none;
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(29, 78, 216, 0.25);
         }
-        .btn-primary:hover {
-            background-color: #2d6161;
-            box-shadow: 0 4px 12px rgba(58, 121, 122, 0.3);
+        .btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            box-shadow: 0 6px 20px rgba(29, 78, 216, 0.35);
+            color: #ffffff;
+            transform: translateY(-1px);
         }
         .btn-review {
             border-radius: 12px;
-            padding: 0.6rem 1.2rem;
+            padding: 0.65rem 1.2rem;
             font-weight: 600;
             font-size: 0.88rem;
             transition: all 0.3s;
-            background: linear-gradient(135deg, #0369a1, #0284c7);
+            background: linear-gradient(135deg, #0284c7, #0369a1);
             color: white;
             border: none;
             display: flex;
@@ -192,7 +225,7 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
             width: 100%;
         }
         .btn-review:hover {
-            background: linear-gradient(135deg, #075985, #0369a1);
+            background: linear-gradient(135deg, #0369a1, #075985);
             color: white;
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(3, 105, 161, 0.30);
@@ -200,21 +233,22 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
         .progress {
             height: 8px;
             border-radius: 10px;
-            background-color: #eef2f3;
+            background-color: #e2e8f0;
         }
         .progress-bar {
-            background: linear-gradient(to right, #3fb27f, var(--mint-green));
+            background: linear-gradient(to right, #1d4ed8, #3b82f6);
         }
         .text-primary {
-            color: var(--primary-teal) !important;
+            color: var(--brand-primary) !important;
         }
         .btn-outline-primary {
-            color: var(--primary-teal);
-            border-color: var(--primary-teal);
+            color: var(--brand-primary);
+            border-color: #bfdbfe;
         }
         .btn-outline-primary:hover {
-            background-color: var(--primary-teal);
-            border-color: var(--primary-teal);
+            background-color: var(--brand-primary);
+            border-color: var(--brand-primary);
+            color: #ffffff;
         }
     </style>
 </head>
@@ -223,7 +257,8 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
 <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
     <div class="container">
         <a class="navbar-brand fw-bold" href="#">
-            <i class="bi bi-mortarboard-fill me-2"></i>CBT - <?= htmlspecialchars($bimbel_name) ?>
+            <img src="../assets/img/<?= htmlspecialchars($bimbel_logo) . $logo_version ?>" alt="Logo" class="navbar-logo me-2">
+            <span>CBT - <?= htmlspecialchars($bimbel_name) ?></span>
         </a>
         <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon" style="filter: invert(1);"></span>
@@ -232,10 +267,10 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
             <ul class="navbar-nav align-items-center">
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
-                        <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
-                            <i class="bi bi-person-fill"></i>
+                        <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center me-2 shadow-sm" style="width: 34px; height: 34px;">
+                            <i class="bi bi-person-fill fs-5"></i>
                         </div>
-                        <span>Halo, <?= htmlspecialchars($_SESSION['full_name']) ?></span>
+                        <span class="fw-medium">Halo, <?= htmlspecialchars($_SESSION['full_name']) ?></span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end border-0 shadow mt-2">
                         <li>
@@ -445,29 +480,29 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
 
 <div class="modal fade" id="changePasswordModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
             <form method="POST">
-                <div class="modal-header">
-                    <h5 class="modal-title fw-bold">Ganti Password</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="modal-header text-white" style="background: linear-gradient(135deg, #0d2347 0%, #1e3a8a 100%);">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-shield-lock me-2 text-warning"></i>Ganti Password</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label class="form-label">Password Lama</label>
+                        <label class="form-label fw-semibold">Password Lama</label>
                         <input type="password" name="current_password" class="form-control" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Password Baru</label>
+                        <label class="form-label fw-semibold">Password Baru</label>
                         <input type="password" name="new_password" class="form-control" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Konfirmasi Password Baru</label>
+                        <label class="form-label fw-semibold">Konfirmasi Password Baru</label>
                         <input type="password" name="confirm_password" class="form-control" required>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" name="change_password" class="btn btn-primary">Simpan Password</button>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" name="change_password" class="btn btn-primary px-4 fw-semibold">Simpan Password</button>
                 </div>
             </form>
         </div>
@@ -476,10 +511,10 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
 
 <div class="modal fade" id="tokenModal" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-primary text-white">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 18px; overflow: hidden;">
+            <div class="modal-header text-white" style="background: linear-gradient(135deg, #0d2347 0%, #1e3a8a 100%);">
                 <h5 class="modal-title fw-bold">
-                    <i class="bi bi-key-fill me-2"></i>Token Ujian
+                    <i class="bi bi-key-fill me-2 text-warning"></i>Token Ujian
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>

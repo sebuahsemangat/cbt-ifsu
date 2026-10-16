@@ -222,7 +222,7 @@ $page = $_GET['page'] ?? 'main';
             <!-- KARTU STATISTIK RINGKASAN -->
             <div class="row g-3 mb-4">
                 <div class="col-6 col-lg-3">
-                    <div class="card border-0 shadow-sm p-3 h-100">
+                    <div class="card border-0 shadow-sm p-3 h-100 border-start border-4 border-primary">
                         <div class="d-flex align-items-center">
                             <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
                                 <i class="bi bi-people text-primary fs-4"></i>
@@ -261,7 +261,7 @@ $page = $_GET['page'] ?? 'main';
                     </div>
                 </div>
                 <div class="col-6 col-lg-3">
-                    <div class="card border-0 shadow-sm p-3 h-100">
+                    <div class="card border-0 shadow-sm p-3 h-100 border-start border-4 border-info">
                         <div class="d-flex align-items-center">
                             <div class="bg-info bg-opacity-10 p-3 rounded-circle me-3">
                                 <i class="bi bi-journal-check text-info fs-4"></i>
