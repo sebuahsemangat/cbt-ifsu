@@ -107,6 +107,69 @@ $references = $stmtRef->fetchAll();
                 </div>
             <?php endif; ?>
         <?php endif; ?>
+
+        <!-- Card Petunjuk Penyesuaian Template Menggunakan AI -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <div class="me-3 d-flex align-items-center justify-content-center rounded-3 bg-primary bg-opacity-10 text-primary" style="width: 40px; height: 40px;">
+                        <i class="bi bi-robot fs-5"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold text-dark">Petunjuk Penyesuaian Soal dengan AI</h6>
+                        <small class="text-muted">Gunakan Claude AI untuk merapikan format soal ke template sistem secara instan</small>
+                    </div>
+                </div>
+                <span class="badge bg-warning text-dark"><i class="bi bi-stars me-1"></i>Tips AI</span>
+            </div>
+            <div class="card-body p-4">
+                <ol class="mb-0 ps-3 text-secondary" style="line-height: 1.8;">
+                    <li class="mb-3">
+                        <strong class="text-dark">Download Template Soal</strong><br>
+                        Unduh template dokumen Word resmi sistem melalui tombol 
+                        <a href="modules/questions/download_template.php" class="btn btn-sm btn-outline-primary py-0 px-2 ms-1 align-baseline">
+                            <i class="bi bi-download me-1"></i>Download Template Word
+                        </a>
+                    </li>
+                    <li class="mb-3">
+                        <strong class="text-dark">Buka Website Claude AI</strong><br>
+                        Buka browser dan akses website resmi 
+                        <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" class="fw-semibold text-primary text-decoration-none">
+                            claude.ai <i class="bi bi-box-arrow-up-right small"></i>
+                        </a>
+                    </li>
+                    <li class="mb-3">
+                        <strong class="text-dark">Upload Dua File Sekaligus</strong><br>
+                        Unggah / lampirkan dua file ke dalam percakapan Claude AI:
+                        <ul class="mt-1 mb-0 ps-3 small text-muted">
+                            <li>File soal Anda yang sudah ada</li>
+                            <li>File template Word yang telah Anda download</li>
+                        </ul>
+                    </li>
+                    <li class="mb-3">
+                        <strong class="text-dark">Masukkan Prompt Perintah</strong><br>
+                        Salin dan kirimkan prompt di bawah ini ke Claude AI:
+                        <div class="bg-light p-3 rounded-3 border mt-2">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-secondary-subtle text-secondary small font-monospace">
+                                    <i class="bi bi-chat-left-dots-fill me-1"></i>Prompt AI
+                                </span>
+                                <button type="button" class="btn btn-sm btn-outline-primary py-1 px-3 fw-semibold" id="btnCopyPrompt" onclick="copyPrompt()">
+                                    <i class="bi bi-clipboard me-1" id="copyIcon"></i><span id="copyText">Salin Prompt</span>
+                                </button>
+                            </div>
+                            <div class="p-2 bg-white rounded border border-light-subtle">
+                                <p class="mb-0 text-dark font-monospace small" id="promptContent" style="white-space: pre-wrap; user-select: all;">Buat sebuah file docx dari dokumen yang saya upload sesuaikan formatnya dengan template yang disediakan. jika soal mengandung referensi, maka pisahkan referensi di dalam chat jangan di dalam file docx</p>
+                            </div>
+                        </div>
+                    </li>
+                    <li>
+                        <strong class="text-dark">Download & Upload ke Sistem</strong><br>
+                        Download file <code>.docx</code> yang telah dihasilkan oleh Claude AI, kemudian upload file tersebut pada bagian <strong>Upload File Word</strong> di atas.
+                    </li>
+                </ol>
+            </div>
+        </div>
     </div>
 
     <div class="col-lg-5">
@@ -282,4 +345,48 @@ document.getElementById('importForm').addEventListener('submit', function(e) {
     xhr.open('POST', form.action, true);
     xhr.send(formData);
 });
+
+function copyPrompt() {
+    const text = document.getElementById('promptContent').innerText.trim();
+    const btn = document.getElementById('btnCopyPrompt');
+    const icon = document.getElementById('copyIcon');
+    const textSpan = document.getElementById('copyText');
+
+    function showSuccess() {
+        btn.classList.remove('btn-outline-primary');
+        btn.classList.add('btn-success');
+        icon.className = 'bi bi-check-lg me-1';
+        textSpan.textContent = 'Tersalin!';
+        setTimeout(function() {
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-primary');
+            icon.className = 'bi bi-clipboard me-1';
+            textSpan.textContent = 'Salin Prompt';
+        }, 2000);
+    }
+
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(showSuccess).catch(function() {
+            fallbackCopy();
+        });
+    } else {
+        fallbackCopy();
+    }
+
+    function fallbackCopy() {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            showSuccess();
+        } catch (e) {
+            alert('Gagal menyalin otomatis. Silakan salin teks secara manual.');
+        }
+        document.body.removeChild(textarea);
+    }
+}
 </script>
