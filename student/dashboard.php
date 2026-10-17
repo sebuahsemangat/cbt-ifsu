@@ -77,6 +77,61 @@ JOIN exam_classes ec ON ec.exam_id = e.id AND ec.class_name = ?
 ORDER BY e.start_date DESC");
 $stmt->execute([$student_id, $student_class]);
 $exams = $stmt->fetchAll();
+
+/**
+ * Format jadwal ujian ke format lokal Indonesia dengan durasi
+ */
+function formatIndoSchedule($startStr, $endStr) {
+    $startTime = strtotime($startStr);
+    $endTime = strtotime($endStr);
+    
+    $indoDays = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    $indoMonths = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    
+    $startDay = $indoDays[(int)date('w', $startTime)];
+    $startDate = (int)date('j', $startTime);
+    $startMonth = $indoMonths[(int)date('n', $startTime)];
+    $startYear = date('Y', $startTime);
+    $startClock = date('H:i', $startTime);
+    
+    $endDay = $indoDays[(int)date('w', $endTime)];
+    $endDate = (int)date('j', $endTime);
+    $endMonth = $indoMonths[(int)date('n', $endTime)];
+    $endYear = date('Y', $endTime);
+    $endClock = date('H:i', $endTime);
+    
+    $isSameDay = date('Y-m-d', $startTime) === date('Y-m-d', $endTime);
+    
+    // Hitung estimasi rentang durasi
+    $diffSec = max(0, $endTime - $startTime);
+    $diffHours = floor($diffSec / 3600);
+    $diffMins = floor(($diffSec % 3600) / 60);
+    
+    $durationText = '';
+    if ($diffHours >= 24) {
+        $days = floor($diffHours / 24);
+        $remHours = $diffHours % 24;
+        $durationText = "{$days} Hari" . ($remHours > 0 ? " {$remHours} Jam" : '');
+    } elseif ($diffHours > 0 && $diffMins > 0) {
+        $durationText = "{$diffHours}j {$diffMins}m";
+    } elseif ($diffHours > 0) {
+        $durationText = "{$diffHours} Jam";
+    } elseif ($diffMins > 0) {
+        $durationText = "{$diffMins} Menit";
+    }
+    
+    return [
+        'isSameDay' => $isSameDay,
+        'headerDate' => $isSameDay 
+            ? "{$startDay}, {$startDate} {$startMonth} {$startYear}"
+            : "{$startDate} {$startMonth} - {$endDate} {$endMonth} {$endYear}",
+        'startClock' => $startClock,
+        'endClock' => $endClock,
+        'startDateShort' => "{$startDate} {$startMonth}",
+        'endDateShort' => "{$endDate} {$endMonth}",
+        'durationText' => $durationText
+    ];
+}
 ?>
 
 <!DOCTYPE html>
@@ -253,6 +308,86 @@ $exams = $stmt->fetchAll();
             border-color: var(--brand-primary);
             color: #ffffff;
         }
+
+        /* Premium Exam Schedule Box */
+        .exam-schedule-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 0.85rem 1rem;
+            margin-bottom: 1.25rem;
+            transition: all 0.25s ease;
+        }
+        .card-exam:hover .exam-schedule-box {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+        .schedule-date-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 0.65rem;
+            margin-bottom: 0.65rem;
+            border-bottom: 1px dashed #cbd5e1;
+            gap: 0.5rem;
+        }
+        .schedule-date-text {
+            font-size: 0.825rem;
+            font-weight: 700;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .schedule-time-grid {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .time-pill {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 0.45rem 0.6rem;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+            transition: all 0.2s ease;
+        }
+        .time-pill.start-pill {
+            border-left: 3px solid #10b981;
+        }
+        .time-pill.end-pill {
+            border-left: 3px solid #ef4444;
+        }
+        .time-pill-label {
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            margin-bottom: 2px;
+        }
+        .time-pill-value {
+            font-size: 0.98rem;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.2px;
+            font-variant-numeric: tabular-nums;
+        }
+        .time-arrow {
+            color: #94a3b8;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
 <body>
@@ -384,16 +519,42 @@ $exams = $stmt->fetchAll();
                             <!-- Icon/Decoration -->
                         </div>
                         <div class="card-body">
-                            <ul class="list-unstyled mb-3 text-secondary">
-                                <li class="mb-2">
-                                    <i class="bi bi-clock me-2"></i>Mulai: 
-                                    <span class="fw-medium text-dark"><?= date('d M Y, H:i', strtotime($start)) ?></span>
-                                </li>
-                                <li class="mb-2">
-                                    <i class="bi bi-clock-history me-2"></i>Selesai: 
-                                    <span class="fw-medium text-dark"><?= date('d M Y, H:i', strtotime($end)) ?></span>
-                                </li>
-                            </ul>
+                            <?php $sch = formatIndoSchedule($start, $end); ?>
+                            <!-- Widget Jadwal Ujian Modern -->
+                            <div class="exam-schedule-box">
+                                <div class="schedule-date-header">
+                                    <div class="schedule-date-text">
+                                        <i class="bi bi-calendar2-event-fill text-primary"></i>
+                                        <span><?= htmlspecialchars($sch['headerDate']) ?></span>
+                                    </div>
+                                    <?php if (!empty($sch['durationText'])): ?>
+                                        <span class="badge bg-white text-secondary border fw-semibold shadow-xs" title="Durasi jendela ujian">
+                                            <i class="bi bi-clock-history text-warning me-1"></i><?= htmlspecialchars($sch['durationText']) ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="schedule-time-grid">
+                                    <div class="time-pill start-pill">
+                                        <div class="time-pill-label text-success">
+                                            <i class="bi bi-play-circle-fill"></i> Mulai <?= !$sch['isSameDay'] ? '(' . $sch['startDateShort'] . ')' : '' ?>
+                                        </div>
+                                        <div class="time-pill-value">
+                                            <?= $sch['startClock'] ?> <small class="text-muted fw-normal" style="font-size: 0.7rem;">WIB</small>
+                                        </div>
+                                    </div>
+                                    <div class="time-arrow">
+                                        <i class="bi bi-arrow-right"></i>
+                                    </div>
+                                    <div class="time-pill end-pill">
+                                        <div class="time-pill-label text-danger">
+                                            <i class="bi bi-stop-circle-fill"></i> Selesai <?= !$sch['isSameDay'] ? '(' . $sch['endDateShort'] . ')' : '' ?>
+                                        </div>
+                                        <div class="time-pill-value">
+                                            <?= $sch['endClock'] ?> <small class="text-muted fw-normal" style="font-size: 0.7rem;">WIB</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             
                             <?php if ($now < $start): ?>
                                 <!-- Info Placeholder Saat Ujian Belum Dimulai -->

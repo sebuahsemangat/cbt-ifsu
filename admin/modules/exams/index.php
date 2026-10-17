@@ -388,7 +388,7 @@ while ($row = $stmt_ec->fetch(PDO::FETCH_ASSOC)) {
                                         <div class="mb-3">
                                             <div class="d-flex justify-content-between align-items-center mb-1">
                                                 <label class="form-label fw-bold mb-0">
-                                                    <i class="bi bi-people-fill text-primary me-1"></i>Kelas yang Diizinkan Mengakses
+                                                    <i class="bi bi-people-fill text-primary me-1"></i>Akses Kelas
                                                 </label>
                                                 <div class="btn-group btn-group-sm">
                                                     <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2" onclick="toggleAllClasses('editExamModal<?= $e['id'] ?>', true)">Pilih Semua</button>
