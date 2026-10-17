@@ -80,12 +80,10 @@ $logo_version = (file_exists($logo_path) && is_file($logo_path)) ? '?v=' . filem
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CBT - <?= htmlspecialchars($bimbel_name) ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <!-- Google Fonts: Plus Jakarta Sans -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="../assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/vendor/bootstrap-icons/bootstrap-icons.css">
+    <!-- Local Fonts: Plus Jakarta Sans & Poppins -->
+    <link href="../assets/vendor/fonts/fonts.css" rel="stylesheet">
     <link rel="icon" href="../assets/img/<?= htmlspecialchars($bimbel_logo) . $logo_version ?>">
     
     <style>
@@ -323,7 +321,7 @@ $logo_version = (file_exists($logo_path) && is_file($logo_path)) ? '?v=' . filem
 }
         if (empty($exams)): ?>
             <div class="col-12 text-center py-5">
-                <img src="https://placehold.co/200x200/e9ecef/adb5bd?text=No+Data" class="mb-3 rounded-circle opacity-50" width="150">
+                <img src="../assets/img/no-data.svg" class="mb-3 rounded-circle opacity-50" width="150" alt="No Data">
                 <h5 class="text-muted">Belum ada jadwal ujian.</h5>
             </div>
         <?php else: ?>
@@ -543,7 +541,7 @@ $logo_version = (file_exists($logo_path) && is_file($logo_path)) ? '?v=' . filem
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script>
     function openTokenModal(examId, examName) {
         document.getElementById('examIdInput').value = examId;

@@ -52,9 +52,9 @@ if (preg_match('/<img[^>]*$/', $questionText)) {
 $questionText = fixAdminImagePaths($questionText);
 ?>
 
-<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/quill-image-resize-module@3.0.0/image-resize.min.js"></script>
+<link href="../assets/vendor/quill/quill.1.3.6.snow.css" rel="stylesheet">
+<script src="../assets/vendor/quill/quill.1.3.6.min.js"></script>
+<script src="../assets/vendor/quill/image-resize.min.js"></script>
 
 <style>
     /* Cegah gambar besar merusak layout flexbox grid Bootstrap */

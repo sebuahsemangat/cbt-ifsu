@@ -1,9 +1,9 @@
-</div> <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+</div> <script src="../assets/vendor/jquery/jquery-3.7.0.min.js"></script>
     
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 
     <!-- SortableJS for drag-and-drop subject reordering -->
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="../assets/vendor/sortable/Sortable.min.js"></script>
     <script>
     function initSortableSubjects() {
         document.querySelectorAll('.sortable-subjects').forEach(function(tbody) {
@@ -85,8 +85,8 @@
         });
     </script>
     <!-- Quill.js WYSIWYG Editor -->
-    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+    <link href="../assets/vendor/quill/quill.snow.css" rel="stylesheet">
+    <script src="../assets/vendor/quill/quill.js"></script>
     
     <script>
         // Inisialisasi Quill.js
