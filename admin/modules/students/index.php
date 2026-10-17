@@ -16,6 +16,41 @@ $stmt_kelompoks = $pdo->query("SELECT DISTINCT kelompok FROM students WHERE kelo
 $existing_kelompoks = $stmt_kelompoks->fetchAll(PDO::FETCH_COLUMN);
 ?>
 
+<style>
+    .pagination .page-item .page-link {
+        color: #334155;
+        border-radius: 6px;
+        margin: 0 2px;
+        min-width: 32px;
+        height: 32px;
+        padding: 0 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.825rem;
+        border-color: #e2e8f0;
+        font-weight: 500;
+        transition: all 0.15s ease-in-out;
+    }
+    .pagination .page-item.active .page-link {
+        background-color: var(--brand-primary, #1e40af);
+        border-color: var(--brand-primary, #1e40af);
+        color: #ffffff;
+        font-weight: 600;
+        box-shadow: 0 2px 4px rgba(30, 64, 175, 0.2);
+    }
+    .pagination .page-item.disabled .page-link {
+        color: #94a3b8;
+        background-color: #f8fafc;
+        border-color: #e2e8f0;
+    }
+    .pagination .page-item:not(.active):not(.disabled) .page-link:hover {
+        background-color: #eff6ff;
+        border-color: #bfdbfe;
+        color: var(--brand-primary, #1e40af);
+    }
+</style>
+
 <?php if (isset($_GET['status'])): ?>
     <div class="alert alert-<?= in_array($_GET['status'], ['success', 'updated', 'deleted', 'resetted', 'pw_resetted', 'all_resetted', 'kelompok_updated']) ? 'success' : 'danger' ?> alert-dismissible fade show" role="alert">
         <?php 
@@ -158,9 +193,21 @@ $existing_kelompoks = $stmt_kelompoks->fetchAll(PDO::FETCH_COLUMN);
             </table>
         </div>
     </div>
-    <div class="card-footer bg-white border-0 py-3">
-        <nav>
-            <ul class="pagination pagination-sm justify-content-center mb-0" id="paginationControls"></ul>
+    <div class="card-footer bg-white border-top py-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div class="d-flex align-items-center gap-2 flex-wrap text-muted small">
+            <span>Tampilkan</span>
+            <select id="rowsPerPageSelect" class="form-select form-select-sm" style="width: 75px;">
+                <option value="10">10</option>
+                <option value="20" selected>20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+            </select>
+            <span>data per halaman</span>
+            <span class="mx-1 text-black-50">|</span>
+            <span id="paginationInfo" class="fw-medium text-dark">Menampilkan 0 data</span>
+        </div>
+        <nav aria-label="Navigasi Halaman Siswa">
+            <ul class="pagination pagination-sm mb-0 flex-wrap align-items-center" id="paginationControls"></ul>
         </nav>
     </div>
 </div>
@@ -396,7 +443,7 @@ $existing_kelompoks = $stmt_kelompoks->fetchAll(PDO::FETCH_COLUMN);
 
 <script>
 // Logika Pencarian, Filter Kelompok, Paginasi, & Multi-Select Checkbox
-const rowsPerPage = 20;
+let rowsPerPage = 20;
 let currentPage = 1;
 let currentSortClass = 'none';
 let currentSortKelompok = 'none';
@@ -407,6 +454,8 @@ const tableBody = document.getElementById('tableBody');
 const allRows = Array.from(tableBody.querySelectorAll('.student-row'));
 const noDataRow = document.getElementById('noData');
 const paginationControls = document.getElementById('paginationControls');
+const paginationInfo = document.getElementById('paginationInfo');
+const rowsPerPageSelect = document.getElementById('rowsPerPageSelect');
 const sortClassBtn = document.getElementById('sortClass');
 const sortKelompokBtn = document.getElementById('sortKelompok');
 
@@ -416,6 +465,15 @@ const selectedCount = document.getElementById('selectedCount');
 
 // Set penyimpan ID siswa yang diceklis (lintas halaman)
 const selectedStudentIds = new Set();
+
+// Event listener pilihan baris per halaman
+if (rowsPerPageSelect) {
+    rowsPerPageSelect.addEventListener('change', function() {
+        rowsPerPage = parseInt(this.value, 10) || 20;
+        currentPage = 1;
+        displayTable();
+    });
+}
 
 function getFilteredRows() {
     const keyword = searchInput.value.toLowerCase().trim();
@@ -447,19 +505,25 @@ function getFilteredRows() {
 
 function displayTable() {
     const filteredRows = getFilteredRows();
-    const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
-    if (currentPage > totalPages) currentPage = 1;
+    const totalItems = filteredRows.length;
+    const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
 
     // Sembunyikan semua baris
     allRows.forEach(row => row.style.display = 'none');
 
-    if (filteredRows.length === 0) {
+    if (totalItems === 0) {
         noDataRow.style.display = '';
         paginationControls.innerHTML = '';
+        if (paginationInfo) {
+            paginationInfo.innerHTML = 'Menampilkan <strong>0</strong> siswa' + 
+                (allRows.length > 0 ? ` <span class="text-muted">(dari total ${allRows.length} siswa)</span>` : '');
+        }
     } else {
         noDataRow.style.display = 'none';
         const start = (currentPage - 1) * rowsPerPage;
-        const end = start + rowsPerPage;
+        const end = Math.min(start + rowsPerPage, totalItems);
         
         filteredRows.slice(start, end).forEach((row, idx) => {
             row.style.display = '';
@@ -474,6 +538,12 @@ function displayTable() {
             }
         });
         
+        if (paginationInfo) {
+            const isFiltered = totalItems < allRows.length;
+            paginationInfo.innerHTML = `Menampilkan <strong>${start + 1} - ${end}</strong> dari <strong>${totalItems}</strong> siswa` + 
+                (isFiltered ? ` <span class="text-muted fst-italic">(difilter dari ${allRows.length})</span>` : '');
+        }
+        
         setupPagination(totalPages);
     }
 
@@ -481,21 +551,95 @@ function displayTable() {
     updateBulkBar();
 }
 
+// Algoritma Smart Pagination dengan sliding window & ellipsis
+function getPaginationItems(current, total) {
+    if (total <= 7) {
+        return Array.from({ length: total }, (_, i) => i + 1);
+    }
+
+    const items = [];
+    if (current <= 4) {
+        for (let i = 1; i <= 5; i++) items.push(i);
+        items.push('...');
+        items.push(total);
+    } else if (current >= total - 3) {
+        items.push(1);
+        items.push('...');
+        for (let i = total - 4; i <= total; i++) items.push(i);
+    } else {
+        items.push(1);
+        items.push('...');
+        items.push(current - 1);
+        items.push(current);
+        items.push(current + 1);
+        items.push('...');
+        items.push(total);
+    }
+
+    return items;
+}
+
+function createPageButton(content, targetPage, isActive = false, isDisabled = false, title = '') {
+    const li = document.createElement('li');
+    li.className = `page-item ${isActive ? 'active' : ''} ${isDisabled ? 'disabled' : ''}`;
+    
+    const a = document.createElement('a');
+    a.className = 'page-link';
+    a.href = '#';
+    if (title) a.title = title;
+    a.innerHTML = content;
+
+    if (!isDisabled && !isActive) {
+        a.addEventListener('click', (e) => {
+            e.preventDefault();
+            currentPage = targetPage;
+            displayTable();
+            
+            // Scroll halus ke tabel jika posisi scroll di bawah tabel
+            const cardEl = document.querySelector('.card.border-0.shadow-sm');
+            if (cardEl && cardEl.getBoundingClientRect().top < 0) {
+                cardEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    }
+    li.appendChild(a);
+    return li;
+}
+
 function setupPagination(totalPages) {
     paginationControls.innerHTML = '';
     if (totalPages <= 1) return;
 
-    for (let i = 1; i <= totalPages; i++) {
-        const li = document.createElement('li');
-        li.className = `page-item ${i === currentPage ? 'active' : ''}`;
-        li.innerHTML = `<a class="page-link" href="#">${i}</a>`;
-        li.addEventListener('click', (e) => {
-            e.preventDefault();
-            currentPage = i;
-            displayTable();
-        });
-        paginationControls.appendChild(li);
-    }
+    // Tombol Pertama & Sebelumnya
+    paginationControls.appendChild(
+        createPageButton('<i class="bi bi-chevron-double-left"></i>', 1, false, currentPage === 1, 'Halaman Pertama (1)')
+    );
+    paginationControls.appendChild(
+        createPageButton('<i class="bi bi-chevron-left"></i>', currentPage - 1, false, currentPage === 1, 'Halaman Sebelumnya')
+    );
+
+    // Nomor Halaman dengan Ellipsis
+    const items = getPaginationItems(currentPage, totalPages);
+    items.forEach(item => {
+        if (item === '...') {
+            const li = document.createElement('li');
+            li.className = 'page-item disabled';
+            li.innerHTML = '<span class="page-link text-muted border-0 bg-transparent px-2">&hellip;</span>';
+            paginationControls.appendChild(li);
+        } else {
+            paginationControls.appendChild(
+                createPageButton(item, item, item === currentPage, false, `Halaman ${item}`)
+            );
+        }
+    });
+
+    // Tombol Selanjutnya & Terakhir
+    paginationControls.appendChild(
+        createPageButton('<i class="bi bi-chevron-right"></i>', currentPage + 1, false, currentPage === totalPages, 'Halaman Selanjutnya')
+    );
+    paginationControls.appendChild(
+        createPageButton('<i class="bi bi-chevron-double-right"></i>', totalPages, false, currentPage === totalPages, `Halaman Terakhir (${totalPages})`)
+    );
 }
 
 function updateHeaderCheckAll(filteredRows) {
