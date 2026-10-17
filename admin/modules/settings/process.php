@@ -102,6 +102,11 @@ if (isset($_POST['update_settings'])) {
         $stmt = $pdo->prepare("INSERT INTO settings (setting_key, setting_value) VALUES ('bimbel_name', ?) ON DUPLICATE KEY UPDATE setting_value = ?");
         $stmt->execute([$bimbel_name, $bimbel_name]);
 
+        // Update Fitur Ganti Password Siswa
+        $allow_student_change_password = isset($_POST['allow_student_change_password']) ? '1' : '0';
+        $stmt = $pdo->prepare("INSERT INTO settings (setting_key, setting_value) VALUES ('allow_student_change_password', ?) ON DUPLICATE KEY UPDATE setting_value = ?");
+        $stmt->execute([$allow_student_change_password, $allow_student_change_password]);
+
         // Handle Logo Upload
         if (isset($_FILES['bimbel_logo']) && $_FILES['bimbel_logo']['error'] !== UPLOAD_ERR_NO_FILE) {
             if ($_FILES['bimbel_logo']['error'] !== UPLOAD_ERR_OK) {

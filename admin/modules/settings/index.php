@@ -20,6 +20,7 @@ try {
 $app_name = $settings['app_name'] ?? 'CBT Simulation';
 $bimbel_name = $settings['bimbel_name'] ?? 'Bimbel Lita Sumedang';
 $bimbel_logo = $settings['bimbel_logo'] ?? 'logo-bimbel.png';
+$allow_student_change_password = ($settings['allow_student_change_password'] ?? '1') === '1';
 ?>
 
 <div class="row">
@@ -62,6 +63,19 @@ $bimbel_logo = $settings['bimbel_logo'] ?? 'logo-bimbel.png';
                                     <div class="form-text">Format: PNG, JPG, JPEG (Max 2MB). Disarankan PNG transparan untuk hasil terbaik.</div>
                                     <div id="file-error" class="text-danger small mt-1" style="display: none;"></div>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4 pt-3 border-top">
+                            <label class="form-label fw-bold d-block">Fitur Siswa</label>
+                            <div class="form-check form-switch fs-6">
+                                <input class="form-check-input" type="checkbox" role="switch" id="allow_student_change_password" name="allow_student_change_password" value="1" <?= $allow_student_change_password ? 'checked' : '' ?>>
+                                <label class="form-check-label fw-semibold" for="allow_student_change_password">
+                                    Izinkan Siswa Mengubah Password
+                                </label>
+                            </div>
+                            <div class="form-text">
+                                Jika diaktifkan, siswa dapat mengubah password mereka sendiri melalui dashboard siswa. Jika dinonaktifkan, menu ganti password akan disembunyikan dan diblokir.
                             </div>
                         </div>
 

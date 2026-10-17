@@ -27,28 +27,43 @@ $student_class = trim($student_status['class'] ?? '');
 
 $message = '';
 
+// === AMBIL SETTING DARI DATABASE ===
+$stmt_settings = $pdo->query("SELECT setting_key, setting_value FROM settings");
+$settings = $stmt_settings->fetchAll(PDO::FETCH_KEY_PAIR);
+
+$allow_change_password = ($settings['allow_student_change_password'] ?? '1') === '1';
+$bimbel_name = $settings['bimbel_name'] ?? 'BIMBINGAN BELAJAR LITA';
+$app_name    = $settings['app_name'] ?? 'CBT Simulation';
+$bimbel_logo = $settings['bimbel_logo'] ?? 'logo-bimbel.png';
+$logo_path   = '../assets/img/' . $bimbel_logo;
+$logo_version = (file_exists($logo_path) && is_file($logo_path)) ? '?v=' . filemtime($logo_path) : '';
+
 // --- PROSES GANTI PASSWORD ---
 if (isset($_POST['change_password'])) {
-    $current_pass = $_POST['current_password'];
-    $new_pass = $_POST['new_password'];
-    $confirm_pass = $_POST['confirm_password'];
-
-    // Ambil password lama dari DB
-    $stmt = $pdo->prepare("SELECT password FROM students WHERE id = ?");
-    $stmt->execute([$student_id]);
-    $user = $stmt->fetch();
-
-    if (password_verify($current_pass, $user['password'])) {
-        if ($new_pass === $confirm_pass) {
-            $hashed_pass = password_hash($new_pass, PASSWORD_DEFAULT);
-            $upd = $pdo->prepare("UPDATE students SET password = ? WHERE id = ?");
-            $upd->execute([$hashed_pass, $student_id]);
-            $message = "<div class='alert alert-success'>Password berhasil diubah!</div>";
-        } else {
-            $message = "<div class='alert alert-danger'>Konfirmasi password baru tidak cocok.</div>";
-        }
+    if (!$allow_change_password) {
+        $message = "<div class='alert alert-danger'>Fitur ganti password telah dinonaktifkan oleh administrator.</div>";
     } else {
-        $message = "<div class='alert alert-danger'>Password lama salah.</div>";
+        $current_pass = $_POST['current_password'];
+        $new_pass = $_POST['new_password'];
+        $confirm_pass = $_POST['confirm_password'];
+
+        // Ambil password lama dari DB
+        $stmt = $pdo->prepare("SELECT password FROM students WHERE id = ?");
+        $stmt->execute([$student_id]);
+        $user = $stmt->fetch();
+
+        if (password_verify($current_pass, $user['password'])) {
+            if ($new_pass === $confirm_pass) {
+                $hashed_pass = password_hash($new_pass, PASSWORD_DEFAULT);
+                $upd = $pdo->prepare("UPDATE students SET password = ? WHERE id = ?");
+                $upd->execute([$hashed_pass, $student_id]);
+                $message = "<div class='alert alert-success'>Password berhasil diubah!</div>";
+            } else {
+                $message = "<div class='alert alert-danger'>Konfirmasi password baru tidak cocok.</div>";
+            }
+        } else {
+            $message = "<div class='alert alert-danger'>Password lama salah.</div>";
+        }
     }
 }
 
@@ -62,16 +77,6 @@ JOIN exam_classes ec ON ec.exam_id = e.id AND ec.class_name = ?
 ORDER BY e.start_date DESC");
 $stmt->execute([$student_id, $student_class]);
 $exams = $stmt->fetchAll();
-
-// === AMBIL SETTING DARI DATABASE ===
-$stmt_settings = $pdo->query("SELECT setting_key, setting_value FROM settings");
-$settings = $stmt_settings->fetchAll(PDO::FETCH_KEY_PAIR);
-
-$bimbel_name = $settings['bimbel_name'] ?? 'BIMBINGAN BELAJAR LITA';
-$app_name    = $settings['app_name'] ?? 'CBT Simulation';
-$bimbel_logo = $settings['bimbel_logo'] ?? 'logo-bimbel.png';
-$logo_path   = '../assets/img/' . $bimbel_logo;
-$logo_version = (file_exists($logo_path) && is_file($logo_path)) ? '?v=' . filemtime($logo_path) : '';
 ?>
 
 <!DOCTYPE html>
@@ -271,12 +276,14 @@ $logo_version = (file_exists($logo_path) && is_file($logo_path)) ? '?v=' . filem
                         <span class="fw-medium">Halo, <?= htmlspecialchars($_SESSION['full_name']) ?></span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end border-0 shadow mt-2">
+                        <?php if ($allow_change_password): ?>
                         <li>
                             <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
                                 <i class="bi bi-key me-2"></i>Ganti Password
                             </a>
                         </li>
                         <li><hr class="dropdown-divider"></li>
+                        <?php endif; ?>
                         <li>
                             <a class="dropdown-item text-danger" href="../logout.php">
                                 <i class="bi bi-box-arrow-right me-2"></i>Logout
@@ -476,6 +483,7 @@ $logo_version = (file_exists($logo_path) && is_file($logo_path)) ? '?v=' . filem
     </div>
 </div>
 
+<?php if ($allow_change_password): ?>
 <div class="modal fade" id="changePasswordModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
@@ -506,6 +514,7 @@ $logo_version = (file_exists($logo_path) && is_file($logo_path)) ? '?v=' . filem
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <div class="modal fade" id="tokenModal" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
