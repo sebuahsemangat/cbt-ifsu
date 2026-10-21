@@ -1,4 +1,25 @@
-</div> <script src="../assets/vendor/jquery/jquery-3.7.0.min.js"></script>
+    <!-- Footer Admin -->
+    <footer class="admin-footer mt-auto pt-4 pb-3 border-top text-muted">
+        <div class="row align-items-center g-2 small">
+            <div class="col-12 col-lg-4 text-center text-lg-start">
+                &copy; <?= date('Y') ?> <strong class="text-dark"><?= htmlspecialchars($site_app_name ?? 'CBT Simulation') ?></strong> &bull; <?= htmlspecialchars($site_bimbel_name ?? 'SMK Informatika Sumedang') ?>
+            </div>
+            <div class="col-12 col-lg-4 text-center">
+                <span>Developed by <strong class="text-primary">@SebuahSemangat</strong></span>
+            </div>
+            <div class="col-12 col-lg-4 text-center text-lg-end">
+                <div class="d-inline-flex align-items-center gap-2">
+                    <span class="badge bg-white text-secondary border py-1 px-2 shadow-xs">
+                        <i class="bi bi-hdd-network text-success me-1"></i>Sistem Ujian LAN Offline
+                    </span>
+                    <span class="text-muted" style="font-size: 0.78rem;">v2.0</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+</div> <!-- /main-content -->
+
+<script src="../assets/vendor/jquery/jquery-3.7.0.min.js"></script>
     
     <script src="../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 

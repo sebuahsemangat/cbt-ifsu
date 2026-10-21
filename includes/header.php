@@ -136,8 +136,15 @@ $site_bimbel_logo = $app_settings['bimbel_logo'] ?? 'logo-bimbel.png';
         .main-content { 
             margin-left: var(--sidebar-width); 
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-            padding: 28px;
+            padding: 28px 28px 0 28px;
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .main-content > .container-fluid {
+            flex: 1 0 auto;
+            padding-left: 0;
+            padding-right: 0;
         }
 
         /* Nav Links */
@@ -268,7 +275,7 @@ $site_bimbel_logo = $app_settings['bimbel_logo'] ?? 'logo-bimbel.png';
         @media (max-width: 991.98px) {
             .sidebar { margin-left: calc(-1 * var(--sidebar-width)); }
             .sidebar.active { margin-left: 0; }
-            .main-content { margin-left: 0; padding: 16px; }
+            .main-content { margin-left: 0; padding: 16px 16px 0 16px; }
         }
     </style>
     
