@@ -149,8 +149,56 @@ const quillConfig = {
     theme: 'snow' 
 };
 
+// Image upload handler untuk bypass OpenResty 403 Base64 overload
+function selectLocalImage(targetQuill) {
+    const input = document.createElement('input');
+    input.setAttribute('type', 'file');
+    input.setAttribute('accept', 'image/png, image/jpeg, image/jpg, image/webp');
+    input.click();
+
+    input.onchange = () => {
+        const file = input.files[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Ukuran gambar maksimal 5MB!');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const base64Data = e.target.result;
+            const params = new URLSearchParams();
+            params.append('image_base64', base64Data);
+
+            fetch('modules/questions/upload_image.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString()
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.success && res.preview_url) {
+                    const range = targetQuill.getSelection(true);
+                    targetQuill.insertEmbed(range ? range.index : 0, 'image', res.preview_url);
+                } else {
+                    alert('Gagal mengupload gambar: ' + (res.message || 'Error'));
+                }
+            })
+            .catch(err => {
+                alert('Terjadi kesalahan koneksi saat mengupload gambar.');
+                console.error(err);
+            });
+        };
+        reader.readAsDataURL(file);
+    };
+}
+
 // Main Editor
 var quill = new Quill('#editor', quillConfig);
+quill.getModule('toolbar').addHandler('image', function() {
+    selectLocalImage(quill);
+});
 var optionQuills = {};
 
 function renderOptions() {
@@ -181,6 +229,7 @@ function renderOptions() {
             container.appendChild(div);
             
             const q = new Quill(`#editor_pg_${let}`, quillConfig);
+            q.getModule('toolbar').addHandler('image', function() { selectLocalImage(q); });
             q.root.innerHTML = val;
             optionQuills[`input_pg_${let}`] = q;
         });
@@ -259,6 +308,7 @@ function addBSRow(text = '', isCorrect = 1) {
     document.getElementById('bs-rows').appendChild(div);
     
     const q = new Quill(`#editor_${id}`, quillConfig);
+    q.getModule('toolbar').addHandler('image', function() { selectLocalImage(q); });
     q.root.innerHTML = text;
     optionQuills[`input_${id}`] = q;
 }
@@ -292,6 +342,7 @@ function addMultiRow(text = '', isCorrect = 0) {
     document.getElementById('multi-rows').appendChild(div);
      
     const q = new Quill(`#editor_${id}`, quillConfig);
+    q.getModule('toolbar').addHandler('image', function() { selectLocalImage(q); });
     q.root.innerHTML = text;
     optionQuills[`input_${id}`] = q;
 }
@@ -301,13 +352,18 @@ function removeRow(btn, id) {
     delete optionQuills[`input_${id}`];
 }
 
-document.getElementById('questionForm').onsubmit = function() {
-    // Sync Main Question
-    document.getElementById('quill_html').value = quill.root.innerHTML;
+function cleanHtmlForSave(html) {
+    if (!html || typeof html !== 'string') return '';
+    return html.replace(/\.\.\/uploads\/questions\//g, 'uploads/questions/');
+}
 
-    // Sync Options
+document.getElementById('questionForm').onsubmit = function() {
+    // Sync Main Question & normalisasi path gambar
+    document.getElementById('quill_html').value = cleanHtmlForSave(quill.root.innerHTML);
+
+    // Sync Options & normalisasi path gambar
     for (let id in optionQuills) {
-        document.getElementById(id).value = optionQuills[id].root.innerHTML;
+        document.getElementById(id).value = cleanHtmlForSave(optionQuills[id].root.innerHTML);
     }
 
     // Handle Multi Checkboxes

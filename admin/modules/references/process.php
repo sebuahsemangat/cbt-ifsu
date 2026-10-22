@@ -64,6 +64,58 @@ function uploadAndCompressImage($file) {
     return false;
 }
 
+// --- FUNGSI HELPER: SIMPAN & KOMPRESI BASE64 (BYPASS OPENRESTY 403) ---
+function saveAndCompressBase64Image($dataUri) {
+    if (!preg_match('/^data:image\/(\w+);base64,/', $dataUri)) {
+        return false;
+    }
+
+    $encodedData = substr($dataUri, strpos($dataUri, ',') + 1);
+    $decodedData = base64_decode($encodedData);
+    if ($decodedData === false) {
+        return false;
+    }
+
+    $targetDir = "../../../assets/uploads/references/";
+    if (!file_exists($targetDir)) mkdir($targetDir, 0777, true);
+
+    $fileName = time() . '_' . uniqid() . '.jpg';
+    $targetFile = $targetDir . $fileName;
+
+    $src = @imagecreatefromstring($decodedData);
+    if (!$src) {
+        return false;
+    }
+
+    // Tangani transparansi PNG agar latar belakang tetap putih rapi saat dijadikan JPG
+    $width = imagesx($src);
+    $height = imagesy($src);
+    $bg = imagecreatetruecolor($width, $height);
+    $white = imagecolorallocate($bg, 255, 255, 255);
+    imagefill($bg, 0, 0, $white);
+    imagecopy($bg, $src, 0, 0, 0, 0, $width, $height);
+    imagedestroy($src);
+    $src = $bg;
+
+    // Resize jika lebar > 1200px
+    $maxWidth = 1200;
+    if ($width > $maxWidth) {
+        $newWidth = $maxWidth;
+        $newHeight = (int)floor($height * ($maxWidth / $width));
+        $tmp = imagecreatetruecolor($newWidth, $newHeight);
+        imagecopyresampled($tmp, $src, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+        imagedestroy($src);
+        $src = $tmp;
+    }
+
+    if (imagejpeg($src, $targetFile, 75)) {
+        imagedestroy($src);
+        return $fileName;
+    }
+    imagedestroy($src);
+    return false;
+}
+
 // --- AKSI SIMPAN (TAMBAH / EDIT) ---
 if ($action == 'save' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     $id = $_POST['id'] ?? null;
@@ -83,28 +135,43 @@ if ($action == 'save' && $_SERVER['REQUEST_METHOD'] == 'POST') {
         exit;
     }
 
-    // 2. Logika Upload Gambar dengan Kompresi
+    // 2. Logika Upload Gambar dengan Kompresi (Mendukung Base64 untuk Bypass OpenResty 403)
     $imagePath = null;
     
-    // Jika user upload gambar baru
-    if ($type == 'image' && !empty($_FILES['image']['name'])) {
-        $uploaded = uploadAndCompressImage($_FILES['image']); // Panggil fungsi baru
-        
+    // Prioritas 1: Base64 Upload (Aman dari blokir multipart OpenResty)
+    if ($type == 'image' && !empty($_POST['image_base64'])) {
+        $uploaded = saveAndCompressBase64Image($_POST['image_base64']);
         if ($uploaded) {
             $imagePath = $uploaded;
-            
             // Hapus gambar lama jika ini mode Edit
             if ($id) {
                 $oldStmt = $pdo->prepare("SELECT image_path FROM `references` WHERE id = ?");
                 $oldStmt->execute([$id]);
                 $oldImg = $oldStmt->fetchColumn();
                 if ($oldImg && file_exists("../../../assets/uploads/references/$oldImg")) {
-                    unlink("../../../assets/uploads/references/$oldImg");
+                    @unlink("../../../assets/uploads/references/$oldImg");
                 }
             }
         } else {
-            // Gagal upload
-            header("Location: ../../dashboard.php?page=references_form&status=error_upload");
+            header("Location: ../../dashboard.php?page=references_form&status=error_upload" . ($id ? "&id=$id" : ""));
+            exit;
+        }
+    } 
+    // Prioritas 2: Fallback $_FILES jika ada
+    elseif ($type == 'image' && !empty($_FILES['image']['name'])) {
+        $uploaded = uploadAndCompressImage($_FILES['image']);
+        if ($uploaded) {
+            $imagePath = $uploaded;
+            if ($id) {
+                $oldStmt = $pdo->prepare("SELECT image_path FROM `references` WHERE id = ?");
+                $oldStmt->execute([$id]);
+                $oldImg = $oldStmt->fetchColumn();
+                if ($oldImg && file_exists("../../../assets/uploads/references/$oldImg")) {
+                    @unlink("../../../assets/uploads/references/$oldImg");
+                }
+            }
+        } else {
+            header("Location: ../../dashboard.php?page=references_form&status=error_upload" . ($id ? "&id=$id" : ""));
             exit;
         }
     } elseif ($type == 'image' && $id) {

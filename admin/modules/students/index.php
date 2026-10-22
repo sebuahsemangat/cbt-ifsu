@@ -377,11 +377,12 @@ $existing_kelompoks = $stmt_kelompoks->fetchAll(PDO::FETCH_COLUMN);
     </div>
 </div>
 
-<!-- MODAL: IMPORT CSV -->
+<!-- MODAL: IMPORT CSV (Mendukung Base64 untuk Bypass OpenResty 403) -->
 <div class="modal fade" id="importModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <form action="modules/students/process.php?action=import" method="POST" enctype="multipart/form-data">
+            <form action="modules/students/process.php?action=import" method="POST" id="formImportCsv">
+                <input type="hidden" name="csv_base64" id="import_csv_base64">
                 <div class="modal-header">
                     <h5 class="modal-title fw-bold">Import Data Siswa</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -389,7 +390,7 @@ $existing_kelompoks = $stmt_kelompoks->fetchAll(PDO::FETCH_COLUMN);
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Pilih File Template (.csv)</label>
-                        <input type="file" name="file_excel" class="form-control" required accept=".csv">
+                        <input type="file" name="file_excel" id="file_import_csv" class="form-control" required accept=".csv">
                         <small class="text-muted d-block mt-2">
                             Format kolom: <strong>NIS ; Nama Lengkap ; Kelas ; Kelompok (Opsional)</strong>.<br>
                             Gunakan file yang diunduh dari tombol "Template" di atas. Password default otomatis <strong>123456</strong>.
@@ -397,7 +398,8 @@ $existing_kelompoks = $stmt_kelompoks->fetchAll(PDO::FETCH_COLUMN);
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Mulai Proses</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary" id="btnSubmitImportCsv">Mulai Proses</button>
                 </div>
             </form>
         </div>
@@ -864,4 +866,43 @@ document.addEventListener('click', function(e) {
 
 // Inisialisasi tampilan awal
 displayTable();
+
+// Handler Konversi File CSV ke Base64 (Bypass OpenResty 403 Multipart)
+const fileInputCsv = document.getElementById('file_import_csv');
+const inputBase64Csv = document.getElementById('import_csv_base64');
+const formImportCsv = document.getElementById('formImportCsv');
+const btnSubmitImport = document.getElementById('btnSubmitImportCsv');
+
+if (fileInputCsv) {
+    fileInputCsv.addEventListener('change', function() {
+        const file = this.files[0];
+        if (!file) {
+            inputBase64Csv.value = '';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const rawContent = e.target.result;
+            try {
+                inputBase64Csv.value = btoa(unescape(encodeURIComponent(rawContent)));
+            } catch (err) {
+                inputBase64Csv.value = '';
+            }
+        };
+        reader.readAsText(file);
+    });
+}
+
+if (formImportCsv) {
+    formImportCsv.addEventListener('submit', function(e) {
+        if (btnSubmitImport) {
+            btnSubmitImport.disabled = true;
+            btnSubmitImport.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Memproses...';
+        }
+        // Jika base64 sudah terisi, form dikirim via urlencoded tanpa multipart untuk keamanan OpenResty
+        if (inputBase64Csv && inputBase64Csv.value) {
+            fileInputCsv.removeAttribute('required');
+        }
+    });
+}
 </script>

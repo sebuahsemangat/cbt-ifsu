@@ -568,8 +568,9 @@ function startTimer() {
       return;
     }
 
-    // Sync berkala ke server setiap 3 detik agar waktu tersimpan jika komputer mati mendadak
-    if (remainingSeconds % 3 === 0) {
+    // Sync berkala ke server setiap 30 detik (dioptimalkan untuk OpenResty agar tidak terkena limit hit/508 Resource Limit)
+    // Sisa waktu juga otomatis tersimpan saat siswa menjawab soal, berpindah tab, atau menutup browser
+    if (remainingSeconds % 30 === 0) {
       syncRemainingTime();
     }
 
@@ -909,9 +910,9 @@ function lockExamSession() {
     overlay.classList.remove("d-none");
   }
 
-  // Polling berkala setiap 3 detik untuk mengecek apakah admin/pengawas sudah membuka kunci
+  // Polling berkala setiap 10 detik untuk mengecek apakah admin/pengawas sudah membuka kunci (aman dari rate limit OpenResty)
   if (!_lockPollInterval) {
-    _lockPollInterval = setInterval(checkLockStatusPoll, 3000);
+    _lockPollInterval = setInterval(checkLockStatusPoll, 10000);
   }
 }
 

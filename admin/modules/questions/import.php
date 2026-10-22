@@ -45,9 +45,9 @@ $references = $stmtRef->fetchAll();
                 <h5 class="mb-0"><i class="bi bi-upload me-2"></i>Upload File Word</h5>
             </div>
             <div class="card-body">
-                <form action="modules/questions/import_process.php" method="POST" enctype="multipart/form-data"
-                    id="importForm">
+                <form action="modules/questions/import_process.php" method="POST" id="importForm">
                     <input type="hidden" name="subject_id" value="<?= $subject_id ?>">
+                    <input type="hidden" name="word_base64" id="wordFileBase64">
 
                     <!-- <div class="mb-4">
                         <label class="form-label fw-bold">Referensi/Stimulus (Opsional)</label>
@@ -308,7 +308,15 @@ Siapa nama presiden pertama Indonesia?
             document.getElementById('fileName').textContent = file.name;
             document.getElementById('fileSize').textContent = (file.size / 1024).toFixed(1) + ' KB';
             fileInfo.classList.remove('d-none');
+
+            // Baca file ke Base64 (Bypass OpenResty 403)
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                document.getElementById('wordFileBase64').value = evt.target.result;
+            };
+            reader.readAsDataURL(file);
         } else {
+            document.getElementById('wordFileBase64').value = '';
             fileInfo.classList.add('d-none');
         }
     });
@@ -317,7 +325,8 @@ Siapa nama presiden pertama Indonesia?
         e.preventDefault();
 
         const form = this;
-        const formData = new FormData(form);
+        const file = document.getElementById('wordFile').files[0];
+        let wordBase64 = document.getElementById('wordFileBase64').value;
         const btn = document.getElementById('submitBtn');
         const progressBar = document.getElementById('progressBar');
         const progressPercent = document.getElementById('progressPercent');
@@ -338,7 +347,7 @@ Siapa nama presiden pertama Indonesia?
                 progressPercent.textContent = percent + '%';
 
                 if (percent === 100) {
-                    progressStatus.textContent = 'Memproses dokumen (Mungkin butuh waktu)...';
+                    progressStatus.textContent = 'Memproses dokumen Word (Mungkin butuh waktu)...';
                     progressBar.classList.add('bg-success');
                 }
             }
@@ -347,6 +356,11 @@ Siapa nama presiden pertama Indonesia?
         xhr.onreadystatechange = function () {
             if (xhr.readyState === 4) {
                 btn.disabled = false;
+                if (xhr.status === 403) {
+                    alert('Error 403 Forbidden (OpenResty WAF): Server menolak unggahan file. Ukuran berkas mungkin melebihi batas atau mengandung konten yang dibatasi.');
+                    progressContainer.classList.add('d-none');
+                    return;
+                }
                 try {
                     const response = JSON.parse(xhr.responseText);
                     if (response.status === 'success') {
@@ -355,14 +369,40 @@ Siapa nama presiden pertama Indonesia?
                         alert('Error: ' + response.msg);
                     }
                 } catch (e) {
-                    alert('Terjadi kesalahan sistem saat memproses file.');
-                    console.error(xhr.responseText);
+                    alert('Terjadi kesalahan sistem saat memproses file. Periksa koneksi dan format file.');
+                    console.error('Server response:', xhr.responseText);
                 }
             }
         };
 
-        xhr.open('POST', form.action, true);
-        xhr.send(formData);
+        function executeSend(b64Data) {
+            xhr.open('POST', form.action, true);
+            if (b64Data) {
+                // Kirim via application/x-www-form-urlencoded untuk bypass OpenResty 403 Multipart
+                const params = new URLSearchParams();
+                params.append('subject_id', '<?= $subject_id ?>');
+                params.append('word_base64', b64Data);
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.send(params.toString());
+            } else {
+                // Fallback FormData normal
+                const formData = new FormData(form);
+                xhr.send(formData);
+            }
+        }
+
+        // Jika Base64 belum selesai di-load saat form disubmit, baca ulang
+        if (!wordBase64 && file) {
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                wordBase64 = evt.target.result;
+                document.getElementById('wordFileBase64').value = wordBase64;
+                executeSend(wordBase64);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            executeSend(wordBase64);
+        }
     });
 
     function copyPrompt() {

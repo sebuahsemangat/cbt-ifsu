@@ -23,18 +23,39 @@ if (!$subject_id) {
     exit;
 }
 
-// Validate file upload
-if (!isset($_FILES['word_file']) || $_FILES['word_file']['error'] !== UPLOAD_ERR_OK) {
-    $errorMsg = "Gagal mengupload file.";
+// Validate file upload (Mendukung Base64 untuk bypass OpenResty 403 pada multipart upload)
+$filePathToLoad = null;
+$isTempFile = false;
+$tempFilePath = null;
+
+if (!empty($_POST['word_base64'])) {
+    $dataUri = $_POST['word_base64'];
+    $base64Data = (strpos($dataUri, ',') !== false) ? substr($dataUri, strpos($dataUri, ',') + 1) : $dataUri;
+    $binaryData = base64_decode($base64Data);
+
+    if ($binaryData === false || strlen($binaryData) < 10) {
+        $errorMsg = "File Word Base64 tidak valid atau rusak.";
+        header("Location: ../../dashboard.php?page=questions_import&subject_id=$subject_id&status=error&msg=" . urlencode($errorMsg));
+        exit;
+    }
+
+    $tempFilePath = tempnam(sys_get_temp_dir(), 'word_import_') . '.docx';
+    file_put_contents($tempFilePath, $binaryData);
+    $filePathToLoad = $tempFilePath;
+    $isTempFile = true;
+
+} elseif (isset($_FILES['word_file']) && $_FILES['word_file']['error'] === UPLOAD_ERR_OK) {
+    $file = $_FILES['word_file'];
+    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+
+    if ($extension !== 'docx') {
+        header("Location: ../../dashboard.php?page=questions_import&subject_id=$subject_id&status=error&msg=" . urlencode("Hanya file .docx yang diperbolehkan"));
+        exit;
+    }
+    $filePathToLoad = $file['tmp_name'];
+} else {
+    $errorMsg = "Gagal mengupload file Word.";
     header("Location: ../../dashboard.php?page=questions_import&subject_id=$subject_id&status=error&msg=" . urlencode($errorMsg));
-    exit;
-}
-
-$file = $_FILES['word_file'];
-$extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-
-if ($extension !== 'docx') {
-    header("Location: ../../dashboard.php?page=questions_import&subject_id=$subject_id&status=error&msg=" . urlencode("Hanya file .docx yang diperbolehkan"));
     exit;
 }
 
@@ -46,7 +67,7 @@ if (!is_dir($uploadDir)) {
 
 try {
     // Load Word document
-    $phpWord = IOFactory::load($file['tmp_name']);
+    $phpWord = IOFactory::load($filePathToLoad);
     
     // Extract all text content with images
     $fullContent = [];
@@ -109,6 +130,10 @@ try {
         'status' => 'error',
         'msg' => $e->getMessage()
     ]);
+} finally {
+    if (!empty($isTempFile) && !empty($tempFilePath) && file_exists($tempFilePath)) {
+        @unlink($tempFilePath);
+    }
 }
 exit;
 

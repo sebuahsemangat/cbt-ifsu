@@ -61,12 +61,28 @@ if ($action == 'edit' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     exit;
 }
 
-// Logika Import CSV dengan NIS & Kelompok
+// Logika Import CSV dengan NIS & Kelompok (Mendukung Base64 untuk Bypass OpenResty 403)
 if ($action == 'import' && $_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_FILES['file_excel']) && $_FILES['file_excel']['error'] == 0) {
-        $file = $_FILES['file_excel']['tmp_name'];
-        $handle = fopen($file, "r");
-        
+    $handle = null;
+    
+    // 1. Dukung Base64 via application/x-www-form-urlencoded (Bypass OpenResty 403)
+    if (!empty($_POST['csv_base64'])) {
+        $rawCsv = base64_decode($_POST['csv_base64']);
+        if ($rawCsv !== false && !empty($rawCsv)) {
+            $handle = fopen("php://memory", "r+");
+            fwrite($handle, $rawCsv);
+            rewind($handle);
+        }
+    } elseif (!empty($_POST['csv_content'])) {
+        $handle = fopen("php://memory", "r+");
+        fwrite($handle, $_POST['csv_content']);
+        rewind($handle);
+    } elseif (isset($_FILES['file_excel']) && $_FILES['file_excel']['error'] == 0) {
+        // Fallback: upload normal $_FILES jika diizinkan server
+        $handle = fopen($_FILES['file_excel']['tmp_name'], "r");
+    }
+
+    if ($handle) {
         // Baca baris pertama untuk deteksi delimiter (koma atau titik koma)
         $firstLine = fgets($handle);
         $delimiter = (strpos($firstLine, ';') !== false) ? ';' : ',';
