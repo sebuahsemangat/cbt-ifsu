@@ -452,11 +452,81 @@ $isSessionLocked = ((int)($curSessData['is_locked'] ?? 0) === 1);
         .font-medium .question-text, .font-medium .answer-option label, .font-medium .reference-content { font-size: 1.05rem; }
         .font-large .question-text, .font-large .answer-option label, .font-large .reference-content { font-size: 1.2rem; }
         
-        .answer-option { padding: 1.15rem; border: 2px solid #f1f5f9; border-radius: 14px; margin-bottom: 1rem; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: start; background: #ffffff; }
-        .answer-option:hover { border-color: #93c5fd; background-color: var(--ans-hover); transform: translateX(4px); }
-        .answer-option.selected { border-color: var(--brand-primary); background-color: var(--ans-hover); box-shadow: 0 4px 14px rgba(30, 64, 175, 0.12); }
-        .answer-option input { width: 22px; height: 22px; margin-right: 1rem; cursor: pointer; margin-top: 3px; accent-color: var(--brand-primary); }
-        .answer-option label { cursor: pointer; margin: 0; width: 100%; color: #1e293b; font-weight: 500; }
+        .answer-option { 
+            padding: 1rem 1.25rem; 
+            border: 2px solid #f1f5f9; 
+            border-radius: 14px; 
+            margin-bottom: 0.85rem; 
+            cursor: pointer; 
+            transition: all 0.2s ease; 
+            display: flex; 
+            align-items: flex-start; 
+            background: #ffffff; 
+        }
+        .answer-option:hover { 
+            border-color: #93c5fd; 
+            background-color: var(--ans-hover); 
+            transform: translateX(4px); 
+        }
+        .answer-option.selected { 
+            border-color: var(--brand-primary); 
+            background-color: var(--ans-hover); 
+            box-shadow: 0 4px 14px rgba(30, 64, 175, 0.12); 
+        }
+        .answer-option input[type="radio"],
+        .answer-option input[type="checkbox"] { 
+            width: 20px; 
+            height: 20px; 
+            margin-right: 0.85rem; 
+            margin-top: 0.2rem; 
+            flex-shrink: 0;
+            cursor: pointer; 
+            accent-color: var(--brand-primary); 
+        }
+        .answer-option label { 
+            cursor: pointer; 
+            margin: 0; 
+            width: 100%; 
+            color: #1e293b; 
+            font-weight: 500; 
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        .answer-option .option-key {
+            font-weight: 700;
+            color: var(--brand-primary);
+            flex-shrink: 0;
+            line-height: 1.5;
+            min-width: 1.5rem;
+        }
+        .answer-option .option-text {
+            flex-grow: 1;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+        /* Mencegah line-break akibat tag <p> bawaan dari editor */
+        .answer-option .option-text > p:first-child,
+        .answer-option label > p:first-child {
+            margin-top: 0 !important;
+        }
+        .answer-option .option-text > p:last-child,
+        .answer-option label > p:last-child {
+            margin-bottom: 0 !important;
+        }
+        .answer-option .option-text > p,
+        .answer-option label p {
+            margin-bottom: 0.35rem;
+        }
+        .answer-option .option-text > p:only-child {
+            display: inline;
+        }
+        .answer-option .option-text img {
+            max-width: 100%;
+            height: auto;
+            display: inline-block;
+            vertical-align: middle;
+        }
         
         .bottom-navigation { 
             background-color: white; 

@@ -54,6 +54,17 @@ function resolveStudentImg($html) {
     return preg_replace('/src=["\']uploads\/questions\//i', 'src="../uploads/questions/', $html);
 }
 
+function cleanOptionReviewHtml($html) {
+    if (!is_string($html) || empty($html)) return '';
+    $s = trim($html);
+    $s = preg_replace('/^(<p[^>]*>(\s|&nbsp;|<br\s*\/?>)*<\/p>\s*)+/i', '', $s);
+    $s = preg_replace('/^(\s*<br\s*\/?>\s*)+/i', '', $s);
+    $s = preg_replace('/^(<p[^>]*>)\s*<br\s*\/?>\s*/i', '$1', $s);
+    $s = preg_replace('/(\s*<br\s*\/?>\s*)+$/i', '', $s);
+    $s = preg_replace('/(\s*<p[^>]*>(\s|&nbsp;|<br\s*\/?>)*<\/p>)+$/i', '', $s);
+    return $s;
+}
+
 // Ambil semua subject beserta session, soal, dan jawaban siswa
 $stmtSubs = $pdo->prepare("SELECT * FROM subjects WHERE exam_id = ? ORDER BY sort_order ASC, id ASC");
 $stmtSubs->execute([$examId]);
@@ -359,6 +370,18 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
             line-height: 1.6;
         }
         .answer-row .ans-icon { font-size: 1rem; flex-shrink: 0; margin-top: 2px; }
+        .answer-row .option-wrap {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            flex-grow: 1;
+        }
+        .answer-row .option-key { font-weight: 700; flex-shrink: 0; min-width: 1.4rem; line-height: 1.5; }
+        .answer-row .option-text { flex-grow: 1; word-break: break-word; line-height: 1.5; }
+        .answer-row .option-text > p:first-child { margin-top: 0 !important; }
+        .answer-row .option-text > p:last-child { margin-bottom: 0 !important; }
+        .answer-row .option-text > p:only-child { display: inline; }
+        .answer-row .option-text p { margin-bottom: 0.25rem; }
         .answer-row.user-wrong {
             background: #fff5f5;
             border-color: #fca5a5;
@@ -698,7 +721,10 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
                     ?>
                         <div class="answer-row <?= $rowClass ?>">
                             <i class="ans-icon bi <?= $icon ?>"></i>
-                            <span><strong><?= htmlspecialchars($key) ?>.</strong> <?= resolveStudentImg($optText) ?></span>
+                            <div class="option-wrap">
+                                <strong class="option-key"><?= htmlspecialchars($key) ?>.</strong>
+                                <div class="option-text"><?= cleanOptionReviewHtml(resolveStudentImg($optText)) ?></div>
+                            </div>
                             <?php if ($isUserChoice && !$isCorrectChoice): ?><span class="ms-auto fw-bold" style="font-size:0.78rem; white-space:nowrap;">Jawaban Kamu</span><?php endif; ?>
                             <?php if ($isCorrectChoice): ?><span class="ms-auto fw-bold" style="font-size:0.78rem; white-space:nowrap;">Kunci Jawaban</span><?php endif; ?>
                         </div>

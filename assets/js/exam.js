@@ -92,6 +92,22 @@ function renderQuestion(index) {
     return html.replace(/src=["']uploads\/questions\//g, 'src="../uploads/questions/');
   }
 
+  function cleanOptionHtml(html) {
+    if (!html || typeof html !== "string") return "";
+    let s = html.trim();
+    // 1. Bersihkan tag paragraf kosong di awal (misal <p><br></p> atau <p>&nbsp;</p>)
+    s = s.replace(/^(<p[^>]*>(\s|&nbsp;|<br\s*\/?>)*<\/p>\s*)+/gi, "");
+    // 2. Bersihkan tag <br> di awal string
+    s = s.replace(/^(\s*<br\s*\/?>\s*)+/gi, "");
+    // 3. Bersihkan tag <br> di awal tag <p> pertama (misal <p><br>teks...</p>)
+    s = s.replace(/^(<p[^>]*>)\s*<br\s*\/?>\s*/gi, "$1");
+    // 4. Bersihkan trailing <br> di akhir string
+    s = s.replace(/(\s*<br\s*\/?>\s*)+$/gi, "");
+    // 5. Bersihkan trailing paragraf kosong di akhir
+    s = s.replace(/(\s*<p[^>]*>(\s|&nbsp;|<br\s*\/?>)*<\/p>)+$/gi, "");
+    return s;
+  }
+
   // 3. Question Text
   let qText = resolveImgPath(q.question_text || "");
   if (q.image_path) {
@@ -111,13 +127,16 @@ function renderQuestion(index) {
   if (type === "pg") {
     const opts = ansData.options || {};
     Object.keys(opts).forEach((key) => {
-      const text = resolveImgPath(opts[key]);
+      const text = cleanOptionHtml(resolveImgPath(opts[key]));
       const checked = myAns === key ? "checked" : "";
 
       container.innerHTML += `
                 <div class="answer-option" onclick="selectOption('${key}', 'pg')">
                     <input type="radio" name="ans_${q.id}" value="${key}" ${checked}>
-                    <label><strong>${key}.</strong> ${text}</label>
+                    <label>
+                        <span class="option-key">${key}.</span>
+                        <div class="option-text">${text}</div>
+                    </label>
                 </div>
                 `;
     });
@@ -190,10 +209,14 @@ function renderQuestion(index) {
         isChecked = myAns.includes(idx) || myAns.includes(String(idx));
       }
 
+      const text = cleanOptionHtml(resolveImgPath(item.text));
+
       container.innerHTML += `
                 <div class="answer-option" onclick="toggleMulti(${idx})">
                     <input type="checkbox" name="ans_${q.id}[]" value="${idx}" ${isChecked ? "checked" : ""}>
-                    <label>${resolveImgPath(item.text)}</label>
+                    <label>
+                        <div class="option-text">${text}</div>
+                    </label>
                 </div>
                 `;
     });
