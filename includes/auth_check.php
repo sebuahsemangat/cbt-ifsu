@@ -17,7 +17,19 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
         exit;
     }
 
-    header("Location: ../index.php");
+    // Tentukan path relatif ke root index.php sesuai kedalaman script
+    $redirectUrl = '../index.php';
+    if (file_exists('../../../index.php')) {
+        $redirectUrl = '../../../index.php';
+    } elseif (file_exists('../../index.php')) {
+        $redirectUrl = '../../index.php';
+    } elseif (file_exists('../index.php')) {
+        $redirectUrl = '../index.php';
+    } elseif (file_exists('index.php')) {
+        $redirectUrl = 'index.php';
+    }
+
+    header("Location: " . $redirectUrl);
     exit;
 }
 

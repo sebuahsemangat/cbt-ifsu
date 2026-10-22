@@ -87,9 +87,9 @@ function compressImage($source, $destination, $quality = 80, $maxWidth = 500) {
     return $saved;
 }
 
-if (isset($_POST['update_settings'])) {
-    $app_name = trim($_POST['app_name']);
-    $bimbel_name = trim($_POST['bimbel_name']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['update_settings']) || isset($_POST['app_name']))) {
+    $app_name = trim($_POST['app_name'] ?? '');
+    $bimbel_name = trim($_POST['bimbel_name'] ?? '');
 
     try {
         $pdo->beginTransaction();
@@ -118,9 +118,75 @@ if (isset($_POST['update_settings'])) {
         $stmt = $pdo->prepare("INSERT INTO settings (setting_key, setting_value) VALUES ('enable_anti_cheating', ?) ON DUPLICATE KEY UPDATE setting_value = ?");
         $stmt->execute([$enable_anti_cheating, $enable_anti_cheating]);
 
+        // Handle Logo Upload (Mendukung Base64 untuk bypass OpenResty 403 pada multipart/form-data)
+        $logo_processed = false;
 
-        // Handle Logo Upload
-        if (isset($_FILES['bimbel_logo']) && $_FILES['bimbel_logo']['error'] !== UPLOAD_ERR_NO_FILE) {
+        // 1. Upload via Base64 Data URL (Format application/x-www-form-urlencoded untuk bypass OpenResty 403)
+        if (!empty($_POST['bimbel_logo_base64'])) {
+            $dataUri = $_POST['bimbel_logo_base64'];
+            if (preg_match('/^data:image\/(\w+);base64,/', $dataUri, $matches)) {
+                $rawExt = strtolower($matches[1]);
+                $file_extension = ($rawExt === 'jpeg') ? 'jpg' : $rawExt;
+                $allowed_extensions = ['png', 'jpg', 'jpeg', 'webp'];
+
+                if (!in_array($file_extension, $allowed_extensions)) {
+                    throw new Exception("Format logo tidak didukung. Gunakan PNG, JPG, JPEG, atau WebP.");
+                }
+
+                $base64Data = substr($dataUri, strpos($dataUri, ',') + 1);
+                $binaryData = base64_decode($base64Data);
+
+                if ($binaryData === false) {
+                    throw new Exception("Format gambar base64 rusak.");
+                }
+
+                if (strlen($binaryData) > 2 * 1024 * 1024) {
+                    throw new Exception("Ukuran file logo terlalu besar. Maksimal 2MB.");
+                }
+
+                $target_dir = '../../../assets/img/';
+                if (!is_dir($target_dir)) {
+                    @mkdir($target_dir, 0755, true);
+                }
+
+                // Dapatkan logo lama untuk dibersihkan
+                $stmt_old = $pdo->prepare("SELECT setting_value FROM settings WHERE setting_key = 'bimbel_logo'");
+                $stmt_old->execute();
+                $old_filename = $stmt_old->fetchColumn();
+
+                $new_filename = 'logo-bimbel-' . time() . '.' . $file_extension;
+                $target_path = $target_dir . $new_filename;
+
+                $tmp_file = tempnam(sys_get_temp_dir(), 'logo_');
+                file_put_contents($tmp_file, $binaryData);
+
+                $processed = compressImage($tmp_file, $target_path, 80, 400);
+                if (!$processed) {
+                    if (!copy($tmp_file, $target_path)) {
+                        @unlink($tmp_file);
+                        throw new Exception("Gagal memproses dan menyimpan file logo.");
+                    }
+                }
+                @unlink($tmp_file);
+
+                // Update nama file logo di database
+                $stmt = $pdo->prepare("INSERT INTO settings (setting_key, setting_value) VALUES ('bimbel_logo', ?) ON DUPLICATE KEY UPDATE setting_value = ?");
+                $stmt->execute([$new_filename, $new_filename]);
+
+                // Hapus file logo lama jika ada dan berbeda
+                if ($old_filename && $old_filename !== $new_filename) {
+                    $old_path = $target_dir . $old_filename;
+                    if (file_exists($old_path) && is_file($old_path)) {
+                        @unlink($old_path);
+                    }
+                }
+
+                $logo_processed = true;
+            }
+        }
+
+        // 2. Fallback Upload normal via $_FILES jika tersedia
+        if (!$logo_processed && isset($_FILES['bimbel_logo']) && $_FILES['bimbel_logo']['error'] !== UPLOAD_ERR_NO_FILE) {
             if ($_FILES['bimbel_logo']['error'] !== UPLOAD_ERR_OK) {
                 throw new Exception("Gagal mengunggah logo. Kode error: " . $_FILES['bimbel_logo']['error']);
             }

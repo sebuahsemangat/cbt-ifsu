@@ -30,7 +30,8 @@ $enable_anti_cheating = ($settings['enable_anti_cheating'] ?? '1') === '1';
         <div class="card border-0 shadow-sm p-4">
             <h4 class="fw-bold mb-4">Pengaturan Aplikasi</h4>
 
-            <form action="modules/settings/process.php" method="POST" enctype="multipart/form-data">
+            <form id="settingsForm" action="modules/settings/process.php" method="POST">
+                <input type="hidden" name="update_settings" value="1">
                 <div class="row">
                     <div class="col-md-8">
                         <div class="mb-3">
@@ -60,9 +61,10 @@ $enable_anti_cheating = ($settings['enable_anti_cheating'] ?? '1') === '1';
                                         style="max-width: 100%; max-height: 100%; object-fit: contain;">
                                 </div>
                                 <div class="flex-grow-1">
-                                    <input type="file" class="form-control" id="bimbel_logo" name="bimbel_logo"
-                                        accept="image/png, image/jpeg, .png, .jpg, .jpeg">
-                                    <div class="form-text">Format: PNG, JPG, JPEG (Max 2MB). Disarankan PNG transparan untuk hasil terbaik.</div>
+                                    <input type="file" class="form-control" id="bimbel_logo"
+                                        accept="image/png, image/jpeg, .png, .jpg, .jpeg, .webp">
+                                    <input type="hidden" name="bimbel_logo_base64" id="bimbel_logo_base64">
+                                    <div class="form-text">Format: PNG, JPG, JPEG, WebP (Max 2MB). Disarankan PNG transparan untuk hasil terbaik.</div>
                                     <div id="file-error" class="text-danger small mt-1" style="display: none;"></div>
                                 </div>
                             </div>
@@ -133,20 +135,24 @@ $enable_anti_cheating = ($settings['enable_anti_cheating'] ?? '1') === '1';
 
 <script>
     // Preview logo before upload and validate file
-    document.getElementById('bimbel_logo').addEventListener('change', function (e) {
+    const logoInput = document.getElementById('bimbel_logo');
+    const base64Input = document.getElementById('bimbel_logo_base64');
+    const errorDiv = document.getElementById('file-error');
+
+    logoInput.addEventListener('change', function (e) {
         const file = e.target.files[0];
-        const errorDiv = document.getElementById('file-error');
         errorDiv.style.display = 'none';
         errorDiv.textContent = '';
+        base64Input.value = '';
 
         if (file) {
             // Validasi format
-            const validTypes = ['image/png', 'image/jpeg', 'image/jpg'];
-            const validExtensions = ['png', 'jpg', 'jpeg'];
+            const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+            const validExtensions = ['png', 'jpg', 'jpeg', 'webp'];
             const ext = file.name.split('.').pop().toLowerCase();
 
             if (!validTypes.includes(file.type) && !validExtensions.includes(ext)) {
-                errorDiv.textContent = 'Format file tidak didukung! Pilih file PNG atau JPG/JPEG.';
+                errorDiv.textContent = 'Format file tidak didukung! Pilih file PNG, JPG/JPEG, atau WebP.';
                 errorDiv.style.display = 'block';
                 this.value = '';
                 return;
@@ -163,8 +169,22 @@ $enable_anti_cheating = ($settings['enable_anti_cheating'] ?? '1') === '1';
             const reader = new FileReader();
             reader.onload = function (e) {
                 document.getElementById('preview-logo').src = e.target.result;
+                base64Input.value = e.target.result;
             };
             reader.readAsDataURL(file);
+        }
+    });
+
+    // Pastikan jika user klik simpan langsung saat file baru dipilih, base64 sudah terisi
+    document.getElementById('settingsForm').addEventListener('submit', function (e) {
+        if (logoInput.files.length > 0 && !base64Input.value) {
+            e.preventDefault();
+            const reader = new FileReader();
+            reader.onload = function (evt) {
+                base64Input.value = evt.target.result;
+                document.getElementById('settingsForm').submit();
+            };
+            reader.readAsDataURL(logoInput.files[0]);
         }
     });
 </script>
