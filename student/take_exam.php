@@ -825,14 +825,14 @@ $isSessionLocked = ((int)($curSessData['is_locked'] ?? 0) === 1);
             </div>
             <div class="modal-footer border-0 p-3 pt-0 justify-content-center">
                 <button type="button" class="btn btn-danger px-4 py-2 fw-bold text-white shadow-sm" onclick="acknowledgeViolation()" style="border-radius: 10px;">
-                    <i class="bi bi-fullscreen me-1"></i>Saya Mengerti & Kembali ke Ujian
+                    <i class="bi bi-arrow-left me-1"></i>Saya Mengerti & Kembali ke Ujian
                 </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Fullscreen Overlay: Ujian Terkunci Total (Strike 3) -->
+<!-- Overlay: Ujian Terkunci Total (Strike 3) -->
 <div id="examLockedOverlay" class="<?= $isSessionLocked ? '' : 'd-none' ?>" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.96); z-index: 99999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); padding: 1.5rem;">
     <div class="card border-0 shadow-lg text-center p-4 p-md-5" style="max-width: 520px; border-radius: 24px; background: #ffffff;">
         <div class="mb-3">
@@ -874,6 +874,41 @@ $isSessionLocked = ((int)($curSessData['is_locked'] ?? 0) === 1);
                     </div>
                     <div id="proctorUnlockError" class="text-danger small mt-1 d-none"></div>
                 </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Kunci Ujian Berhasil Dibuka (Non-blocking, ramah mobile/desktop) -->
+<div class="modal fade" id="examUnlockedModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 18px; overflow: hidden;">
+            <div class="modal-header py-3 px-4" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: #ffffff;">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-unlock-fill me-2"></i>UJIAN TELAH DIBUKA
+                </h5>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <div class="mb-3">
+                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success bg-opacity-10 text-success" style="width: 76px; height: 76px; font-size: 2.5rem;">
+                        <i class="bi bi-shield-check"></i>
+                    </span>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">Kunci Ujian Berhasil Dibuka!</h5>
+                <p class="text-secondary small mb-3">
+                    Pengawas telah membuka kunci sesi ujian Anda. Riwayat pelanggaran telah di-reset ke 0. Harap tetap berada di halaman ujian dan tidak berpindah jendela.
+                </p>
+                <div class="alert alert-success py-2 px-3 small text-start d-flex align-items-center mb-0" style="border-radius: 10px;">
+                    <i class="bi bi-check-circle-fill fs-5 me-2 text-success"></i>
+                    <div>
+                        Sesi Anda sudah aktif kembali. Silakan klik tombol di bawah untuk melanjutkan ujian.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-3 pt-0 justify-content-center">
+                <button type="button" class="btn btn-success px-4 py-2 fw-bold text-white shadow-sm" onclick="dismissUnlockModal()" style="border-radius: 10px;">
+                    <i class="bi bi-pencil-square me-1"></i>Lanjutkan Ujian
+                </button>
             </div>
         </div>
     </div>

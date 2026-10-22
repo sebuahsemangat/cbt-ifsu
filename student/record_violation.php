@@ -43,6 +43,18 @@ if (!$session || $session['status'] !== 'ongoing') {
     exit;
 }
 
+// Jangan catat pelanggaran baru jika status sesi saat ini sedang terkunci
+if ((int)$session['is_locked'] === 1) {
+    echo json_encode([
+        'success' => true,
+        'anti_cheating' => true,
+        'violation_count' => (int)$session['violation_count'],
+        'is_locked' => true,
+        'max_violations' => 3
+    ]);
+    exit;
+}
+
 // Tambah hitungan pelanggaran
 $newCount = (int)$session['violation_count'] + 1;
 $isLocked = ($newCount >= 3) ? 1 : (int)$session['is_locked'];

@@ -111,7 +111,6 @@ $enable_anti_cheating = ($settings['enable_anti_cheating'] ?? '1') === '1';
                                 Jika diaktifkan:
                                 <ul class="mb-0 ps-3 small text-muted">
                                     <li>Siswa <strong>dilarang menyalin (copy) teks</strong> soal/referensi, klik kanan, dan shortcut keyboard.</li>
-                                    <li>Siswa diwajibkan dalam <strong>mode layar penuh (fullscreen)</strong>.</li>
                                     <li>Sistem mendeteksi jika siswa <strong>minimize, berpindah tab, atau membuka aplikasi lain</strong>.</li>
                                     <li>Maksimal pelanggaran <strong>3 kali</strong>: pelanggaran 1 & 2 memunculkan peringatan, dan pelanggaran ke-3 <strong>ujian otomatis terkunci</strong> hingga dibuka oleh Pengawas.</li>
                                 </ul>

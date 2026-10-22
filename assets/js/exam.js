@@ -704,11 +704,13 @@ function submitExamForce() {
 let _lastViolationTime = 0;
 let _isSessionLocked = false;
 let _lockPollInterval = null;
+let _violationGracePeriodUntil = Date.now() + 3000;
 
 function initAntiCheating() {
   if (typeof EXAM_DATA === "undefined" || !EXAM_DATA.enableAntiCheating) return;
 
   _isSessionLocked = !!EXAM_DATA.isLocked;
+  _violationGracePeriodUntil = Date.now() + 3000;
 
   // 1. Blokir Klik Kanan
   document.addEventListener("contextmenu", (e) => {
@@ -754,53 +756,26 @@ function initAntiCheating() {
     }
   });
 
-  let _hasEnteredFullscreen = false;
-
-  // 5. Coba masuk mode Fullscreen saat siswa klik pertama kali di halaman
-  const tryEnterFullscreen = () => {
-    if (!document.fullscreenElement && !_isSessionLocked && !_isExamSubmitting) {
-      const docEl = document.documentElement;
-      if (docEl.requestFullscreen) {
-        docEl.requestFullscreen().then(() => {
-          _hasEnteredFullscreen = true;
-        }).catch(() => {});
-      } else if (docEl.webkitRequestFullscreen) {
-        docEl.webkitRequestFullscreen();
-        _hasEnteredFullscreen = true;
-      }
-    }
-  };
-  document.addEventListener("click", tryEnterFullscreen, { once: true });
-
-  // 6. Deteksi Pindah Tab / Minimize (visibilitychange - standar Android & iOS)
+  // 5. Deteksi Pindah Tab / Minimize (visibilitychange - standar Android & iOS)
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden") {
       triggerViolation("Pindah Tab / Minimize Browser");
     }
   });
 
-  // 7. Khusus Mobile & iOS Safari: event pagehide saat beralih aplikasi / tab di HP
+  // 6. Khusus Mobile & iOS Safari: event pagehide saat beralih aplikasi / tab di HP
   window.addEventListener("pagehide", () => {
     triggerViolation("Beralih Aplikasi / Tab Browser");
   });
 
-  // 8. Deteksi Kehilangan Fokus / Alt+Tab / Buka Aplikasi Lain (window blur)
+  // 7. Deteksi Kehilangan Fokus / Alt+Tab / Buka Aplikasi Lain (window blur)
   window.addEventListener("blur", () => {
-    triggerViolation("Beralih Aplikasi / Jendela");
-  });
-
-  // 9. Deteksi Keluar Fullscreen (Hanya jika perangkat mendukung & pernah masuk fullscreen sebelumnya)
-  document.addEventListener("fullscreenchange", () => {
-    if (document.fullscreenElement) {
-      _hasEnteredFullscreen = true;
-    } else if (_hasEnteredFullscreen && !_isExamSubmitting && !_isSessionLocked) {
-      // Tunggu 500ms untuk memastikan bukan karena membuka modal
-      setTimeout(() => {
-        if (!document.fullscreenElement && !_isExamSubmitting && !_isSessionLocked) {
-          triggerViolation("Keluar dari Mode Layar Penuh (Fullscreen)");
-        }
-      }, 500);
-    }
+    // Delay 250ms untuk verifikasi agar tidak salah deteksi saat transisi modal atau render
+    setTimeout(() => {
+      if (!document.hasFocus() && !_isSessionLocked && !_isExamSubmitting && Date.now() >= _violationGracePeriodUntil) {
+        triggerViolation("Beralih Aplikasi / Jendela");
+      }
+    }, 250);
   });
 
   // Jika saat buka halaman status sudah terkunci, langsung kunci
@@ -809,12 +784,16 @@ function initAntiCheating() {
   }
 }
 
+
 function triggerViolation(reason) {
   if (typeof EXAM_DATA === "undefined" || !EXAM_DATA.enableAntiCheating) return;
   if (typeof remainingSeconds !== "undefined" && remainingSeconds <= 0) return;
   if (_isExamSubmitting || _isSessionLocked) return;
 
   const now = Date.now();
+  // Masa tenggang (cooldown/grace period) setelah load, unlock, atau menutup modal
+  if (now < _violationGracePeriodUntil) return;
+
   // Debounce 3.5 detik agar satu aksi beralih aplikasi tidak dihitung berkali-kali
   if (now - _lastViolationTime < 3500) return;
   _lastViolationTime = now;
@@ -864,18 +843,20 @@ function showViolationWarning(count) {
 }
 
 function acknowledgeViolation() {
+  _violationGracePeriodUntil = Date.now() + 3000;
   const warnModalEl = document.getElementById("violationWarningModal");
   if (warnModalEl) {
     const warnModal = bootstrap.Modal.getInstance(warnModalEl);
     if (warnModal) warnModal.hide();
   }
+}
 
-  // Masuk kembali ke mode layar penuh
-  const docEl = document.documentElement;
-  if (docEl.requestFullscreen) {
-    docEl.requestFullscreen().catch(() => {});
-  } else if (docEl.webkitRequestFullscreen) {
-    docEl.webkitRequestFullscreen();
+function dismissUnlockModal() {
+  _violationGracePeriodUntil = Date.now() + 4000;
+  const unlockedModalEl = document.getElementById("examUnlockedModal");
+  if (unlockedModalEl) {
+    const modal = bootstrap.Modal.getInstance(unlockedModalEl);
+    if (modal) modal.hide();
   }
 }
 
@@ -972,6 +953,10 @@ function submitProctorUnlock(e) {
 
 function unlockSessionSuccess() {
   _isSessionLocked = false;
+  // Berikan masa tenggang 7 detik setelah unlock agar tidak terpicu event blur saat transisi
+  _violationGracePeriodUntil = Date.now() + 7000;
+  _lastViolationTime = Date.now();
+
   if (_lockPollInterval) {
     clearInterval(_lockPollInterval);
     _lockPollInterval = null;
@@ -982,15 +967,18 @@ function unlockSessionSuccess() {
     overlay.classList.add("d-none");
   }
 
-  // Masuk kembali ke fullscreen
-  const docEl = document.documentElement;
-  if (docEl.requestFullscreen) {
-    docEl.requestFullscreen().catch(() => {});
-  } else if (docEl.webkitRequestFullscreen) {
-    docEl.webkitRequestFullscreen();
-  }
+  // Reset counter indikator pelanggaran di UI jika modal peringatan sebelumnya sempat aktif
+  const currentStrikeEl = document.getElementById("viol-current-strike");
+  const remainingStrikesEl = document.getElementById("viol-remaining-strikes");
+  if (currentStrikeEl) currentStrikeEl.textContent = "0";
+  if (remainingStrikesEl) remainingStrikesEl.textContent = "3";
 
-  alert("Kunci ujian telah dibuka oleh pengawas. Silakan melanjutkan ujian.");
+  // Tampilkan modal bahwa akun telah dibuka (non-blocking, tidak memicu browser blur)
+  const unlockedModalEl = document.getElementById("examUnlockedModal");
+  if (unlockedModalEl && typeof bootstrap !== "undefined") {
+    const modal = bootstrap.Modal.getOrCreateInstance(unlockedModalEl);
+    modal.show();
+  }
 }
 
 // Inisialisasi fitur saat halaman selesai dimuat
