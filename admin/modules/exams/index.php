@@ -564,9 +564,25 @@ function fetchToken(examId) {
 
     fetch('modules/exams/token_handler.php?action=get_or_create', {
         method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        },
         body: formData
     })
-    .then(response => response.json())
+    .then(async response => {
+        const text = await response.text();
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            console.error('Respon Server bukan JSON:', text);
+            // Ambil pesan bersih dari HTML jika server mengembalikan error page
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = text;
+            const cleanMsg = tempDiv.textContent.trim() || text.substring(0, 150);
+            throw new Error(cleanMsg);
+        }
+    })
     .then(data => {
         if (data.status === 'success') {
             renderTokenUI(examId, data.token, data.remaining);
@@ -574,8 +590,12 @@ function fetchToken(examId) {
             alert('Gagal mengambil token: ' + data.message);
         }
     })
-    .catch(error => console.error('Error:', error));
+    .catch(error => {
+        console.error('Error fetchToken:', error);
+        alert('Terjadi kesalahan saat memproses token: ' + error.message);
+    });
 }
+
 
 function renderTokenUI(examId, tokenCode, remainingSeconds) {
     const container = document.getElementById(`token-box-${examId}`);

@@ -22,6 +22,7 @@ $bimbel_name = $settings['bimbel_name'] ?? 'Bimbel Lita Sumedang';
 $bimbel_logo = $settings['bimbel_logo'] ?? 'logo-bimbel.png';
 $allow_student_change_password = ($settings['allow_student_change_password'] ?? '1') === '1';
 $min_exam_duration_percent = (int) ($settings['min_exam_duration_percent'] ?? 50);
+$enable_anti_cheating = ($settings['enable_anti_cheating'] ?? '1') === '1';
 ?>
 
 <div class="row">
@@ -97,6 +98,26 @@ $min_exam_duration_percent = (int) ($settings['min_exam_duration_percent'] ?? 50
                                 Jika diaktifkan, siswa dapat mengubah password mereka sendiri melalui dashboard siswa. Jika dinonaktifkan, menu ganti password akan disembunyikan dan diblokir.
                             </div>
                         </div>
+
+                        <div class="mb-4 pt-3 border-top">
+                            <label class="form-label fw-bold d-block">Fitur Anti-Cheating (Integritas Ujian)</label>
+                            <div class="form-check form-switch fs-6 mb-2">
+                                <input class="form-check-input" type="checkbox" role="switch" id="enable_anti_cheating" name="enable_anti_cheating" value="1" <?= $enable_anti_cheating ? 'checked' : '' ?>>
+                                <label class="form-check-label fw-semibold" for="enable_anti_cheating">
+                                    Aktifkan Proteksi Anti-Cheating & Kunci Ujian
+                                </label>
+                            </div>
+                            <div class="form-text">
+                                Jika diaktifkan:
+                                <ul class="mb-0 ps-3 small text-muted">
+                                    <li>Siswa <strong>dilarang menyalin (copy) teks</strong> soal/referensi, klik kanan, dan shortcut keyboard.</li>
+                                    <li>Siswa diwajibkan dalam <strong>mode layar penuh (fullscreen)</strong>.</li>
+                                    <li>Sistem mendeteksi jika siswa <strong>minimize, berpindah tab, atau membuka aplikasi lain</strong>.</li>
+                                    <li>Maksimal pelanggaran <strong>3 kali</strong>: pelanggaran 1 & 2 memunculkan peringatan, dan pelanggaran ke-3 <strong>ujian otomatis terkunci</strong> hingga dibuka oleh Pengawas.</li>
+                                </ul>
+                            </div>
+                        </div>
+
 
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-start">

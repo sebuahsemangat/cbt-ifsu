@@ -199,7 +199,25 @@ if ($action === 'finish') {
     exit;
 }
 
+// === BUKA KUNCI UJIAN SISWA (ANTI-CHEATING) ===
+if ($action === 'unlock') {
+    $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+    if ($id > 0) {
+        try {
+            $stmt = $pdo->prepare("UPDATE exam_sessions SET is_locked = 0, violation_count = 0 WHERE id = ?");
+            $stmt->execute([$id]);
+            $_SESSION['success'] = "Kunci ujian siswa berhasil dibuka. Siswa dapat melanjutkan ujian.";
+        } catch (PDOException $e) {
+            $_SESSION['error'] = "Gagal membuka kunci ujian: " . $e->getMessage();
+        }
+    }
+    $redirect = $_GET['redirect'] ?? 'dashboard';
+    header("Location: ../../dashboard.php" . ($redirect === 'scores' ? "?page=scores" : ""));
+    exit;
+}
+
 // Jika action tidak valid
 $_SESSION['error'] = "Aksi tidak valid.";
 header("Location: ../../dashboard.php?page=scores");
 exit;
+

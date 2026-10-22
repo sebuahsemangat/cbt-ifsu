@@ -26,6 +26,8 @@ try {
             es.subject_id,
             es.start_time,
             es.end_time,
+            es.violation_count,
+            es.is_locked,
             COALESCE(es.remaining_seconds, TIMESTAMPDIFF(SECOND, NOW(), es.end_time)) AS remaining_seconds,
             e.exam_name,
             sb.name AS subject_name,
@@ -87,12 +89,15 @@ try {
             'subject_name'      => $st['subject_name'] ?? null,
             'start_time'        => $st['start_time'] ? date('H:i', strtotime($st['start_time'])) : null,
             'remaining_seconds' => $st['remaining_seconds'] !== null ? (int)$st['remaining_seconds'] : null,
+            'violation_count'   => (int)($st['violation_count'] ?? 0),
+            'is_locked'         => ((int)($st['is_locked'] ?? 0) === 1),
             'answered_count'    => $is_working ? (int)($st['answered_count'] ?? 0) : 0,
             'total_questions'   => $is_working ? (int)($st['total_questions'] ?? 0) : 0,
             'is_working'        => $is_working,
             'is_login'          => $is_login,
             'category'          => $category
         ];
+
     }
 
     $count_active = $count_working + $count_login_only;

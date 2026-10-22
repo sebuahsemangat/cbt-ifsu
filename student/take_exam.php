@@ -320,6 +320,17 @@ $minDurationPercent = (int)($stmtMinPct->fetchColumn() ?: 50);
 $subjectDuration = (int)$currentSubject['duration'];
 $minDurationMinutes = (int)ceil($subjectDuration * ($minDurationPercent / 100));
 $minDurationSeconds = $minDurationMinutes * 60;
+
+// Ambil pengaturan anti-cheating
+$stmtAntiCheat = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'enable_anti_cheating'");
+$enableAntiCheating = ($stmtAntiCheat->fetchColumn() ?? '1') === '1';
+
+// Ambil status kunci dan jumlah pelanggaran dari sesi saat ini
+$stmtCurSess = $pdo->prepare("SELECT violation_count, is_locked FROM exam_sessions WHERE id = ?");
+$stmtCurSess->execute([$sessionId]);
+$curSessData = $stmtCurSess->fetch(PDO::FETCH_ASSOC);
+$currentViolationCount = (int)($curSessData['violation_count'] ?? 0);
+$isSessionLocked = ((int)($curSessData['is_locked'] ?? 0) === 1);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -355,6 +366,22 @@ $minDurationSeconds = $minDurationMinutes * 60;
             color: #1e293b; 
             -webkit-font-smoothing: antialiased; 
         }
+
+        <?php if ($enableAntiCheating): ?>
+        /* Anti-Cheating: Mencegah seleksi teks, popup magnifier iOS, dan drag gambar */
+        .no-select, .question-card, .reference-pane, #question-container, #options-container, .student-name, .navbar-brand, body {
+            -webkit-touch-callout: none !important; /* Nonaktifkan menu pop-up teks pada iOS Safari */
+            -webkit-user-select: none !important;
+            -moz-user-select: none !important;
+            -ms-user-select: none !important;
+            user-select: none !important;
+        }
+        img {
+            -webkit-touch-callout: none !important;
+            -webkit-user-drag: none;
+            user-drag: none;
+        }
+        <?php endif; ?>
         .navbar-exam { 
             background: linear-gradient(135deg, #0d2347 0%, #1e3a8a 100%); 
             box-shadow: 0 4px 20px rgba(13, 35, 71, 0.25); 
@@ -768,6 +795,91 @@ $minDurationSeconds = $minDurationMinutes * 60;
     <input type="hidden" name="session_id" value="<?= $sessionId ?>">
 </form>
 
+<?php if ($enableAntiCheating): ?>
+<!-- Modal: Peringatan Pelanggaran (Strike 1 & 2) -->
+<div class="modal fade" id="violationWarningModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 18px; overflow: hidden;">
+            <div class="modal-header py-3 px-4" style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: #ffffff;">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-exclamation-octagon-fill me-2 text-warning"></i>PERINGATAN PELANGGARAN (<span id="viol-current-strike">1</span>/3)
+                </h5>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <div class="mb-3">
+                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-danger bg-opacity-10 text-danger" style="width: 76px; height: 76px; font-size: 2.5rem;">
+                        <i class="bi bi-shield-slash-fill"></i>
+                    </span>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">Terdeteksi Meninggalkan Halaman Ujian!</h5>
+                <p class="text-secondary small mb-3">
+                    Anda terdeteksi berpindah tab browser, me-minimize jendela, atau beralih ke aplikasi lain. Tindakan ini dilarang dan telah dicatat oleh sistem pengawas CBT.
+                </p>
+                <div class="alert alert-danger py-2 px-3 small text-start d-flex align-items-center mb-3" style="border-radius: 10px;">
+                    <i class="bi bi-exclamation-triangle-fill fs-4 me-3 text-danger"></i>
+                    <div>
+                        Sisa kesempatan: <strong id="viol-remaining-strikes">2</strong> kali lagi.<br>
+                        Jika mencapai <strong>3 kali</strong>, ujian Anda akan <strong>TERKUNCI OTOMATIS</strong>.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-3 pt-0 justify-content-center">
+                <button type="button" class="btn btn-danger px-4 py-2 fw-bold text-white shadow-sm" onclick="acknowledgeViolation()" style="border-radius: 10px;">
+                    <i class="bi bi-fullscreen me-1"></i>Saya Mengerti & Kembali ke Ujian
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fullscreen Overlay: Ujian Terkunci Total (Strike 3) -->
+<div id="examLockedOverlay" class="<?= $isSessionLocked ? '' : 'd-none' ?>" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.96); z-index: 99999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); padding: 1.5rem;">
+    <div class="card border-0 shadow-lg text-center p-4 p-md-5" style="max-width: 520px; border-radius: 24px; background: #ffffff;">
+        <div class="mb-3">
+            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-danger text-white shadow" style="width: 80px; height: 80px; font-size: 2.75rem;">
+                <i class="bi bi-lock-fill"></i>
+            </span>
+        </div>
+        <h4 class="fw-bold text-danger mb-2">UJIAN ANDA TERKUNCI!</h4>
+        <p class="text-muted small mb-4">
+            Anda telah meninggalkan halaman ujian sebanyak <strong>3 kali</strong>. Sesuai tata tertib, sesi ujian Anda telah dikunci oleh sistem integritas CBT.
+        </p>
+
+        <div class="alert alert-warning py-3 px-3 text-start small mb-4" style="border-radius: 12px; border-left: 4px solid #f59e0b;">
+            <div class="d-flex align-items-start">
+                <i class="bi bi-info-circle-fill text-warning fs-5 me-2 mt-1"></i>
+                <div>
+                    <strong>Instruksi untuk Siswa:</strong><br>
+                    Harap tenang dan segera lapor kepada <strong>Pengawas Ujian</strong> di ruangan Anda. Pengawas dapat membuka kunci sesi Anda melalui Dashboard Monitoring Pengawas.
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center justify-content-center gap-2 mb-4 text-muted small">
+            <span class="spinner-border spinner-border-sm text-danger" role="status"></span>
+            <span>Menunggu pengawas membuka kunci... (cek otomatis)</span>
+        </div>
+
+        <!-- Opsi Buka Kunci Mandiri oleh Pengawas di Tempat -->
+        <div class="pt-3 border-top text-start">
+            <a class="text-decoration-none small text-secondary fw-semibold d-inline-flex align-items-center" data-bs-toggle="collapse" href="#proctorAuthCollapse" role="button">
+                <i class="bi bi-shield-lock me-1"></i> Pengawas ada di tempat? Buka kunci di sini
+            </a>
+            <div class="collapse mt-3" id="proctorAuthCollapse">
+                <form id="proctorUnlockForm" onsubmit="submitProctorUnlock(event)">
+                    <label class="form-label small fw-bold text-dark">Password Pengawas / Admin</label>
+                    <div class="input-group mb-2">
+                        <input type="password" id="proctorPasswordInput" class="form-control" placeholder="Masukkan password pengawas" required autocomplete="current-password">
+                        <button class="btn btn-danger px-3 fw-bold" type="submit" id="btnProctorUnlock">Buka</button>
+                    </div>
+                    <div id="proctorUnlockError" class="text-danger small mt-1 d-none"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <script src="../assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script>
     const EXAM_DATA = {
@@ -778,6 +890,9 @@ $minDurationSeconds = $minDurationMinutes * 60;
         minDurationSeconds: <?= $minDurationSeconds ?>,
         minDurationMinutes: <?= $minDurationMinutes ?>,
         minDurationPercent: <?= $minDurationPercent ?>,
+        enableAntiCheating: <?= json_encode($enableAntiCheating) ?>,
+        violationCount: <?= $currentViolationCount ?>,
+        isLocked: <?= $isSessionLocked ? 'true' : 'false' ?>,
         sessionId: <?= $sessionId ?>
     };
 

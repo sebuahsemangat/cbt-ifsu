@@ -690,7 +690,312 @@ function finishExam(isFromNav = false) {
   confirmModal.show();
 }
 
+let _isExamSubmitting = false;
+
 function submitExamForce() {
+  _isExamSubmitting = true;
   document.getElementById("submit-form").submit();
 }
+
+// =========================================================================
+// FITUR ANTI-CHEATING (ANTI-KECURANGAN)
+// =========================================================================
+
+let _lastViolationTime = 0;
+let _isSessionLocked = false;
+let _lockPollInterval = null;
+
+function initAntiCheating() {
+  if (typeof EXAM_DATA === "undefined" || !EXAM_DATA.enableAntiCheating) return;
+
+  _isSessionLocked = !!EXAM_DATA.isLocked;
+
+  // 1. Blokir Klik Kanan
+  document.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+  });
+
+  // 2. Blokir Copy, Cut, Paste
+  document.addEventListener("copy", (e) => {
+    e.preventDefault();
+  });
+  document.addEventListener("cut", (e) => {
+    e.preventDefault();
+  });
+  document.addEventListener("paste", (e) => {
+    e.preventDefault();
+  });
+
+  // 3. Blokir Drag & Drop
+  document.addEventListener("dragstart", (e) => {
+    e.preventDefault();
+  });
+
+  // 4. Blokir Shortcut Keyboard Terlarang
+  document.addEventListener("keydown", (e) => {
+    // F12 (DevTools)
+    if (e.key === "F12") {
+      e.preventDefault();
+      return false;
+    }
+
+    if (e.ctrlKey || e.metaKey) {
+      const key = e.key.toLowerCase();
+      // Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+A, Ctrl+U (source), Ctrl+P (print)
+      if (["c", "v", "x", "a", "u", "p"].includes(key)) {
+        e.preventDefault();
+        return false;
+      }
+      // Ctrl+Shift+I / J / C (Inspect Element)
+      if (e.shiftKey && ["i", "j", "c"].includes(key)) {
+        e.preventDefault();
+        return false;
+      }
+    }
+  });
+
+  let _hasEnteredFullscreen = false;
+
+  // 5. Coba masuk mode Fullscreen saat siswa klik pertama kali di halaman
+  const tryEnterFullscreen = () => {
+    if (!document.fullscreenElement && !_isSessionLocked && !_isExamSubmitting) {
+      const docEl = document.documentElement;
+      if (docEl.requestFullscreen) {
+        docEl.requestFullscreen().then(() => {
+          _hasEnteredFullscreen = true;
+        }).catch(() => {});
+      } else if (docEl.webkitRequestFullscreen) {
+        docEl.webkitRequestFullscreen();
+        _hasEnteredFullscreen = true;
+      }
+    }
+  };
+  document.addEventListener("click", tryEnterFullscreen, { once: true });
+
+  // 6. Deteksi Pindah Tab / Minimize (visibilitychange - standar Android & iOS)
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      triggerViolation("Pindah Tab / Minimize Browser");
+    }
+  });
+
+  // 7. Khusus Mobile & iOS Safari: event pagehide saat beralih aplikasi / tab di HP
+  window.addEventListener("pagehide", () => {
+    triggerViolation("Beralih Aplikasi / Tab Browser");
+  });
+
+  // 8. Deteksi Kehilangan Fokus / Alt+Tab / Buka Aplikasi Lain (window blur)
+  window.addEventListener("blur", () => {
+    triggerViolation("Beralih Aplikasi / Jendela");
+  });
+
+  // 9. Deteksi Keluar Fullscreen (Hanya jika perangkat mendukung & pernah masuk fullscreen sebelumnya)
+  document.addEventListener("fullscreenchange", () => {
+    if (document.fullscreenElement) {
+      _hasEnteredFullscreen = true;
+    } else if (_hasEnteredFullscreen && !_isExamSubmitting && !_isSessionLocked) {
+      // Tunggu 500ms untuk memastikan bukan karena membuka modal
+      setTimeout(() => {
+        if (!document.fullscreenElement && !_isExamSubmitting && !_isSessionLocked) {
+          triggerViolation("Keluar dari Mode Layar Penuh (Fullscreen)");
+        }
+      }, 500);
+    }
+  });
+
+  // Jika saat buka halaman status sudah terkunci, langsung kunci
+  if (_isSessionLocked) {
+    lockExamSession();
+  }
+}
+
+function triggerViolation(reason) {
+  if (typeof EXAM_DATA === "undefined" || !EXAM_DATA.enableAntiCheating) return;
+  if (typeof remainingSeconds !== "undefined" && remainingSeconds <= 0) return;
+  if (_isExamSubmitting || _isSessionLocked) return;
+
+  const now = Date.now();
+  // Debounce 3.5 detik agar satu aksi beralih aplikasi tidak dihitung berkali-kali
+  if (now - _lastViolationTime < 3500) return;
+  _lastViolationTime = now;
+
+  const fd = new FormData();
+  fd.append("session_id", sessionId);
+  fd.append("reason", reason || "Pelanggaran Integritas");
+
+  fetch("record_violation.php", {
+    method: "POST",
+    body: fd,
+    keepalive: true
+  })
+
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.success && data.anti_cheating) {
+        const count = data.violation_count;
+        const isLocked = data.is_locked;
+
+        if (isLocked || count >= 3) {
+          lockExamSession();
+        } else {
+          showViolationWarning(count);
+        }
+      }
+    })
+    .catch(() => {});
+}
+
+function showViolationWarning(count) {
+  const currentStrikeEl = document.getElementById("viol-current-strike");
+  const remainingStrikesEl = document.getElementById("viol-remaining-strikes");
+  if (currentStrikeEl) currentStrikeEl.textContent = count;
+  if (remainingStrikesEl) remainingStrikesEl.textContent = Math.max(0, 3 - count);
+
+  const warnModalEl = document.getElementById("violationWarningModal");
+  if (warnModalEl) {
+    const warnModal = bootstrap.Modal.getOrCreateInstance(warnModalEl);
+    warnModal.show();
+  } else {
+    alert(
+      `PERINGATAN PELANGGARAN (${count}/3)!\nAnda terdeteksi meninggalkan halaman ujian. Sisa kesempatan: ${3 - count} kali lagi sebelum ujian terkunci.`
+    );
+  }
+}
+
+function acknowledgeViolation() {
+  const warnModalEl = document.getElementById("violationWarningModal");
+  if (warnModalEl) {
+    const warnModal = bootstrap.Modal.getInstance(warnModalEl);
+    if (warnModal) warnModal.hide();
+  }
+
+  // Masuk kembali ke mode layar penuh
+  const docEl = document.documentElement;
+  if (docEl.requestFullscreen) {
+    docEl.requestFullscreen().catch(() => {});
+  } else if (docEl.webkitRequestFullscreen) {
+    docEl.webkitRequestFullscreen();
+  }
+}
+
+function lockExamSession() {
+  _isSessionLocked = true;
+
+  // Tutup semua modal lain jika terbuka
+  const warnModalEl = document.getElementById("violationWarningModal");
+  if (warnModalEl) {
+    const wm = bootstrap.Modal.getInstance(warnModalEl);
+    if (wm) wm.hide();
+  }
+  const confModalEl = document.getElementById("confirmFinishModal");
+  if (confModalEl) {
+    const cm = bootstrap.Modal.getInstance(confModalEl);
+    if (cm) cm.hide();
+  }
+  const listModalEl = document.getElementById("questionListModal");
+  if (listModalEl) {
+    const lm = bootstrap.Modal.getInstance(listModalEl);
+    if (lm) lm.hide();
+  }
+
+  // Tampilkan overlay layar terkunci
+  const overlay = document.getElementById("examLockedOverlay");
+  if (overlay) {
+    overlay.classList.remove("d-none");
+  }
+
+  // Polling berkala setiap 3 detik untuk mengecek apakah admin/pengawas sudah membuka kunci
+  if (!_lockPollInterval) {
+    _lockPollInterval = setInterval(checkLockStatusPoll, 3000);
+  }
+}
+
+function checkLockStatusPoll() {
+  if (!_isSessionLocked) {
+    if (_lockPollInterval) clearInterval(_lockPollInterval);
+    return;
+  }
+
+  fetch(`check_lock_status.php?session_id=${sessionId}`)
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.success && !data.is_locked) {
+        unlockSessionSuccess();
+      }
+    })
+    .catch(() => {});
+}
+
+function submitProctorUnlock(e) {
+  e.preventDefault();
+  const passInput = document.getElementById("proctorPasswordInput");
+  const errDiv = document.getElementById("proctorUnlockError");
+  const btn = document.getElementById("btnProctorUnlock");
+
+  if (!passInput || !passInput.value.trim()) return;
+
+  if (errDiv) errDiv.classList.add("d-none");
+  if (btn) btn.disabled = true;
+
+  const fd = new FormData();
+  fd.append("session_id", sessionId);
+  fd.append("admin_password", passInput.value.trim());
+
+  fetch("unlock_session.php", {
+    method: "POST",
+    body: fd
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.success) {
+        passInput.value = "";
+        unlockSessionSuccess();
+      } else {
+        if (errDiv) {
+          errDiv.textContent = data.message || "Password pengawas salah!";
+          errDiv.classList.remove("d-none");
+        }
+      }
+    })
+    .catch(() => {
+      if (errDiv) {
+        errDiv.textContent = "Terjadi kesalahan koneksi ke server.";
+        errDiv.classList.remove("d-none");
+      }
+    })
+    .finally(() => {
+      if (btn) btn.disabled = false;
+    });
+}
+
+function unlockSessionSuccess() {
+  _isSessionLocked = false;
+  if (_lockPollInterval) {
+    clearInterval(_lockPollInterval);
+    _lockPollInterval = null;
+  }
+
+  const overlay = document.getElementById("examLockedOverlay");
+  if (overlay) {
+    overlay.classList.add("d-none");
+  }
+
+  // Masuk kembali ke fullscreen
+  const docEl = document.documentElement;
+  if (docEl.requestFullscreen) {
+    docEl.requestFullscreen().catch(() => {});
+  } else if (docEl.webkitRequestFullscreen) {
+    docEl.webkitRequestFullscreen();
+  }
+
+  alert("Kunci ujian telah dibuka oleh pengawas. Silakan melanjutkan ujian.");
+}
+
+// Inisialisasi fitur saat halaman selesai dimuat
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initAntiCheating);
+} else {
+  initAntiCheating();
+}
+
 

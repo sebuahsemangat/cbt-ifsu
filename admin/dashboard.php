@@ -76,6 +76,8 @@ $page = $_GET['page'] ?? 'main';
                     es.subject_id,
                     es.start_time,
                     es.end_time,
+                    es.violation_count,
+                    es.is_locked,
                     COALESCE(es.remaining_seconds, TIMESTAMPDIFF(SECOND, NOW(), es.end_time)) AS remaining_seconds,
                     e.exam_name,
                     sb.name AS subject_name,
@@ -134,6 +136,8 @@ $page = $_GET['page'] ?? 'main';
                     'subject_name' => $st['subject_name'] ?? null,
                     'start_time' => $st['start_time'] ? date('H:i', strtotime($st['start_time'])) : null,
                     'remaining_seconds' => $st['remaining_seconds'] !== null ? (int) $st['remaining_seconds'] : null,
+                    'violation_count' => (int) ($st['violation_count'] ?? 0),
+                    'is_locked' => ((int) ($st['is_locked'] ?? 0) === 1),
                     'answered_count' => $is_working ? (int) ($st['answered_count'] ?? 0) : 0,
                     'total_questions' => $is_working ? (int) ($st['total_questions'] ?? 0) : 0,
                     'is_working' => $is_working,
@@ -474,12 +478,29 @@ $page = $_GET['page'] ?? 'main';
                         let actionBtns = '';
 
                         if (st.is_working) {
-                            statusBadge = `
-                            <span class="badge bg-warning text-dark px-2 py-1 d-inline-flex align-items-center">
-                                <span class="spinner-grow spinner-grow-sm me-1 text-danger" role="status"></span>
-                                Mengerjakan
-                            </span>
-                        `;
+                            if (st.is_locked) {
+                                statusBadge = `
+                                <span class="badge bg-danger px-2 py-1 d-inline-flex align-items-center">
+                                    <i class="bi bi-lock-fill me-1"></i> Terkunci (3x)
+                                </span>
+                            `;
+                            } else {
+                                let violBadge = '';
+                                if (st.violation_count > 0) {
+                                    violBadge = `
+                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger ms-1" title="${st.violation_count}x terdeteksi meninggalkan halaman ujian">
+                                        <i class="bi bi-exclamation-triangle-fill me-1"></i>${st.violation_count}x
+                                    </span>
+                                `;
+                                }
+                                statusBadge = `
+                                <span class="badge bg-warning text-dark px-2 py-1 d-inline-flex align-items-center">
+                                    <span class="spinner-grow spinner-grow-sm me-1 text-danger" role="status"></span>
+                                    Mengerjakan
+                                </span>
+                                ${violBadge}
+                            `;
+                            }
                             mapelCol = `
                             <div class="fw-bold text-primary">
                                 <i class="bi bi-book me-1"></i> ${subjEsc}
@@ -533,8 +554,20 @@ $page = $_GET['page'] ?? 'main';
                                 }
                             }
 
-                            // Tombol Aksi: Hanya Icon tanpa Teks (Gembok Terbuka untuk Reset Login)
+                            // Tombol Aksi: Tambah tombol Buka Kunci jika sesi terkunci
+                            let unlockBtn = '';
+                            if (st.is_locked) {
+                                unlockBtn = `
+                                <button class="btn btn-sm btn-success btn-action-icon me-1" 
+                                        onclick="unlockExamSession(${st.session_id}, '${escapeJs(st.full_name)}')" 
+                                        title="Buka Kunci Ujian Siswa">
+                                    <i class="bi bi-key-fill"></i>
+                                </button>
+                            `;
+                            }
+
                             actionBtns = `
+                            ${unlockBtn}
                             <button class="btn btn-sm btn-warning text-dark btn-action-icon me-1" 
                                     onclick="finishExam(${st.session_id}, '${escapeJs(st.full_name)}', '${escapeJs(st.subject_name || 'ujian')}')" 
                                     title="Selesaikan Paksa Ujian">
@@ -735,6 +768,13 @@ $page = $_GET['page'] ?? 'main';
                 function finishExam(sessionId, studentName, subjectName) {
                     if (confirm(`Apakah Anda yakin ingin MENYELESAIKAN PAKSA ujian "${subjectName}" untuk siswa "${studentName}"?\n\nSistem akan menghitung nilai akhir berdasarkan jawaban yang sudah tersimpan.`)) {
                         window.location.href = `modules/scores/process.php?action=finish&id=${sessionId}&redirect=dashboard`;
+                    }
+                }
+
+                // Fungsi Aksi Buka Kunci Ujian Siswa (Anti-Cheating)
+                function unlockExamSession(sessionId, studentName) {
+                    if (confirm(`Buka kunci sesi ujian untuk siswa "${studentName}"?\n\nSiswa akan dapat melanjutkan ujian kembali.`)) {
+                        window.location.href = `modules/scores/process.php?action=unlock&id=${sessionId}&redirect=dashboard`;
                     }
                 }
 

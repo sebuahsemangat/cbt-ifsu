@@ -113,6 +113,12 @@ if (isset($_POST['update_settings'])) {
         $stmt = $pdo->prepare("INSERT INTO settings (setting_key, setting_value) VALUES ('min_exam_duration_percent', ?) ON DUPLICATE KEY UPDATE setting_value = ?");
         $stmt->execute([(string)$min_percent, (string)$min_percent]);
 
+        // Update Fitur Anti-Cheating
+        $enable_anti_cheating = isset($_POST['enable_anti_cheating']) ? '1' : '0';
+        $stmt = $pdo->prepare("INSERT INTO settings (setting_key, setting_value) VALUES ('enable_anti_cheating', ?) ON DUPLICATE KEY UPDATE setting_value = ?");
+        $stmt->execute([$enable_anti_cheating, $enable_anti_cheating]);
+
+
         // Handle Logo Upload
         if (isset($_FILES['bimbel_logo']) && $_FILES['bimbel_logo']['error'] !== UPLOAD_ERR_NO_FILE) {
             if ($_FILES['bimbel_logo']['error'] !== UPLOAD_ERR_OK) {
