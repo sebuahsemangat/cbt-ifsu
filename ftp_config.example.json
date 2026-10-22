@@ -1,0 +1,20 @@
+{
+  "host": "ftp.yourdomain.com",
+  "port": 21,
+  "username": "your_username",
+  "password": "your_password",
+  "ssl": false,
+  "passive": true,
+  "timeout": 30,
+  "remote_root": "/public_html/",
+  "ignore": [
+    ".git",
+    ".gitignore",
+    "ftp_config.json",
+    "ftp_config.example.json",
+    "deploy_ftp.php",
+    ".vscode",
+    "node_modules",
+    "*.log"
+  ]
+}

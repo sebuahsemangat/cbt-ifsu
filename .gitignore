@@ -1,0 +1,7 @@
+# FTP Deployment credentials
+ftp_config.json
+
+# Local environment / IDE
+.vscode/
+.idea/
+*.log

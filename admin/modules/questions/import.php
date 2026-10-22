@@ -168,7 +168,7 @@ $references = $stmtRef->fetchAll();
                             </div>
                             <div class="p-2 bg-white rounded border border-light-subtle">
                                 <p class="mb-0 text-dark font-monospace small" id="promptContent"
-                                    style="white-space: pre-wrap; user-select: all;">Buat sebuah file docx dari dokumen
+                                    style=" user-select: all;">Buat sebuah file docx dari dokumen
                                     yang saya upload sesuaikan formatnya dengan template yang disediakan. jika soal
                                     mengandung referensi, maka pisahkan referensi di dalam chat jangan di dalam file
                                     docx</p>
