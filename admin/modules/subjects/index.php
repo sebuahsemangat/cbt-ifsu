@@ -6,6 +6,9 @@ require_once '../includes/auth_check.php';
 $stmt = $pdo->query("SELECT * FROM subjects ORDER BY created_at DESC");
 $subjects = $stmt->fetchAll();
 
+// Ambil pengaturan batas minimal durasi ujian (%)
+$stmt_min_dur = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'min_exam_duration_percent'");
+$min_exam_duration_percent = (int)($stmt_min_dur->fetchColumn() ?: 50);
 ?>
 
 <div class="container-fluid">
@@ -33,7 +36,14 @@ $subjects = $stmt->fetchAll();
                         <?php foreach ($subjects as $s): ?>
                         <tr>
                             <td class="px-4 fw-semibold"><?= htmlspecialchars($s['name']) ?></td>
-                            <td><?= $s['duration'] ?> Menit</td>
+                            <td>
+                                <?= $s['duration'] ?> Menit
+                                <?php if ($min_exam_duration_percent > 0): ?>
+                                    <br><span class="badge bg-light text-secondary border small mt-1" title="Batas minimal pengerjaan (<?= $min_exam_duration_percent ?>%)">
+                                        <i class="bi bi-clock-history me-1"></i>Min. <?= ceil($s['duration'] * ($min_exam_duration_percent / 100)) ?> mnt
+                                    </span>
+                                <?php endif; ?>
+                            </td>
                             <td><?= $s['max_score'] ?></td>
                             <td>
                                 <span class="badge bg-<?= $s['is_active'] ? 'success' : 'danger' ?>">
@@ -72,9 +82,23 @@ $subjects = $stmt->fetchAll();
                         <label class="form-label">Nama Mata Pelajaran</label>
                         <input type="text" name="name" class="form-control" required placeholder="Contoh: Matematika">
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Durasi (Menit)</label>
-                        <input type="number" name="duration" class="form-control" required placeholder="Contoh: 90">
+                    <div class="row g-2 mb-3">
+                        <div class="col-sm-7">
+                            <label class="form-label">Durasi (Menit)</label>
+                            <input type="number" name="duration" class="form-control duration-input" required placeholder="Contoh: 90" min="1">
+                        </div>
+                        <div class="col-sm-5">
+                            <label class="form-label text-muted">Batas Minimal</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control bg-light min-duration-preview" readonly value="-">
+                                <span class="input-group-text bg-light text-muted"><i class="bi bi-lock-fill small"></i></span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-text small text-muted">
+                                <i class="bi bi-info-circle me-1"></i>Batas minimal pengerjaan: <strong><?= $min_exam_duration_percent ?>%</strong> dari total durasi (diatur di Pengaturan).
+                            </div>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Skor Maksimal</label>
@@ -89,3 +113,22 @@ $subjects = $stmt->fetchAll();
         </div>
     </div>
 </div>
+
+<script>
+const MIN_DURATION_PERCENT = <?= json_encode($min_exam_duration_percent) ?>;
+document.addEventListener('input', function(e) {
+    if (e.target.classList.contains('duration-input')) {
+        const modal = e.target.closest('.modal-content') || e.target.closest('form');
+        const minPreview = modal ? modal.querySelector('.min-duration-preview') : null;
+        if (minPreview) {
+            const val = parseFloat(e.target.value) || 0;
+            if (val > 0) {
+                const minDur = Math.ceil(val * (MIN_DURATION_PERCENT / 100));
+                minPreview.value = minDur + ' Menit';
+            } else {
+                minPreview.value = '-';
+            }
+        }
+    }
+});
+</script>

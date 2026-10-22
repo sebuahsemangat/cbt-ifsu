@@ -180,7 +180,23 @@ if (isset($options['files'])) {
             $filesToUpload[] = $file;
         }
     }
+
+    // Jika tidak ada perubahan uncommitted, fallback otomatis ke file commit terakhir (HEAD)
+    if (empty($filesToUpload)) {
+        $commitOutput = [];
+        exec("git diff-tree --no-commit-id --name-only -r HEAD", $commitOutput);
+        if (!empty($commitOutput)) {
+            echo "Tidak ada perubahan uncommitted, mendeteksi file dari commit terakhir (HEAD)...\n";
+            foreach ($commitOutput as $file) {
+                $file = trim($file);
+                if ($file !== '' && file_exists(__DIR__ . DIRECTORY_SEPARATOR . $file) && !isIgnored($file, $ignoreList)) {
+                    $filesToUpload[] = $file;
+                }
+            }
+        }
+    }
 }
+
 
 // Normalize and remove duplicates
 $filesToUpload = array_values(array_unique(array_filter($filesToUpload, function($f) {

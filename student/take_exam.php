@@ -313,6 +313,13 @@ if ($timeData && $timeData['remaining_seconds'] !== null) {
 $stmtSync = $pdo->prepare("UPDATE exam_sessions SET end_time = DATE_ADD(NOW(), INTERVAL ? SECOND), remaining_seconds = ? WHERE id = ?");
 $stmtSync->execute([$remainingSec, $remainingSec, $sessionId]);
 
+// Ambil pengaturan batas minimal durasi pengerjaan ujian (%)
+$stmtMinPct = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'min_exam_duration_percent'");
+$minDurationPercent = (int)($stmtMinPct->fetchColumn() ?: 50);
+
+$subjectDuration = (int)$currentSubject['duration'];
+$minDurationMinutes = (int)ceil($subjectDuration * ($minDurationPercent / 100));
+$minDurationSeconds = $minDurationMinutes * 60;
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -643,6 +650,55 @@ $stmtSync->execute([$remainingSec, $remainingSec, $sessionId]);
     </div>
 </div>
 
+<!-- Modal: Batas Waktu Minimal Belum Terpenuhi -->
+<div class="modal fade" id="minDurationWarningModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 18px; overflow: hidden;">
+            <div class="modal-header py-3 px-4" style="background: linear-gradient(135deg, #b45309 0%, #d97706 100%); color: #ffffff;">
+                <h5 class="modal-title fw-bold"><i class="bi bi-clock-history me-2"></i>Belum Dapat Mengumpulkan</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <div class="mb-3">
+                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-warning bg-opacity-10 text-warning" style="width: 70px; height: 70px; font-size: 2.2rem;">
+                        <i class="bi bi-hourglass-split"></i>
+                    </span>
+                </div>
+                <h5 class="fw-bold text-dark mb-2">Batas Minimal Pengerjaan Belum Tercapai</h5>
+                <p class="text-secondary mb-3 small" id="min-duration-msg">
+                    Siswa belum diizinkan mengumpulkan jawaban sebelum batas minimal waktu terlewati.
+                </p>
+                <div class="p-3 rounded-3 bg-light border text-start small mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">Total Durasi Mapel:</span>
+                        <strong id="md-total-dur">-</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">Batas Minimal (<?= $minDurationPercent ?>%):</span>
+                        <strong id="md-min-dur" class="text-warning">-</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">Waktu Pengerjaan Anda:</span>
+                        <strong id="md-elapsed-dur">-</strong>
+                    </div>
+                    <div class="d-flex justify-content-between pt-2 border-top">
+                        <span class="fw-semibold text-danger">Tersisa Waktu Tunggu:</span>
+                        <strong id="md-remaining-wait" class="text-danger fs-6">-</strong>
+                    </div>
+                </div>
+                <div class="text-muted small">
+                    <i class="bi bi-lightbulb text-warning me-1"></i>Silakan manfaatkan sisa waktu ini untuk memeriksa kembali jawaban Anda.
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-3 pt-0 justify-content-center">
+                <button type="button" class="btn btn-warning px-4 py-2 fw-bold text-white shadow-sm" data-bs-dismiss="modal" style="border-radius: 10px;">
+                    <i class="bi bi-arrow-left me-1"></i>Kembali Periksa Jawaban
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal: Konfirmasi Selesai -->
 <div class="modal fade" id="confirmFinishModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -718,9 +774,22 @@ $stmtSync->execute([$remainingSec, $remainingSec, $sessionId]);
         questions: <?= json_encode($finalQuestions) ?>,
         ansMap: <?= json_encode($ansMap) ?>,
         remainingSeconds: <?= $remainingSec ?>,
+        totalDurationSeconds: <?= $durationSec ?>,
+        minDurationSeconds: <?= $minDurationSeconds ?>,
+        minDurationMinutes: <?= $minDurationMinutes ?>,
+        minDurationPercent: <?= $minDurationPercent ?>,
         sessionId: <?= $sessionId ?>
     };
+
+    <?php if (isset($_GET['err']) && $_GET['err'] === 'min_duration'): ?>
+    window.addEventListener('DOMContentLoaded', () => {
+        if (typeof finishExam === 'function') {
+            finishExam();
+        }
+    });
+    <?php endif; ?>
 </script>
+
 <script src="../assets/js/exam.js?v=<?= filemtime(__DIR__ . '/../assets/js/exam.js') ?>"></script>
 </body>
 </html>

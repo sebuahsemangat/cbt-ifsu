@@ -107,6 +107,12 @@ if (isset($_POST['update_settings'])) {
         $stmt = $pdo->prepare("INSERT INTO settings (setting_key, setting_value) VALUES ('allow_student_change_password', ?) ON DUPLICATE KEY UPDATE setting_value = ?");
         $stmt->execute([$allow_student_change_password, $allow_student_change_password]);
 
+        // Update Batas Minimal Durasi Pengerjaan Ujian (%)
+        $min_percent = isset($_POST['min_exam_duration_percent']) ? (int)$_POST['min_exam_duration_percent'] : 50;
+        $min_percent = max(0, min(100, $min_percent));
+        $stmt = $pdo->prepare("INSERT INTO settings (setting_key, setting_value) VALUES ('min_exam_duration_percent', ?) ON DUPLICATE KEY UPDATE setting_value = ?");
+        $stmt->execute([(string)$min_percent, (string)$min_percent]);
+
         // Handle Logo Upload
         if (isset($_FILES['bimbel_logo']) && $_FILES['bimbel_logo']['error'] !== UPLOAD_ERR_NO_FILE) {
             if ($_FILES['bimbel_logo']['error'] !== UPLOAD_ERR_OK) {

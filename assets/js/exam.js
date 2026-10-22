@@ -582,9 +582,81 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-function finishExam() {
+function finishExam(isFromNav = false) {
   if (typeof _pendingSavesSet !== "undefined" && _pendingSavesSet.size > 0)
     return;
+
+  // Cek batas minimal durasi pengerjaan
+  const totalDurationSeconds =
+    typeof EXAM_DATA !== "undefined" && EXAM_DATA.totalDurationSeconds
+      ? EXAM_DATA.totalDurationSeconds
+      : 0;
+  const minDurationSeconds =
+    typeof EXAM_DATA !== "undefined" && EXAM_DATA.minDurationSeconds
+      ? EXAM_DATA.minDurationSeconds
+      : 0;
+  const minDurationMinutes =
+    typeof EXAM_DATA !== "undefined" && EXAM_DATA.minDurationMinutes
+      ? EXAM_DATA.minDurationMinutes
+      : 0;
+  const minDurationPercent =
+    typeof EXAM_DATA !== "undefined" && EXAM_DATA.minDurationPercent
+      ? EXAM_DATA.minDurationPercent
+      : 0;
+
+  // Waktu yang sudah berjalan
+  const elapsedSeconds = Math.max(0, totalDurationSeconds - remainingSeconds);
+
+  // Jika batas minimal diaktifkan (> 0), sisa waktu utama belum habis (> 0), dan waktu berjalan belum capai minimal
+  if (
+    minDurationSeconds > 0 &&
+    remainingSeconds > 0 &&
+    elapsedSeconds < minDurationSeconds
+  ) {
+    // Hide list modal jika sedang terbuka
+    const listModalEl = document.getElementById("questionListModal");
+    if (listModalEl) {
+      const listModal = bootstrap.Modal.getInstance(listModalEl);
+      if (listModal) listModal.hide();
+    }
+
+    const waitSeconds = minDurationSeconds - elapsedSeconds;
+    const waitM = Math.floor(waitSeconds / 60);
+    const waitS = waitSeconds % 60;
+    const waitStr =
+      waitM > 0 ? `${waitM} menit ${waitS} detik` : `${waitS} detik`;
+
+    const elapsedM = Math.floor(elapsedSeconds / 60);
+    const elapsedS = elapsedSeconds % 60;
+    const elapsedStr =
+      elapsedM > 0 ? `${elapsedM} menit ${elapsedS} detik` : `${elapsedS} detik`;
+
+    const totalM = Math.floor(totalDurationSeconds / 60);
+
+    const msgEl = document.getElementById("min-duration-msg");
+    if (msgEl) {
+      msgEl.innerHTML = `Siswa belum diizinkan mengumpulkan jawaban sebelum batas minimal pengerjaan <strong>${minDurationMinutes} menit</strong> (${minDurationPercent}%) terlewati.`;
+    }
+    const elTotal = document.getElementById("md-total-dur");
+    if (elTotal) elTotal.textContent = `${totalM} Menit`;
+    const elMin = document.getElementById("md-min-dur");
+    if (elMin) elMin.textContent = `${minDurationMinutes} Menit`;
+    const elElapsed = document.getElementById("md-elapsed-dur");
+    if (elElapsed) elElapsed.textContent = elapsedStr;
+    const elWait = document.getElementById("md-remaining-wait");
+    if (elWait) elWait.textContent = waitStr;
+
+    const warnModalEl = document.getElementById("minDurationWarningModal");
+    if (warnModalEl) {
+      const warnModal = new bootstrap.Modal(warnModalEl);
+      warnModal.show();
+    } else {
+      alert(
+        `Belum dapat mengumpulkan jawaban!\nBatas minimal pengerjaan adalah ${minDurationMinutes} menit (${minDurationPercent}%).\nSisa waktu tunggu: ${waitStr}`
+      );
+    }
+    return;
+  }
 
   // Hide list modal if open
   const listModalEl = document.getElementById("questionListModal");
@@ -621,3 +693,4 @@ function finishExam() {
 function submitExamForce() {
   document.getElementById("submit-form").submit();
 }
+

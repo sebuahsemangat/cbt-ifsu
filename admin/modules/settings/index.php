@@ -21,6 +21,7 @@ $app_name = $settings['app_name'] ?? 'CBT Simulation';
 $bimbel_name = $settings['bimbel_name'] ?? 'Bimbel Lita Sumedang';
 $bimbel_logo = $settings['bimbel_logo'] ?? 'logo-bimbel.png';
 $allow_student_change_password = ($settings['allow_student_change_password'] ?? '1') === '1';
+$min_exam_duration_percent = (int) ($settings['min_exam_duration_percent'] ?? 50);
 ?>
 
 <div class="row">
@@ -67,6 +68,24 @@ $allow_student_change_password = ($settings['allow_student_change_password'] ?? 
                         </div>
 
                         <div class="mb-4 pt-3 border-top">
+                            <label class="form-label fw-bold d-block">Batas Minimal Pengerjaan Ujian</label>
+                            <div class="row align-items-center g-2">
+                                <div class="col-sm-4 col-md-3">
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="min_exam_duration_percent" name="min_exam_duration_percent"
+                                            value="<?= $min_exam_duration_percent ?>" min="0" max="100" step="1" required>
+                                        <span class="input-group-text fw-bold">%</span>
+                                    </div>
+                                </div>
+                                <div class="col-sm-8 col-md-9">
+                                    <div class="form-text mt-0">
+                                        Persentase durasi minimal sebelum siswa diizinkan mengumpulkan ujian. Contoh: jika durasi mapel <strong>90 menit</strong> dan setting <strong>50%</strong>, maka siswa baru bisa submit setelah <strong>45 menit</strong>. (Isi <strong>0</strong> untuk menonaktifkan).
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4 pt-3 border-top">
                             <label class="form-label fw-bold d-block">Fitur Siswa</label>
                             <div class="form-check form-switch fs-6">
                                 <input class="form-check-input" type="checkbox" role="switch" id="allow_student_change_password" name="allow_student_change_password" value="1" <?= $allow_student_change_password ? 'checked' : '' ?>>
@@ -78,6 +97,7 @@ $allow_student_change_password = ($settings['allow_student_change_password'] ?? 
                                 Jika diaktifkan, siswa dapat mengubah password mereka sendiri melalui dashboard siswa. Jika dinonaktifkan, menu ganti password akan disembunyikan dan diblokir.
                             </div>
                         </div>
+
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-start">
                             <button type="submit" name="update_settings" class="btn btn-primary px-4 py-2">

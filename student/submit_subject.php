@@ -12,7 +12,7 @@ if (!$sessionId) {
 }
 
 // Get Session & Subject Info
-$stmtSess = $pdo->prepare("SELECT es.*, s.max_score FROM exam_sessions es JOIN subjects s ON es.subject_id = s.id WHERE es.id = ?");
+$stmtSess = $pdo->prepare("SELECT es.*, s.max_score, s.duration FROM exam_sessions es JOIN subjects s ON es.subject_id = s.id WHERE es.id = ?");
 $stmtSess->execute([$sessionId]);
 $session = $stmtSess->fetch();
 
@@ -22,6 +22,33 @@ if (!$session || $session['student_id'] != $_SESSION['user_id']) {
 
 $subjectId = $session['subject_id'];
 $examId = $session['exam_id'];
+
+// Validasi Batas Minimal Durasi Pengerjaan Ujian (Keamanan Server)
+$stmtMinPct = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'min_exam_duration_percent'");
+$minDurationPercent = (int)($stmtMinPct->fetchColumn() ?: 50);
+
+if ($minDurationPercent > 0) {
+    $subjectDuration = (int)($session['duration'] ?? 0);
+    if ($subjectDuration > 0) {
+        $minDurationSeconds = (int)ceil($subjectDuration * ($minDurationPercent / 100)) * 60;
+        $totalSeconds = $subjectDuration * 60;
+
+        $remaining = isset($session['remaining_seconds']) ? (int)$session['remaining_seconds'] : 0;
+        $elapsedFromRemaining = max(0, $totalSeconds - $remaining);
+
+        $startTime = !empty($session['start_time']) ? strtotime($session['start_time']) : 0;
+        $elapsedFromStart = $startTime > 0 ? max(0, time() - $startTime) : $elapsedFromRemaining;
+
+        $actualElapsed = max($elapsedFromRemaining, $elapsedFromStart);
+
+        // Jika sisa waktu utama belum habis (> 0) dan belum memenuhi batas minimal (buffer 5 detik)
+        if ($remaining > 0 && $actualElapsed < ($minDurationSeconds - 5)) {
+            header("Location: take_exam.php?err=min_duration");
+            exit;
+        }
+    }
+}
+
 
 // Get Questions
 $stmtQ = $pdo->prepare("SELECT * FROM questions WHERE subject_id = ?");
