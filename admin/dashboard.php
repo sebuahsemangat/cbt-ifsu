@@ -43,9 +43,6 @@ $page = $_GET['page'] ?? 'main';
         case 'references_form':
             include 'modules/references/form.php';
             break;
-        case 'questions':
-            include 'modules/questions/index.php';
-            break;
         case 'questions_form':
             include 'modules/questions/form.php';
             break;
