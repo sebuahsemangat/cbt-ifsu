@@ -560,16 +560,16 @@ function startTimer() {
 // Simpan sisa waktu saat halaman ditutup atau siswa beralih tab
 window.addEventListener("beforeunload", () => {
   if (typeof remainingSeconds !== "undefined" && remainingSeconds !== null && sessionId) {
-    const fd = new FormData();
-    fd.append("session_id", sessionId);
-    fd.append("remaining_seconds", remainingSeconds);
+    const params = new URLSearchParams();
+    params.append("session_id", sessionId);
+    params.append("remaining_seconds", remainingSeconds);
 
     if (navigator.sendBeacon) {
-      navigator.sendBeacon("sync_time.php", fd);
+      navigator.sendBeacon("sync_time.php", params);
     } else {
       fetch("sync_time.php", {
         method: "POST",
-        body: fd,
+        body: params,
         keepalive: true
       }).catch(() => {});
     }
@@ -819,13 +819,14 @@ function triggerViolation(reason) {
   if (now - _lastViolationTime < 3500) return;
   _lastViolationTime = now;
 
-  const fd = new FormData();
-  fd.append("session_id", sessionId);
-  fd.append("reason", reason || "Pelanggaran Integritas");
+  const params = new URLSearchParams();
+  params.append("session_id", sessionId);
+  params.append("reason", reason || "Pelanggaran Integritas");
 
   fetch("record_violation.php", {
     method: "POST",
-    body: fd,
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: params.toString(),
     keepalive: true
   })
 
@@ -937,13 +938,14 @@ function submitProctorUnlock(e) {
   if (errDiv) errDiv.classList.add("d-none");
   if (btn) btn.disabled = true;
 
-  const fd = new FormData();
-  fd.append("session_id", sessionId);
-  fd.append("admin_password", passInput.value.trim());
+  const params = new URLSearchParams();
+  params.append("session_id", sessionId);
+  params.append("admin_password", passInput.value.trim());
 
   fetch("unlock_session.php", {
     method: "POST",
-    body: fd
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: params.toString()
   })
     .then((res) => res.json())
     .then((data) => {

@@ -13,12 +13,13 @@ try {
     require_once '../../../includes/auth_check.php';
 
     $action = $_GET['action'] ?? '';
-    $exam_id = isset($_POST['exam_id']) ? (int)$_POST['exam_id'] : 0;
+    $exam_id = isset($_POST['exam_id']) ? (int)$_POST['exam_id'] : (int)($_GET['exam_id'] ?? 0);
 
     if ($exam_id <= 0) {
         echo json_encode(['status' => 'error', 'message' => 'ID Ujian tidak valid']);
         exit;
     }
+
 
     // Pastikan tabel tokens tersedia di database (self-healing jika belum ada di hosting)
     $pdo->exec("CREATE TABLE IF NOT EXISTS `tokens` (

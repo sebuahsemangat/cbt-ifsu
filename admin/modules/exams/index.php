@@ -559,16 +559,15 @@ function initToken(examId) {
 }
 
 function fetchToken(examId) {
-    const formData = new FormData();
-    formData.append('exam_id', examId);
+    const params = new URLSearchParams();
+    params.append('exam_id', examId);
 
     fetch('modules/exams/token_handler.php?action=get_or_create', {
         method: 'POST',
         headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json'
+            'X-Requested-With': 'XMLHttpRequest'
         },
-        body: formData
+        body: params
     })
     .then(async response => {
         const text = await response.text();
@@ -595,6 +594,7 @@ function fetchToken(examId) {
         alert('Terjadi kesalahan saat memproses token: ' + error.message);
     });
 }
+
 
 
 function renderTokenUI(examId, tokenCode, remainingSeconds) {
