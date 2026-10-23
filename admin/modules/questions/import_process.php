@@ -9,6 +9,7 @@ use PhpOffice\PhpWord\Element\TextRun;
 use PhpOffice\PhpWord\Element\Image;
 use PhpOffice\PhpWord\Element\ListItemRun;
 use PhpOffice\PhpWord\Element\ListItem;
+use PhpOffice\PhpWord\Element\Table;
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: ../../dashboard.php?page=exams");
@@ -85,25 +86,77 @@ try {
     // Join all paragraphs
     $documentText = implode("\n", $fullContent);
     
-    // Parse questions from document
-    $questions = parseQuestions($documentText);
+    // Parse questions & references from document
+    $parsedData = parseQuestionsAndReferences($documentText, $reference_id);
+    $questions = $parsedData['questions'];
+    $referencesFromDoc = $parsedData['references'];
     
     if (empty($questions)) {
         throw new Exception("Tidak ditemukan soal dalam dokumen. Pastikan format sesuai template.");
     }
     
-    // Insert questions to database
+    // Insert references & questions to database inside transaction
     $insertedCount = 0;
+    $refCreatedCount = 0;
     $pdo->beginTransaction();
     
     try {
+        $refKeyToId = [];
+        $targetRefDir = '../../../assets/uploads/references/';
+        if (!is_dir($targetRefDir)) {
+            @mkdir($targetRefDir, 0755, true);
+        }
+
+        // 1. Simpan Referensi dari dokumen Word
+        foreach ($referencesFromDoc as $refKey => $refItem) {
+            $imagePath = null;
+            if (!empty($refItem['image_base64'])) {
+                $binary = base64_decode($refItem['image_base64']);
+                if ($binary) {
+                    $imgName = 'ref_' . time() . '_' . uniqid() . '.' . $refItem['image_ext'];
+                    file_put_contents($targetRefDir . $imgName, $binary);
+                    $imagePath = $imgName;
+                }
+            }
+
+            $refType = !empty($refItem['content']) ? 'text' : 'image';
+            $refContent = $refItem['content'];
+
+            // Cek apakah sudah ada referensi dengan judul persis sama pada mapel ini
+            $chk = $pdo->prepare("SELECT id, image_path FROM `references` WHERE subject_id = ? AND title = ?");
+            $chk->execute([$subject_id, $refItem['title']]);
+            $existing = $chk->fetch();
+
+            if ($existing) {
+                $refId = $existing['id'];
+                if ($imagePath && empty($existing['image_path'])) {
+                    $pdo->prepare("UPDATE `references` SET image_path = ? WHERE id = ?")->execute([$imagePath, $refId]);
+                }
+            } else {
+                $insRef = $pdo->prepare("INSERT INTO `references` (subject_id, title, type, content, image_path) VALUES (?, ?, ?, ?, ?)");
+                $insRef->execute([$subject_id, $refItem['title'], $refType, $refContent, $imagePath]);
+                $refId = $pdo->lastInsertId();
+                $refCreatedCount++;
+            }
+
+            $refKeyToId[$refKey] = $refId;
+        }
+
+        // 2. Simpan Soal
         $stmt = $pdo->prepare("INSERT INTO questions (subject_id, reference_id, question_text, question_type, answer_data) VALUES (?, ?, ?, ?, ?)");
         
         foreach ($questions as $q) {
+            $qRefId = null;
+            if (!empty($q['ref_key']) && isset($refKeyToId[$q['ref_key']])) {
+                $qRefId = $refKeyToId[$q['ref_key']];
+            } else {
+                $qRefId = $reference_id; // Fallback jika tidak ada referensi inline
+            }
+
             $answerJson = json_encode($q['answer_data'], JSON_UNESCAPED_UNICODE);
             $stmt->execute([
                 $subject_id,
-                $reference_id,
+                $qRefId,
                 $q['question_text'],
                 $q['question_type'],
                 $answerJson
@@ -118,10 +171,18 @@ try {
     }
     
     // JSON Success response
+    $msg = 'Berhasil mengimport ' . $insertedCount . ' soal';
+    if ($refCreatedCount > 0) {
+        $msg .= ' dan membuat ' . $refCreatedCount . ' referensi stimulus baru.';
+    } else {
+        $msg .= '.';
+    }
+
     echo json_encode([
         'status' => 'success',
         'count' => $insertedCount,
-        'msg' => 'Berhasil mengimport ' . $insertedCount . ' soal.'
+        'ref_count' => $refCreatedCount,
+        'msg' => $msg
     ]);
     
 } catch (Exception $e) {
@@ -162,6 +223,30 @@ function extractElementContent($element, $uploadDir, &$imageCounter) {
         return $content;
     }
     
+    // Handle Table from Word document
+    if ($element instanceof Table) {
+        $tableHtml = '<div class="table-responsive my-2"><table class="table table-bordered table-stimulus my-0" style="border-collapse: collapse; width: auto; min-width: 50%; margin: 0 auto; border: 1px solid #cbd5e1;"><tbody>';
+        $rows = $element->getRows();
+        $isFirstRow = true;
+        foreach ($rows as $row) {
+            $tableHtml .= '<tr>';
+            foreach ($row->getCells() as $cell) {
+                $cellHtml = '';
+                foreach ($cell->getElements() as $child) {
+                    $cellHtml .= extractElementContent($child, $uploadDir, $imageCounter);
+                }
+                $cellHtml = trim($cellHtml);
+                $tag = $isFirstRow ? 'th' : 'td';
+                $extraStyle = $isFirstRow ? 'background-color: #f8fafc; font-weight: 600;' : '';
+                $tableHtml .= '<' . $tag . ' style="border: 1px solid #cbd5e1; padding: 6px 12px; text-align: center; vertical-align: middle; ' . $extraStyle . '">' . $cellHtml . '</' . $tag . '>';
+            }
+            $tableHtml .= '</tr>';
+            $isFirstRow = false;
+        }
+        $tableHtml .= '</tbody></table></div>';
+        return $tableHtml;
+    }
+
     if ($element instanceof Text) {
         $content = $element->getText();
     } elseif ($element instanceof TextRun) {
@@ -191,6 +276,28 @@ function extractElementContent($element, $uploadDir, &$imageCounter) {
     }
     
     return $content;
+}
+
+/**
+ * Format document HTML: convert plain newlines to <br> while preserving HTML tables & block elements
+ */
+function formatDocumentHtml($html) {
+    if (empty($html)) return '';
+    $lines = explode("\n", $html);
+    $formattedLines = [];
+    foreach ($lines as $line) {
+        $trimmed = trim($line);
+        if ($trimmed === '') continue;
+        if (preg_match('/^<(?:div|table|tbody|thead|tr|td|th|p|h[1-6]|ul|ol|li|blockquote)/i', $trimmed)) {
+            $formattedLines[] = $trimmed;
+        } else {
+            $formattedLines[] = $trimmed . '<br>';
+        }
+    }
+    $result = implode("\n", $formattedLines);
+    $result = preg_replace('/<br>\s*(<(?:div|table|tbody|thead|tr|td|th|p))/i', '$1', $result);
+    $result = preg_replace('/(?:<br\s*\/?>\s*)+$/i', '', $result);
+    return trim($result);
 }
 
 /**
@@ -236,42 +343,113 @@ function saveImage($imageElement, $uploadDir, &$imageCounter) {
 }
 
 /**
- * Parse document text into structured questions
+ * Parse document text into structured questions and references
  */
-function parseQuestions($text) {
+function parseQuestionsAndReferences($text, $defaultRefId = null) {
     $questions = [];
+    $references = [];
+    $currentRefKey = null;
+    $refCounter = 0;
     
-    // Split by question markers
-    $pattern = '/\[(SOAL|SOAL-BS|SOAL-MULTI|SOAL-ISIAN)\]/i';
+    // Split by question & reference markers
+    $pattern = '/\[\s*(SOAL|SOAL-BS|SOAL-MULTI|SOAL-ISIAN|TANPA-REFERENSI|NO-REFERENSI|REFERENSI(?:\s*:\s*[^\n\]]+)?)\s*\]/i';
     $parts = preg_split($pattern, $text, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
     
     $i = 0;
     while ($i < count($parts)) {
-        $marker = strtoupper(trim($parts[$i]));
+        $marker = trim($parts[$i]);
         $content = isset($parts[$i + 1]) ? trim($parts[$i + 1]) : '';
         
-        if ($marker === 'SOAL') {
+        // 1. Tag Referensi: [REFERENSI: Judul] atau [REFERENSI]
+        if (preg_match('/^REFERENSI(?:\s*:\s*(.+))?$/i', $marker, $mRef)) {
+            $refCounter++;
+            $refKey = 'ref_' . $refCounter;
+            $refTitle = isset($mRef[1]) ? trim($mRef[1]) : '';
+            
+            // Ambil judul dari baris pertama jika tidak ada di dalam tag
+            if (empty($refTitle)) {
+                $lines = explode("\n", $content);
+                if (!empty($lines) && preg_match('/^(?:Judul|Nama|Title)\s*:\s*(.+)$/i', trim($lines[0]), $mTitle)) {
+                    $refTitle = trim($mTitle[1]);
+                    array_shift($lines);
+                    $content = implode("\n", $lines);
+                }
+            }
+            
+            if (empty($refTitle)) {
+                $cleanPreview = trim(strip_tags($content));
+                $cleanPreview = preg_replace('/\s+/', ' ', $cleanPreview);
+                if (!empty($cleanPreview)) {
+                    $refTitle = mb_substr($cleanPreview, 0, 40) . (mb_strlen($cleanPreview) > 40 ? '...' : '');
+                } else {
+                    $refTitle = 'Referensi ' . $refCounter;
+                }
+            }
+            
+            $refTitle = mb_substr($refTitle, 0, 250);
+            
+            // Cek apakah ada gambar di dalam konten referensi
+            $refImageBase64 = null;
+            $refImageExt = 'jpg';
+            if (preg_match('/<img[^>]+src=["\']([^"\']+)["\']/i', $content, $mImg)) {
+                $src = $mImg[1];
+                if (preg_match('/^data:image\/(\w+);base64,(.+)$/s', $src, $mB64)) {
+                    $rawExt = strtolower($mB64[1]);
+                    $refImageExt = ($rawExt === 'jpeg') ? 'jpg' : $rawExt;
+                    $refImageBase64 = $mB64[2];
+                }
+            }
+            
+            // Bersihkan teks (hapus tag <img> jika ada agar gambar tidak dobel karena sudah masuk image_path)
+            $textOnly = trim(preg_replace('/<img[^>]+>/i', '', $content));
+            $formattedContent = formatDocumentHtml($textOnly);
+            
+            $references[$refKey] = [
+                'title' => $refTitle,
+                'image_base64' => $refImageBase64,
+                'image_ext' => $refImageExt,
+                'content' => (!empty(strip_tags($formattedContent)) || strpos($formattedContent, '<table') !== false) ? $formattedContent : null,
+                'has_image' => ($refImageBase64 !== null)
+            ];
+            
+            $currentRefKey = $refKey;
+            $i += 2;
+            continue;
+        }
+        
+        // 2. Tag Tanpa Referensi: [TANPA-REFERENSI]
+        if (strcasecmp($marker, 'TANPA-REFERENSI') === 0 || strcasecmp($marker, 'NO-REFERENSI') === 0) {
+            $currentRefKey = null;
+            $i += 2;
+            continue;
+        }
+        
+        // 3. Tag Soal
+        $upperMarker = strtoupper($marker);
+        $q = null;
+        if ($upperMarker === 'SOAL') {
             $q = parsePGQuestion($content);
-            if ($q) $questions[] = $q;
-            $i += 2;
-        } elseif ($marker === 'SOAL-BS') {
+        } elseif ($upperMarker === 'SOAL-BS') {
             $q = parseBSQuestion($content);
-            if ($q) $questions[] = $q;
-            $i += 2;
-        } elseif ($marker === 'SOAL-MULTI') {
+        } elseif ($upperMarker === 'SOAL-MULTI') {
             $q = parseMultiQuestion($content);
-            if ($q) $questions[] = $q;
-            $i += 2;
-        } elseif ($marker === 'SOAL-ISIAN') {
+        } elseif ($upperMarker === 'SOAL-ISIAN') {
             $q = parseIsianQuestion($content);
-            if ($q) $questions[] = $q;
+        }
+        
+        if ($q) {
+            $q['ref_key'] = $currentRefKey;
+            $questions[] = $q;
             $i += 2;
         } else {
             $i++;
         }
     }
     
-    return $questions;
+    return [
+        'questions' => $questions,
+        'references' => $references
+    ];
 }
 
 /**
@@ -312,6 +490,8 @@ function parsePGQuestion($content) {
     }
     
     $questionText = implode('<br>', $questionLines);
+    $questionText = preg_replace('/<br>\s*(<(?:div|table|tbody|thead|tr|td|th))/i', '$1', $questionText);
+    $questionText = preg_replace('/(<\/(?:div|table|tbody|thead|tr|td|th)>)\s*<br>/i', '$1', $questionText);
     
     if (empty($questionText) || empty($correct)) {
         return null;

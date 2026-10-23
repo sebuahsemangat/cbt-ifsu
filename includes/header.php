@@ -25,6 +25,27 @@ $site_bimbel_logo = $app_settings['bimbel_logo'] ?? 'logo-bimbel.png';
     <link href="../assets/vendor/fonts/fonts.css" rel="stylesheet">
     <link href="../assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../assets/vendor/bootstrap-icons/bootstrap-icons.css">
+    
+    <!-- MathJax 3 (Formula & Fractions Renderer) - Works Offline on LAN -->
+    <script>
+    window.MathJax = {
+        tex: {
+            inlineMath: [['\\(', '\\)'], ['$', '$']],
+            displayMath: [['\\[', '\\]'], ['$$', '$$']],
+            processEscapes: true
+        },
+        options: {
+            skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+        },
+        startup: {
+            pageReady: () => {
+                return MathJax.startup.defaultPageReady();
+            }
+        }
+    };
+    </script>
+    <script src="../assets/vendor/mathjax/tex-mml-chtml.js" id="MathJax-script"></script>
+    
     <style>
         :root { 
             --sidebar-width: 260px; 
@@ -59,6 +80,31 @@ $site_bimbel_logo = $app_settings['bimbel_logo'] ?? 'logo-bimbel.png';
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             color: var(--text-body);
             -webkit-font-smoothing: antialiased;
+        }
+
+        /* MathJax Styling: Rata tengah & sejajar teks */
+        mjx-container { display: inline-block !important; margin: 0 3px !important; vertical-align: middle !important; }
+        mjx-container[jax="CHTML"][display="true"] { display: block !important; margin: 0.75rem 0 !important; }
+
+        /* Styling khusus tabel stimulus/referensi dari soal (tidak mempengaruhi tabel admin) */
+        table.table-stimulus {
+            width: auto !important;
+            min-width: 45% !important;
+            max-width: 100% !important;
+            margin: 8px auto !important;
+            border-collapse: collapse !important;
+            background-color: #ffffff;
+        }
+        table.table-stimulus th, table.table-stimulus td {
+            border: 1px solid #cbd5e1 !important;
+            padding: 6px 12px !important;
+            text-align: center !important;
+            vertical-align: middle !important;
+        }
+        table.table-stimulus th {
+            background-color: #f1f5f9 !important;
+            font-weight: 600 !important;
+            color: #1e293b;
         }
 
         /* Sidebar Styling */

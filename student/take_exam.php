@@ -344,6 +344,30 @@ $isSessionLocked = ((int)($curSessData['is_locked'] ?? 0) === 1);
     <link href="../assets/vendor/fonts/fonts.css" rel="stylesheet">
     <link rel="icon" href="../assets/img/<?= htmlspecialchars($bimbel_logo) . $logo_version ?>">
     
+    <!-- MathJax 3 (Formula & Fractions Renderer) - Works Offline on LAN -->
+    <script>
+    window.MathJax = {
+        tex: {
+            inlineMath: [['\\(', '\\)'], ['$', '$']],
+            displayMath: [['\\[', '\\]'], ['$$', '$$']],
+            processEscapes: true
+        },
+        options: {
+            skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+        },
+        startup: {
+            pageReady: () => {
+                return MathJax.startup.defaultPageReady().then(() => {
+                    if (typeof window.triggerMathTypeset === 'function') {
+                        window.triggerMathTypeset();
+                    }
+                });
+            }
+        }
+    };
+    </script>
+    <script src="../assets/vendor/mathjax/tex-mml-chtml.js" id="MathJax-script"></script>
+    
     <style>
         :root {
             /* Identitas Brand Sekolah: SMK Informatika Sumedang */
@@ -445,6 +469,35 @@ $isSessionLocked = ((int)($curSessData['is_locked'] ?? 0) === 1);
         .reference-title { font-weight: 700; color: #0f172a; margin-bottom: 1.2rem; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.5px; }
         .reference-content { color: #334155; font-size: 0.98rem; line-height: 1.8; }
         
+        /* MathJax Styling: Rata tengah & proporsional dengan teks */
+        mjx-container { display: inline-block !important; margin: 0 3px !important; vertical-align: middle !important; }
+        mjx-container[jax="CHTML"][display="true"] { display: block !important; margin: 0.75rem 0 !important; }
+
+        /* Styling tabel responsif di stimulus & soal */
+        .reference-content table, .question-text table {
+            width: auto !important;
+            min-width: 50% !important;
+            max-width: 100% !important;
+            margin: 12px auto !important;
+            border-collapse: collapse !important;
+            background-color: #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .reference-content th, .reference-content td,
+        .question-text th, .question-text td {
+            border: 1px solid #cbd5e1 !important;
+            padding: 8px 14px !important;
+            text-align: center !important;
+            vertical-align: middle !important;
+        }
+        .reference-content th, .question-text th {
+            background-color: #f1f5f9 !important;
+            font-weight: 600 !important;
+            color: #1e293b;
+        }
+
         .question-section { padding-left: 1.5rem; }
         .question-text { font-size: 1.05rem; line-height: 1.8; color: #0f172a; margin-bottom: 2rem; font-weight: 500; }
         

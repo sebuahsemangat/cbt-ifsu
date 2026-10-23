@@ -81,7 +81,7 @@ function renderQuestion(index) {
     if (q.ref_data.content) {
       html += `<div>${q.ref_data.content}</div>`;
     }
-    refBody.innerHTML = html;
+    refBody.innerHTML = formatMathFormulas(html);
   } else {
     refCol.style.display = "none";
     qCol.className = "col-md-12";
@@ -108,12 +108,28 @@ function renderQuestion(index) {
     return s;
   }
 
+  function formatMathFormulas(html) {
+    if (!html || typeof html !== "string") return "";
+    // Otomatis bungkus notasi LaTeX \frac atau \sqrt jika belum diapit \(...\) atau $...$
+    return html.replace(/(\\frac\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}|\\sqrt\{[^{}]+\})/g, function(match, formula, offset, fullStr) {
+      const prefix = fullStr.substring(0, offset);
+      const openParen = prefix.lastIndexOf('\\(');
+      const closeParen = prefix.lastIndexOf('\\)');
+      if (openParen !== -1 && openParen > closeParen) {
+        return match;
+      }
+      return '\\(' + match + '\\)';
+    });
+  }
+
+  window.formatMathFormulas = formatMathFormulas;
+
   // 3. Question Text
   let qText = resolveImgPath(q.question_text || "");
   if (q.image_path) {
     qText += `<br><img src="../assets/uploads/questions/${q.image_path}" class="review-img mt-3" style="max-height:200px;">`;
   }
-  document.getElementById("question-text").innerHTML = qText;
+  document.getElementById("question-text").innerHTML = formatMathFormulas(qText);
 
   // 4. Answers
   const container = document.getElementById("answers-container");
@@ -127,7 +143,7 @@ function renderQuestion(index) {
   if (type === "pg") {
     const opts = ansData.options || {};
     Object.keys(opts).forEach((key) => {
-      const text = cleanOptionHtml(resolveImgPath(opts[key]));
+      const text = formatMathFormulas(cleanOptionHtml(resolveImgPath(opts[key])));
       const checked = myAns === key ? "checked" : "";
 
       container.innerHTML += `
@@ -161,7 +177,7 @@ function renderQuestion(index) {
 
     items.forEach((item, idx) => {
       const rawText = typeof item === "object" && item.text ? item.text : item;
-      const text = resolveImgPath(rawText);
+      const text = formatMathFormulas(resolveImgPath(rawText));
       const char = String.fromCharCode(65 + idx);
 
       // myAns expected to be object {index: value}
@@ -209,7 +225,7 @@ function renderQuestion(index) {
         isChecked = myAns.includes(idx) || myAns.includes(String(idx));
       }
 
-      const text = cleanOptionHtml(resolveImgPath(item.text));
+      const text = formatMathFormulas(cleanOptionHtml(resolveImgPath(item.text)));
 
       container.innerHTML += `
                 <div class="answer-option" onclick="toggleMulti(${idx})">
@@ -238,7 +254,40 @@ function renderQuestion(index) {
   }
 
   updateGrid();
+
+  // Typeset MathJax jika tersedia untuk merender pecahan dan formula
+  triggerMathTypeset();
 }
+
+function triggerMathTypeset() {
+  if (window.MathJax && typeof window.MathJax.typesetPromise === "function") {
+    const containers = [];
+    const qText = document.getElementById("question-text");
+    const aCont = document.getElementById("answers-container");
+    const rBody = document.getElementById("reference-content-body");
+    if (qText) containers.push(qText);
+    if (aCont) containers.push(aCont);
+    if (rBody) containers.push(rBody);
+
+    if (containers.length > 0) {
+      if (typeof window.MathJax.typesetClear === "function") {
+        try { window.MathJax.typesetClear(containers); } catch (e) {}
+      }
+      window.MathJax.typesetPromise(containers).catch(err => {
+        console.warn("MathJax typeset error:", err);
+      });
+    } else {
+      window.MathJax.typesetPromise().catch(err => {
+        console.warn("MathJax typeset error:", err);
+      });
+    }
+  } else if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
+    window.MathJax.startup.promise.then(() => {
+      triggerMathTypeset();
+    });
+  }
+}
+window.triggerMathTypeset = triggerMathTypeset;
 
 function selectBS(idx, val) {
   const q = questions[currentIndex];

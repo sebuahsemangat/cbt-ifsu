@@ -168,10 +168,13 @@ $references = $stmtRef->fetchAll();
                             </div>
                             <div class="p-2 bg-white rounded border border-light-subtle">
                                 <p class="mb-0 text-dark font-monospace small" id="promptContent"
-                                    style=" user-select: all;">Buat sebuah file docx dari dokumen
-                                    yang saya upload sesuaikan formatnya dengan template yang disediakan. jika soal
-                                    mengandung referensi, maka pisahkan referensi di dalam chat jangan di dalam file
-                                    docx</p>
+                                    style="user-select: all; white-space: pre-line;">Buat sebuah file docx dari dokumen yang saya upload, sesuaikan formatnya dengan template yang disediakan.
+Aturan penting:
+1. REFERENSI / STIMULUS: Jika naskah memiliki teks bacaan, wacana, infografis, gambar, atau tabel data stimulus untuk sekelompok soal, sertakan langsung di dalam file docx menggunakan tag [REFERENSI: Judul Bacaan/Tabel] tepat sebelum kelompok soal tersebut. Jika soal berikutnya tidak menggunakan stimulus, gunakan tag [TANPA-REFERENSI].
+2. TABEL: Jika stimulus atau soal memiliki tabel (misal tabel distribusi frekuensi, skor, dll), buatlah tetap sebagai Tabel Word yang rapi, jangan diubah menjadi teks biasa.
+3. RUMUS & PECAHAN MATEMATIKA: Untuk rumus matematika, pecahan vertikal, akar, dan simbol khusus, gunakan notasi LaTeX standar \(...\).
+- Pecahan vertikal/normal: tulis \( \frac{pembilang}{penyebut} \), contoh: \( \frac{1}{2} \) atau \( \frac{a\sqrt{6}}{2} \).
+- JANGAN mengubah pecahan menjadi format garis miring (seperti 1/2 atau a√6/2). Pecahan harus selalu dalam format LaTeX \( \frac{...}{...} \) agar tampil bertumpuk secara normal di aplikasi ujian.</p>
                             </div>
                         </div>
                     </li>
@@ -272,6 +275,63 @@ Siapa nama presiden pertama Indonesia?
                             </div>
                         </div>
                     </div>
+
+                    <!-- Rumus Matematika & Pecahan -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#formatMath">
+                                <strong class="text-danger"><i class="bi bi-calculator me-1"></i> Rumus Matematika & Pecahan</strong>
+                            </button>
+                        </h2>
+                        <div id="formatMath" class="accordion-collapse collapse" data-bs-parent="#formatAccordion">
+                            <div class="accordion-body">
+                                <p class="small text-muted mb-2">Gunakan format LaTeX <code>\( \frac{a}{b} \)</code> agar pecahan tampil vertikal (bertumpuk normal), bukan garis miring <code>a/b</code>.</p>
+                                <pre class="bg-light p-3 rounded small"><code>[SOAL]
+Diketahui kubus ABCD.EFGH dengan panjang rusuk a cm. Jarak titik F ke garis AG adalah...
+[A] \( \frac{a\sqrt{6}}{2} \) cm
+[B] \( \frac{a\sqrt{6}}{3} \) cm
+[C] \( \frac{a\sqrt{6}}{4} \) cm
+[D] \( \frac{a\sqrt{6}}{5} \) cm
+[E] \( \frac{a\sqrt{6}}{6} \) cm
+[JAWABAN] B</code></pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Referensi / Stimulus -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#formatRef">
+                                <strong class="text-primary"><i class="bi bi-file-text me-1"></i> Referensi / Stimulus (Teks, Gambar, & Tabel)</strong>
+                            </button>
+                        </h2>
+                        <div id="formatRef" class="accordion-collapse collapse" data-bs-parent="#formatAccordion">
+                            <div class="accordion-body">
+                                <p class="small text-muted mb-2">Tuliskan sebelum soal yang bersangkutan. Bisa berisi teks wacana, gambar infografis, atau <strong>Tabel Word</strong>. Semua soal di bawahnya otomatis terhubung ke referensi ini sampai ditemukan referensi baru atau <code>[TANPA-REFERENSI]</code>.</p>
+                                <pre class="bg-light p-3 rounded small"><code>[REFERENSI: Tabel Distribusi Frekuensi Nilai Siswa]
+Perhatikan tabel data frekuensi berikut ini:
+(Sisipkan Tabel Word di sini)
+
+[SOAL]
+Berdasarkan data tabel di atas, tentukan nilai modus data tersebut:
+[A] 55,5
+[B] 62,3
+[C] 67,8
+[D] 70,5
+[E] 75,0
+[JAWABAN] B
+
+[TANPA-REFERENSI]
+[SOAL]
+Ibu kota Indonesia adalah...
+[A] Jakarta
+[B] Nusantara
+[JAWABAN] B</code></pre>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <hr>
@@ -288,7 +348,9 @@ Siapa nama presiden pertama Indonesia?
                 <h6 class="fw-bold text-warning"><i class="bi bi-exclamation-triangle me-2"></i>Catatan Penting</h6>
                 <ul class="mb-0 small">
                     <li>Gambar dalam dokumen harus <strong>inline</strong> (bukan floating)</li>
-                    <li>Rumus matematika kompleks bisa disisipkan sebagai gambar</li>
+                    <li>Stimulus teks, infografis, atau tabel data diawali dengan tag <code>[REFERENSI: Judul]</code></li>
+                    <li>Tabel Word di dalam stimulus otomatis terbaca dan diimport ke sistem</li>
+                    <li>Pecahan matematika ditulis dalam format LaTeX: <code>\( \frac{pembilang}{penyebut} \)</code> agar tampil bertumpuk normal</li>
                     <li>Setiap soal harus diawali dengan tag <code>[SOAL]</code>, <code>[SOAL-BS]</code>,
                         <code>[SOAL-MULTI]</code>, atau <code>[SOAL-ISIAN]</code>
                     </li>

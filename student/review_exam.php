@@ -144,6 +144,27 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
     <link rel="stylesheet" href="../assets/vendor/bootstrap-icons/bootstrap-icons.css">
     <!-- Local Fonts: Plus Jakarta Sans & Poppins -->
     <link href="../assets/vendor/fonts/fonts.css" rel="stylesheet">
+    
+    <!-- MathJax 3 (Formula & Fractions Renderer) - Works Offline on LAN -->
+    <script>
+    window.MathJax = {
+        tex: {
+            inlineMath: [['\\(', '\\)'], ['$', '$']],
+            displayMath: [['\\[', '\\]'], ['$$', '$$']],
+            processEscapes: true
+        },
+        options: {
+            skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+        },
+        startup: {
+            pageReady: () => {
+                return MathJax.startup.defaultPageReady();
+            }
+        }
+    };
+    </script>
+    <script src="../assets/vendor/mathjax/tex-mml-chtml.js" id="MathJax-script"></script>
+    
     <style>
         :root {
             --primary-teal: #3a797a;
@@ -355,6 +376,35 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
             color: #1e293b;
             font-weight: 500;
             margin-bottom: 1.2rem;
+        }
+
+        /* MathJax Styling: Rata tengah & sejajar teks */
+        mjx-container { display: inline-block !important; margin: 0 3px !important; vertical-align: middle !important; }
+        mjx-container[jax="CHTML"][display="true"] { display: block !important; margin: 0.75rem 0 !important; }
+
+        /* Styling tabel responsif di stimulus & soal */
+        .question-card table.table-stimulus, .reference-box table {
+            width: auto !important;
+            min-width: 50% !important;
+            max-width: 100% !important;
+            margin: 12px auto !important;
+            border-collapse: collapse !important;
+            background-color: #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .question-card table.table-stimulus th, .question-card table.table-stimulus td,
+        .reference-box th, .reference-box td {
+            border: 1px solid #cbd5e1 !important;
+            padding: 8px 14px !important;
+            text-align: center !important;
+            vertical-align: middle !important;
+        }
+        .question-card table.table-stimulus th, .reference-box th {
+            background-color: #f1f5f9 !important;
+            font-weight: 600 !important;
+            color: #1e293b;
         }
 
         .answer-row {
@@ -812,6 +862,10 @@ function switchTab(idx) {
     // Activate selected
     document.getElementById('panel-' + idx).classList.add('active');
     document.getElementById('tab-btn-' + idx).classList.add('active');
+
+    if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+        window.MathJax.typesetPromise();
+    }
 }
 </script>
 

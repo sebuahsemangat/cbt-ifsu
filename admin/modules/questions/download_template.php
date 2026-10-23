@@ -90,11 +90,73 @@ $section->addText('Siapa nama proklamator kemerdekaan Indonesia?');
 $section->addText('[JAWABAN] Soekarno dan Hatta', ['bold' => true, 'color' => '16a34a']);
 $section->addTextBreak(2);
 
+// ==================== REFERENSI / STIMULUS ====================
+$section->addTitle('5. REFERENSI / STIMULUS (BACAAN, GAMBAR, ATAU TABEL)', 2);
+$section->addText('Gunakan tag [REFERENSI: Judul Bacaan/Tabel] sebelum kelompok soal yang mengacu pada stimulus tersebut.', ['size' => 10, 'color' => '4a5568']);
+$section->addText('Semua soal di bawahnya otomatis terhubung ke referensi ini sampai ditemukan referensi baru atau [TANPA-REFERENSI].', ['size' => 10, 'italic' => true]);
+$section->addTextBreak();
+
+// Example Referensi dengan Tabel
+$section->addText('[REFERENSI: Tabel Distribusi Frekuensi Nilai Matematika]', ['bold' => true, 'color' => '059669']);
+$section->addText('Perhatikan tabel distribusi nilai matematika siswa berikut ini:');
+
+$tableStyle = ['borderSize' => 6, 'borderColor' => 'cbd5e1', 'cellMargin' => 80];
+$phpWord->addTableStyle('RefTable', $tableStyle);
+$table = $section->addTable('RefTable');
+$table->addRow();
+$table->addCell(2000)->addText('Nilai', ['bold' => true]);
+$table->addCell(1000)->addText('3', ['bold' => true]);
+$table->addCell(1000)->addText('4', ['bold' => true]);
+$table->addCell(1000)->addText('5', ['bold' => true]);
+$table->addCell(1000)->addText('6', ['bold' => true]);
+$table->addCell(1000)->addText('7', ['bold' => true]);
+$table->addCell(1000)->addText('8', ['bold' => true]);
+$table->addRow();
+$table->addCell(2000)->addText('Frekuensi');
+$table->addCell(1000)->addText('2');
+$table->addCell(1000)->addText('4');
+$table->addCell(1000)->addText('8');
+$table->addCell(1000)->addText('12');
+$table->addCell(1000)->addText('16');
+$table->addCell(1000)->addText('4');
+$section->addTextBreak();
+
+$section->addText('[SOAL]', ['bold' => true, 'color' => '2563eb']);
+$section->addText('Berdasarkan data tabel di atas, tentukan nilai modus dari data tersebut:');
+$section->addText('[A] 5');
+$section->addText('[B] 6');
+$section->addText('[C] 7', ['bold' => true]);
+$section->addText('[D] 8');
+$section->addText('[E] 12');
+$section->addText('[JAWABAN] C', ['bold' => true, 'color' => '16a34a']);
+$section->addTextBreak(2);
+
+// ==================== RUMUS MATEMATIKA & PECAHAN ====================
+$section->addTitle('6. RUMUS MATEMATIKA & PECAHAN VERTIKAL', 2);
+$section->addText('Gunakan format LaTeX \( \frac{a}{b} \) agar rumus dan pecahan tampil vertikal (bertumpuk normal), bukan garis miring.', ['size' => 10, 'color' => '4a5568']);
+$section->addTextBreak();
+
+$section->addText('[SOAL]', ['bold' => true, 'color' => '2563eb']);
+$section->addText('Diketahui kubus ABCD.EFGH dengan panjang rusuk a cm. Jarak titik F dengan garis AG adalah...');
+$section->addText('[A] \( \frac{a\sqrt{6}}{2} \) cm');
+$section->addText('[B] \( \frac{a\sqrt{6}}{3} \) cm', ['bold' => true]);
+$section->addText('[C] \( \frac{a\sqrt{6}}{4} \) cm');
+$section->addText('[D] \( \frac{a\sqrt{6}}{5} \) cm');
+$section->addText('[E] \( \frac{a\sqrt{6}}{6} \) cm');
+$section->addText('[JAWABAN] B', ['bold' => true, 'color' => '16a34a']);
+$section->addTextBreak(2);
+
+$section->addText('[TANPA-REFERENSI]', ['bold' => true, 'color' => '64748b']);
+$section->addText('(Gunakan tag [TANPA-REFERENSI] jika soal berikutnya adalah soal mandiri yang tidak membutuhkan stimulus)', ['size' => 9, 'italic' => true, 'color' => '64748b']);
+$section->addTextBreak(2);
+
 // ==================== NOTES ====================
 $section->addTitle('CATATAN PENTING:', 3);
 $section->addListItem('Setiap soal HARUS diawali dengan tag [SOAL], [SOAL-BS], [SOAL-MULTI], atau [SOAL-ISIAN]', 0, ['size' => 10]);
+$section->addListItem('Stimulus teks, gambar, atau TABEL diawali tag [REFERENSI: Judul]. Tabel Word otomatis terbaca dan diimport ke sistem.', 0, ['size' => 10]);
+$section->addListItem('Untuk rumus matematika dan pecahan vertikal/normal, gunakan format LaTeX: \( \frac{pembilang}{penyebut} \), contoh: \( \frac{1}{2} \) atau \( \frac{a\sqrt{6}}{2} \). Jangan gunakan garis miring.', 0, ['size' => 10]);
 $section->addListItem('Untuk soal PG, kunci jawaban WAJIB dicantumkan dengan [JAWABAN] A/B/C/D/E', 0, ['size' => 10]);
-$section->addListItem('Gambar bisa disisipkan di dalam soal (harus inline, bukan floating)', 0, ['size' => 10]);
+$section->addListItem('Gambar bisa disisipkan di dalam soal atau referensi (harus inline, bukan floating)', 0, ['size' => 10]);
 $section->addListItem('Jangan sisipkan baris kosong di antara opsi jawaban', 0, ['size' => 10]);
 
 // Generate and download

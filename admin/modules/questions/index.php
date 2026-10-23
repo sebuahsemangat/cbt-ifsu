@@ -110,6 +110,9 @@ $questions = $stmt->fetchAll();
                 <i class="bi bi-ui-checks"></i> Pilih Rentang No
             </button>
         <?php endif; ?>
+        <a href="dashboard.php?page=references_form&subject_id=<?= $subject_id ?>" class="btn btn-outline-info">
+            <i class="bi bi-file-earmark-text"></i> Tambah Referensi
+        </a>
         <a href="dashboard.php?page=questions_import&subject_id=<?= $subject_id ?>" class="btn btn-success">
             <i class="bi bi-file-earmark-word"></i> Import dari Word
         </a>
@@ -123,6 +126,11 @@ $questions = $stmt->fetchAll();
     <?php if ($_GET['status'] == 'success'): ?>
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             <i class="bi bi-check-circle-fill me-2"></i>Data soal berhasil disimpan!
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php elseif ($_GET['status'] == 'ref_success'): ?>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>Referensi baru berhasil ditambahkan!
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     <?php elseif ($_GET['status'] == 'deleted'): ?>
@@ -647,6 +655,10 @@ $questions = $stmt->fetchAll();
                     btnApplyBulkRef.innerHTML = originalBtnHtml;
                 }
             });
+        }
+
+        if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+            window.MathJax.typesetPromise().catch(err => console.warn(err));
         }
     });
 </script>

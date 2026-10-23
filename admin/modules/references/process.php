@@ -194,6 +194,12 @@ if ($action == 'save' && $_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt->execute([$title, $subject_id, $type, $content, $imagePath]);
     }
 
+    $returnSubjectId = !empty($_POST['return_to_subject_id']) ? (int)$_POST['return_to_subject_id'] : null;
+    if ($returnSubjectId) {
+        header("Location: ../../dashboard.php?page=questions&subject_id=$returnSubjectId&status=ref_success");
+        exit;
+    }
+
     header("Location: ../../dashboard.php?page=references&status=success");
     exit;
 }

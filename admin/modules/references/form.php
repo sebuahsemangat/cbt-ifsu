@@ -1,6 +1,7 @@
 <?php
 // Cek apakah mode Edit
 $id = $_GET['id'] ?? null;
+$returnSubjectId = $_GET['subject_id'] ?? null;
 $data = null;
 if ($id) {
     $stmt = $pdo->prepare("SELECT * FROM `references` WHERE id = ?");
@@ -13,9 +14,15 @@ $subjects = $pdo->query("SELECT * FROM subjects ORDER BY name ASC")->fetchAll();
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h3 class="fw-bold"><?= $id ? 'Edit' : 'Tambah' ?> Referensi</h3>
-    <a href="dashboard.php?page=references" class="btn btn-secondary">
-        <i class="bi bi-arrow-left"></i> Kembali
-    </a>
+    <?php if ($returnSubjectId): ?>
+        <a href="dashboard.php?page=questions&subject_id=<?= $returnSubjectId ?>" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Kembali ke Soal
+        </a>
+    <?php else: ?>
+        <a href="dashboard.php?page=references" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Kembali
+        </a>
+    <?php endif; ?>
 </div>
 
 <div class="card border-0 shadow-sm">
@@ -25,6 +32,7 @@ $subjects = $pdo->query("SELECT * FROM subjects ORDER BY name ASC")->fetchAll();
 <?php endif; ?>
         <form action="modules/references/process.php?action=save" method="POST" id="referenceForm">
             <input type="hidden" name="id" value="<?= $id ?>">
+            <input type="hidden" name="return_to_subject_id" value="<?= htmlspecialchars($returnSubjectId ?? '') ?>">
             <input type="hidden" name="image_base64" id="refImageBase64">
             
             <div class="mb-3">
@@ -32,7 +40,7 @@ $subjects = $pdo->query("SELECT * FROM subjects ORDER BY name ASC")->fetchAll();
                 <select name="subject_id" class="form-select" required>
                     <option value="">-- Pilih Mapel --</option>
                     <?php foreach ($subjects as $s): ?>
-                        <option value="<?= $s['id'] ?>" <?= ($data['subject_id'] ?? '') == $s['id'] ? 'selected' : '' ?>>
+                        <option value="<?= $s['id'] ?>" <?= ($data['subject_id'] ?? ($returnSubjectId ?? '')) == $s['id'] ? 'selected' : '' ?>>
                             <?= htmlspecialchars($s['name']) ?>
                         </option>
                     <?php endforeach; ?>
