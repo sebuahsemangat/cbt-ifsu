@@ -139,7 +139,7 @@
                 
                 // Set konten awal dari textarea (untuk mode edit)
                 if (textarea.value) {
-                    quill.root.innerHTML = textarea.value;
+                    quill.clipboard.dangerouslyPasteHTML(textarea.value);
                 }
                 
                 // Sinkronisasi Quill dengan textarea saat konten berubah

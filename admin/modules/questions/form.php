@@ -99,8 +99,17 @@ $questionText = fixAdminImagePaths($questionText);
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Pertanyaan</label>
-                        <div id="editor" style="height: 300px;"><?= $questionText ?></div>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label fw-bold mb-0">Pertanyaan</label>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="toggleMathPreview('main')">
+                                <i class="bi bi-eye me-1"></i>Pratinjau Rumus (MathJax)
+                            </button>
+                        </div>
+                        <div id="editor" class="tex2jax_ignore" style="height: 300px;"></div>
+                        <div id="mainMathPreview" class="p-3 bg-white rounded border border-primary mt-2 d-none shadow-sm">
+                            <div class="fw-bold text-primary small mb-1"><i class="bi bi-calculator me-1"></i>Pratinjau Tampilan Rumus Matematika Siswa:</div>
+                            <div id="mainMathPreviewBody" class="fs-6 text-dark tex2jax_process"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -194,11 +203,84 @@ function selectLocalImage(targetQuill) {
     };
 }
 
+// Helper aman untuk set HTML ke Quill tanpa merusak inline formatting (subscript/superscript)
+function safeSetQuillHtml(targetQuill, html) {
+    if (!targetQuill) return;
+    if (!html || typeof html !== 'string') {
+        targetQuill.setText('');
+        return;
+    }
+    targetQuill.clipboard.dangerouslyPasteHTML(html);
+}
+
+// Helper render visual rumus menggunakan MathJax
+function renderLiveMathJax(containerEl, html) {
+    if (!containerEl) return;
+    containerEl.innerHTML = html || '<span class="text-muted fst-italic">(kosong)</span>';
+    if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+        try {
+            if (typeof window.MathJax.typesetClear === 'function') {
+                window.MathJax.typesetClear([containerEl]);
+            }
+        } catch (e) {}
+        window.MathJax.typesetPromise([containerEl]).catch(err => console.warn('MathJax preview:', err));
+    }
+}
+
+function toggleMathPreview(target) {
+    if (target === 'main') {
+        const box = document.getElementById('mainMathPreview');
+        const body = document.getElementById('mainMathPreviewBody');
+        if (box.classList.contains('d-none')) {
+            box.classList.remove('d-none');
+            renderLiveMathJax(body, quill.root.innerHTML);
+        } else {
+            box.classList.add('d-none');
+        }
+    }
+}
+
+function toggleOptionPreview(letter) {
+    const box = document.getElementById(`preview_pg_${letter}`);
+    if (!box) return;
+    const target = box.querySelector('.math-preview-target');
+    const q = optionQuills[`input_pg_${letter}`];
+    if (!q) return;
+
+    if (box.classList.contains('d-none')) {
+        box.classList.remove('d-none');
+        renderLiveMathJax(target, q.root.innerHTML);
+    } else {
+        box.classList.add('d-none');
+    }
+}
+
 // Main Editor
 var quill = new Quill('#editor', quillConfig);
 quill.getModule('toolbar').addHandler('image', function() {
     selectLocalImage(quill);
 });
+<?php if (!empty($questionText)): ?>
+safeSetQuillHtml(quill, <?= json_encode($questionText) ?>);
+<?php endif; ?>
+
+// Auto-buka preview jika ada rumus matematika pada pertanyaan utama
+quill.on('text-change', () => {
+    const box = document.getElementById('mainMathPreview');
+    if (box && !box.classList.contains('d-none')) {
+        renderLiveMathJax(document.getElementById('mainMathPreviewBody'), quill.root.innerHTML);
+    }
+});
+<?php if (!empty($questionText) && (strpos($questionText, '\\frac') !== false || strpos($questionText, '\\sqrt') !== false || strpos($questionText, '\\(') !== false || strpos($questionText, '<sub') !== false || strpos($questionText, '<sup') !== false)): ?>
+setTimeout(() => {
+    const box = document.getElementById('mainMathPreview');
+    if (box) {
+        box.classList.remove('d-none');
+        renderLiveMathJax(document.getElementById('mainMathPreviewBody'), quill.root.innerHTML);
+    }
+}, 300);
+<?php endif; ?>
+
 var optionQuills = {};
 
 function renderOptions() {
@@ -217,21 +299,47 @@ function renderOptions() {
             div.className = 'card mb-3 shadow-sm';
             div.innerHTML = `
                 <div class="card-body p-2">
-                    <div class="d-flex align-items-center mb-2">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="correct_ans" value="${let}" ${checked} required>
                             <label class="form-check-label fw-bold">${let}</label>
                         </div>
+                        <button type="button" class="btn btn-sm btn-link text-decoration-none py-0 text-muted" onclick="toggleOptionPreview('${let}')">
+                            <i class="bi bi-eye me-1"></i>Pratinjau Rumus
+                        </button>
                     </div>
-                    <div id="editor_pg_${let}" style="height: 100px;"></div>
+                    <div id="editor_pg_${let}" class="tex2jax_ignore" style="height: 100px;"></div>
+                    <div id="preview_pg_${let}" class="p-2 bg-light rounded border mt-2 small d-none">
+                        <span class="text-primary small fw-bold d-block mb-1"><i class="bi bi-calculator me-1"></i>Tampilan Visual Siswa:</span>
+                        <div class="math-preview-target tex2jax_process fw-semibold text-dark"></div>
+                    </div>
                     <input type="hidden" name="options[${let}]" id="input_pg_${let}">
                 </div>`;
             container.appendChild(div);
             
             const q = new Quill(`#editor_pg_${let}`, quillConfig);
             q.getModule('toolbar').addHandler('image', function() { selectLocalImage(q); });
-            q.root.innerHTML = val;
+            safeSetQuillHtml(q, val);
             optionQuills[`input_pg_${let}`] = q;
+
+            // Live updates for option preview
+            q.on('text-change', () => {
+                const box = document.getElementById(`preview_pg_${let}`);
+                if (box && !box.classList.contains('d-none')) {
+                    renderLiveMathJax(box.querySelector('.math-preview-target'), q.root.innerHTML);
+                }
+            });
+
+            // Otomatis tampilkan preview jika opsi mengandung rumus pecahan/akar atau sub/sup
+            if (val && (val.includes('\\frac') || val.includes('\\sqrt') || val.includes('\\(') || val.includes('<sub>') || val.includes('<sup>'))) {
+                setTimeout(() => {
+                    const box = document.getElementById(`preview_pg_${let}`);
+                    if (box) {
+                        box.classList.remove('d-none');
+                        renderLiveMathJax(box.querySelector('.math-preview-target'), val);
+                    }
+                }, 350);
+            }
         });
     } else if (type === 'bs') {
         const posLabel = (savedType === 'bs' && savedData && savedData.labels && savedData.labels.pos) ? savedData.labels.pos : 'Benar';
@@ -302,14 +410,14 @@ function addBSRow(text = '', isCorrect = 1) {
                 </select>
                 <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this, '${id}')"><i class="bi bi-x"></i></button>
              </div>
-             <div id="editor_${id}" style="height: 80px;"></div>
+             <div id="editor_${id}" class="tex2jax_ignore" style="height: 80px;"></div>
              <input type="hidden" name="statements[]" id="input_${id}">
         </div>`;
     document.getElementById('bs-rows').appendChild(div);
     
     const q = new Quill(`#editor_${id}`, quillConfig);
     q.getModule('toolbar').addHandler('image', function() { selectLocalImage(q); });
-    q.root.innerHTML = text;
+    safeSetQuillHtml(q, text);
     optionQuills[`input_${id}`] = q;
 }
 
@@ -336,14 +444,14 @@ function addMultiRow(text = '', isCorrect = 0) {
                 </div>
                 <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this, '${id}')"><i class="bi bi-x"></i></button>
              </div>
-             <div id="editor_${id}" style="height: 80px;"></div>
+             <div id="editor_${id}" class="tex2jax_ignore" style="height: 80px;"></div>
              <input type="hidden" name="multi_options[]" id="input_${id}">
         </div>`;
     document.getElementById('multi-rows').appendChild(div);
      
     const q = new Quill(`#editor_${id}`, quillConfig);
     q.getModule('toolbar').addHandler('image', function() { selectLocalImage(q); });
-    q.root.innerHTML = text;
+    safeSetQuillHtml(q, text);
     optionQuills[`input_${id}`] = q;
 }
 

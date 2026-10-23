@@ -29,13 +29,18 @@ $site_bimbel_logo = $app_settings['bimbel_logo'] ?? 'logo-bimbel.png';
     <!-- MathJax 3 (Formula & Fractions Renderer) - Works Offline on LAN -->
     <script>
     window.MathJax = {
+        chtml: {
+            fontURL: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2'
+        },
         tex: {
             inlineMath: [['\\(', '\\)'], ['$', '$']],
             displayMath: [['\\[', '\\]'], ['$$', '$$']],
             processEscapes: true
         },
         options: {
-            skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+            skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+            ignoreHtmlClass: 'tex2jax_ignore|ql-container|ql-editor',
+            processHtmlClass: 'tex2jax_process'
         },
         startup: {
             pageReady: () => {
@@ -44,7 +49,7 @@ $site_bimbel_logo = $app_settings['bimbel_logo'] ?? 'logo-bimbel.png';
         }
     };
     </script>
-    <script src="../assets/vendor/mathjax/tex-mml-chtml.js" id="MathJax-script"></script>
+    <script src="../assets/vendor/mathjax/tex-mml-chtml.js" id="MathJax-script" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';"></script>
     
     <style>
         :root { 

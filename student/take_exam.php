@@ -347,6 +347,9 @@ $isSessionLocked = ((int)($curSessData['is_locked'] ?? 0) === 1);
     <!-- MathJax 3 (Formula & Fractions Renderer) - Works Offline on LAN -->
     <script>
     window.MathJax = {
+        chtml: {
+            fontURL: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2'
+        },
         tex: {
             inlineMath: [['\\(', '\\)'], ['$', '$']],
             displayMath: [['\\[', '\\]'], ['$$', '$$']],
@@ -366,7 +369,7 @@ $isSessionLocked = ((int)($curSessData['is_locked'] ?? 0) === 1);
         }
     };
     </script>
-    <script src="../assets/vendor/mathjax/tex-mml-chtml.js" id="MathJax-script"></script>
+    <script src="../assets/vendor/mathjax/tex-mml-chtml.js" id="MathJax-script" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';"></script>
     
     <style>
         :root {

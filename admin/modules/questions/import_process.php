@@ -1,4 +1,7 @@
 <?php
+ob_start();
+libxml_use_internal_errors(true);
+
 require_once '../../../config/database.php';
 require_once '../../../includes/auth_check.php';
 require_once '../../../vendor/autoload.php';
@@ -11,91 +14,55 @@ use PhpOffice\PhpWord\Element\ListItemRun;
 use PhpOffice\PhpWord\Element\ListItem;
 use PhpOffice\PhpWord\Element\Table;
 
+/**
+ * Kirim respon JSON bersih bebas dari warning/output tak terduga
+ */
+function sendJsonResponse($data, $statusCode = 200) {
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    http_response_code($statusCode);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: ../../dashboard.php?page=exams");
     exit;
+}
+
+// Mendukung payload raw JSON jika dikirim via Content-Type: application/json
+if (empty($_POST) && $rawInput = file_get_contents('php://input')) {
+    $jsonData = json_decode($rawInput, true);
+    if (is_array($jsonData)) {
+        $_POST = $jsonData;
+    }
 }
 
 $subject_id = $_POST['subject_id'] ?? null;
 $reference_id = !empty($_POST['reference_id']) ? $_POST['reference_id'] : null;
 
 if (!$subject_id) {
-    header("Location: ../../dashboard.php?page=exams&status=error&msg=" . urlencode("Subject ID tidak valid"));
-    exit;
+    sendJsonResponse(['status' => 'error', 'msg' => 'Subject ID tidak valid.'], 400);
 }
 
-// Validate file upload (Mendukung Base64 untuk bypass OpenResty 403 pada multipart upload)
-$filePathToLoad = null;
-$isTempFile = false;
-$tempFilePath = null;
+$action = $_POST['action'] ?? 'preview'; // 'preview', 'confirm_save', or 'direct_import'
 
-if (!empty($_POST['word_base64'])) {
-    $dataUri = $_POST['word_base64'];
-    $base64Data = (strpos($dataUri, ',') !== false) ? substr($dataUri, strpos($dataUri, ',') + 1) : $dataUri;
-    $binaryData = base64_decode($base64Data);
-
-    if ($binaryData === false || strlen($binaryData) < 10) {
-        $errorMsg = "File Word Base64 tidak valid atau rusak.";
-        header("Location: ../../dashboard.php?page=questions_import&subject_id=$subject_id&status=error&msg=" . urlencode($errorMsg));
-        exit;
-    }
-
-    $tempFilePath = tempnam(sys_get_temp_dir(), 'word_import_') . '.docx';
-    file_put_contents($tempFilePath, $binaryData);
-    $filePathToLoad = $tempFilePath;
-    $isTempFile = true;
-
-} elseif (isset($_FILES['word_file']) && $_FILES['word_file']['error'] === UPLOAD_ERR_OK) {
-    $file = $_FILES['word_file'];
-    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-
-    if ($extension !== 'docx') {
-        header("Location: ../../dashboard.php?page=questions_import&subject_id=$subject_id&status=error&msg=" . urlencode("Hanya file .docx yang diperbolehkan"));
-        exit;
-    }
-    $filePathToLoad = $file['tmp_name'];
-} else {
-    $errorMsg = "Gagal mengupload file Word.";
-    header("Location: ../../dashboard.php?page=questions_import&subject_id=$subject_id&status=error&msg=" . urlencode($errorMsg));
-    exit;
-}
-
-// Create uploads directory for question images
-$uploadDir = '../../../uploads/questions/';
-if (!is_dir($uploadDir)) {
-    mkdir($uploadDir, 0755, true);
-}
-
-try {
-    // Load Word document
-    $phpWord = IOFactory::load($filePathToLoad);
+// =========================================================================
+// ACTION: CONFIRM_SAVE (Simpan soal yang telah divalidasi oleh guru ke DB)
+// =========================================================================
+if ($action === 'confirm_save') {
+    $questionsJson = $_POST['questions_json'] ?? '';
+    $referencesJson = $_POST['references_json'] ?? '';
     
-    // Extract all text content with images
-    $fullContent = [];
-    $imageCounter = 0;
+    $questions = json_decode($questionsJson, true);
+    $referencesFromDoc = json_decode($referencesJson, true) ?? [];
     
-    foreach ($phpWord->getSections() as $section) {
-        foreach ($section->getElements() as $element) {
-            $paragraphContent = extractElementContent($element, $uploadDir, $imageCounter);
-            if (!empty(trim($paragraphContent))) {
-                $fullContent[] = $paragraphContent;
-            }
-        }
+    if (empty($questions) || !is_array($questions)) {
+        sendJsonResponse(['status' => 'error', 'msg' => 'Tidak ada soal yang dipilih untuk disimpan.'], 400);
     }
     
-    // Join all paragraphs
-    $documentText = implode("\n", $fullContent);
-    
-    // Parse questions & references from document
-    $parsedData = parseQuestionsAndReferences($documentText, $reference_id);
-    $questions = $parsedData['questions'];
-    $referencesFromDoc = $parsedData['references'];
-    
-    if (empty($questions)) {
-        throw new Exception("Tidak ditemukan soal dalam dokumen. Pastikan format sesuai template.");
-    }
-    
-    // Insert references & questions to database inside transaction
     $insertedCount = 0;
     $refCreatedCount = 0;
     $pdo->beginTransaction();
@@ -107,13 +74,13 @@ try {
             @mkdir($targetRefDir, 0755, true);
         }
 
-        // 1. Simpan Referensi dari dokumen Word
+        // 1. Simpan Referensi dari dokumen
         foreach ($referencesFromDoc as $refKey => $refItem) {
             $imagePath = null;
             if (!empty($refItem['image_base64'])) {
                 $binary = base64_decode($refItem['image_base64']);
                 if ($binary) {
-                    $imgName = 'ref_' . time() . '_' . uniqid() . '.' . $refItem['image_ext'];
+                    $imgName = 'ref_' . time() . '_' . uniqid() . '.' . ($refItem['image_ext'] ?? 'jpg');
                     file_put_contents($targetRefDir . $imgName, $binary);
                     $imagePath = $imgName;
                 }
@@ -153,7 +120,191 @@ try {
                 $qRefId = $reference_id; // Fallback jika tidak ada referensi inline
             }
 
-            $answerJson = json_encode($q['answer_data'], JSON_UNESCAPED_UNICODE);
+            $answerJson = is_string($q['answer_data']) ? $q['answer_data'] : json_encode($q['answer_data'], JSON_UNESCAPED_UNICODE);
+            $stmt->execute([
+                $subject_id,
+                $qRefId,
+                $q['question_text'],
+                $q['question_type'],
+                $answerJson
+            ]);
+            $insertedCount++;
+        }
+        
+        $pdo->commit();
+        
+        $msg = 'Berhasil menyimpan ' . $insertedCount . ' soal';
+        if ($refCreatedCount > 0) {
+            $msg .= ' dan membuat ' . $refCreatedCount . ' referensi stimulus baru.';
+        } else {
+            $msg .= '.';
+        }
+
+        sendJsonResponse([
+            'status' => 'success',
+            'count' => $insertedCount,
+            'ref_count' => $refCreatedCount,
+            'msg' => $msg
+        ]);
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        sendJsonResponse(['status' => 'error', 'msg' => $e->getMessage()], 400);
+    }
+}
+
+// =========================================================================
+// ACTION: PREVIEW (Default) atau DIRECT_IMPORT (Load File Word)
+// =========================================================================
+$filePathToLoad = null;
+$isTempFile = false;
+$tempFilePath = null;
+
+if (!empty($_POST['word_base64'])) {
+    $dataUri = $_POST['word_base64'];
+    $base64Data = (strpos($dataUri, ',') !== false) ? substr($dataUri, strpos($dataUri, ',') + 1) : $dataUri;
+    $binaryData = base64_decode($base64Data);
+
+    if ($binaryData === false || strlen($binaryData) < 10) {
+        sendJsonResponse(['status' => 'error', 'msg' => 'File Word Base64 tidak valid atau rusak.'], 400);
+    }
+
+    $tempFilePath = tempnam(sys_get_temp_dir(), 'word_import_') . '.docx';
+    file_put_contents($tempFilePath, $binaryData);
+    $filePathToLoad = $tempFilePath;
+    $isTempFile = true;
+
+} elseif (isset($_FILES['word_file']) && $_FILES['word_file']['error'] === UPLOAD_ERR_OK) {
+    $file = $_FILES['word_file'];
+    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+
+    if ($extension !== 'docx') {
+        sendJsonResponse(['status' => 'error', 'msg' => 'Hanya file .docx yang diperbolehkan.'], 400);
+    }
+    $filePathToLoad = $file['tmp_name'];
+} else {
+    sendJsonResponse(['status' => 'error', 'msg' => 'Gagal mengupload file Word. Berkas tidak ditemukan.'], 400);
+}
+
+// Create uploads directory for question images
+$uploadDir = '../../../uploads/questions/';
+if (!is_dir($uploadDir)) {
+    mkdir($uploadDir, 0755, true);
+}
+
+try {
+    // Load Word document
+    $phpWord = IOFactory::load($filePathToLoad);
+    
+    // Extract all text content with images
+    $fullContent = [];
+    $imageCounter = 0;
+    
+    foreach ($phpWord->getSections() as $section) {
+        foreach ($section->getElements() as $element) {
+            $paragraphContent = extractElementContent($element, $uploadDir, $imageCounter);
+            if (!empty(trim($paragraphContent))) {
+                $fullContent[] = $paragraphContent;
+            }
+        }
+    }
+    
+    // Join all paragraphs
+    $documentText = implode("\n", $fullContent);
+    
+    // Bersihkan tag HTML formatting yang mungkin membungkus marker sistem seperti [SOAL], [REFERENSI]
+    $documentText = preg_replace_callback('/(?:<[a-z0-9]+[^>]*>|\s)*\[(?:<[a-z0-9]+[^>]*>|\s)*(SOAL|SOAL-BS|SOAL-MULTI|SOAL-ISIAN|TANPA-REFERENSI|NO-REFERENSI|REFERENSI(?:\s*:\s*[^\n\]]+)?)(?:<\/[a-z0-9]+>|\s)*\](?:<\/[a-z0-9]+>|\s)*/i', function($m) {
+        return "\n[" . strip_tags($m[1]) . "]\n";
+    }, $documentText);
+    
+    // Parse questions & references from document
+    $parsedData = parseQuestionsAndReferences($documentText, $reference_id);
+    $questions = $parsedData['questions'];
+    $referencesFromDoc = $parsedData['references'];
+    
+    if (empty($questions)) {
+        throw new Exception("Tidak ditemukan soal dalam dokumen. Pastikan tag [SOAL], [SOAL-BS], dll. ada dalam dokumen.");
+    }
+    
+    // Hitung validasi soal
+    $validCount = 0;
+    $warningCount = 0;
+    foreach ($questions as $q) {
+        if (!empty($q['is_valid'])) {
+            $validCount++;
+        } else {
+            $warningCount++;
+        }
+    }
+
+    // JIKA ACTION = PREVIEW (Default): Kembalikan data soal untuk divalidasi oleh guru
+    if ($action === 'preview') {
+        sendJsonResponse([
+            'status' => 'preview',
+            'total_questions' => count($questions),
+            'valid_count' => $validCount,
+            'warning_count' => $warningCount,
+            'total_references' => count($referencesFromDoc),
+            'questions' => $questions,
+            'references' => $referencesFromDoc
+        ]);
+    }
+
+    // JIKA ACTION = DIRECT_IMPORT (Bypass preview jika diminta)
+    $insertedCount = 0;
+    $refCreatedCount = 0;
+    $pdo->beginTransaction();
+    
+    try {
+        $refKeyToId = [];
+        $targetRefDir = '../../../assets/uploads/references/';
+        if (!is_dir($targetRefDir)) {
+            @mkdir($targetRefDir, 0755, true);
+        }
+
+        foreach ($referencesFromDoc as $refKey => $refItem) {
+            $imagePath = null;
+            if (!empty($refItem['image_base64'])) {
+                $binary = base64_decode($refItem['image_base64']);
+                if ($binary) {
+                    $imgName = 'ref_' . time() . '_' . uniqid() . '.' . ($refItem['image_ext'] ?? 'jpg');
+                    file_put_contents($targetRefDir . $imgName, $binary);
+                    $imagePath = $imgName;
+                }
+            }
+
+            $refType = !empty($refItem['content']) ? 'text' : 'image';
+            $refContent = $refItem['content'];
+
+            $chk = $pdo->prepare("SELECT id, image_path FROM `references` WHERE subject_id = ? AND title = ?");
+            $chk->execute([$subject_id, $refItem['title']]);
+            $existing = $chk->fetch();
+
+            if ($existing) {
+                $refId = $existing['id'];
+                if ($imagePath && empty($existing['image_path'])) {
+                    $pdo->prepare("UPDATE `references` SET image_path = ? WHERE id = ?")->execute([$imagePath, $refId]);
+                }
+            } else {
+                $insRef = $pdo->prepare("INSERT INTO `references` (subject_id, title, type, content, image_path) VALUES (?, ?, ?, ?, ?)");
+                $insRef->execute([$subject_id, $refItem['title'], $refType, $refContent, $imagePath]);
+                $refId = $pdo->lastInsertId();
+                $refCreatedCount++;
+            }
+
+            $refKeyToId[$refKey] = $refId;
+        }
+
+        $stmt = $pdo->prepare("INSERT INTO questions (subject_id, reference_id, question_text, question_type, answer_data) VALUES (?, ?, ?, ?, ?)");
+        
+        foreach ($questions as $q) {
+            $qRefId = null;
+            if (!empty($q['ref_key']) && isset($refKeyToId[$q['ref_key']])) {
+                $qRefId = $refKeyToId[$q['ref_key']];
+            } else {
+                $qRefId = $reference_id;
+            }
+
+            $answerJson = is_string($q['answer_data']) ? $q['answer_data'] : json_encode($q['answer_data'], JSON_UNESCAPED_UNICODE);
             $stmt->execute([
                 $subject_id,
                 $qRefId,
@@ -170,7 +321,6 @@ try {
         throw $e;
     }
     
-    // JSON Success response
     $msg = 'Berhasil mengimport ' . $insertedCount . ' soal';
     if ($refCreatedCount > 0) {
         $msg .= ' dan membuat ' . $refCreatedCount . ' referensi stimulus baru.';
@@ -178,7 +328,7 @@ try {
         $msg .= '.';
     }
 
-    echo json_encode([
+    sendJsonResponse([
         'status' => 'success',
         'count' => $insertedCount,
         'ref_count' => $refCreatedCount,
@@ -186,11 +336,10 @@ try {
     ]);
     
 } catch (Exception $e) {
-    http_response_code(400);
-    echo json_encode([
+    sendJsonResponse([
         'status' => 'error',
         'msg' => $e->getMessage()
-    ]);
+    ], 400);
 } finally {
     if (!empty($isTempFile) && !empty($tempFilePath) && file_exists($tempFilePath)) {
         @unlink($tempFilePath);
@@ -201,7 +350,55 @@ exit;
 // ================== HELPER FUNCTIONS ==================
 
 /**
- * Extract content from PHPWord element (handles Text, TextRun, ListItemRun, ListItem, Image)
+ * Format text element with font styles (subscript, superscript)
+ */
+function formatFormattedText($textElement) {
+    if (!($textElement instanceof Text)) {
+        if (is_object($textElement) && method_exists($textElement, 'getText')) {
+            return $textElement->getText();
+        }
+        return '';
+    }
+    
+    $text = $textElement->getText();
+    if ($text === '' || $text === null) {
+        return '';
+    }
+    
+    $font = method_exists($textElement, 'getFontStyle') ? $textElement->getFontStyle() : null;
+    if ($font && is_object($font)) {
+        $isSub = method_exists($font, 'isSubScript') && $font->isSubScript();
+        $isSuper = method_exists($font, 'isSuperScript') && $font->isSuperScript();
+        $isBold = method_exists($font, 'isBold') && $font->isBold();
+        $isItalic = method_exists($font, 'isItalic') && $font->isItalic();
+        $underline = method_exists($font, 'getUnderline') ? $font->getUnderline() : null;
+        $isUnderline = !empty($underline) && $underline !== 'none';
+        
+        // Bungkus subscript / superscript terlebih dahulu
+        if ($isSub) {
+            $text = '<sub>' . $text . '</sub>';
+        } elseif ($isSuper) {
+            $text = '<sup>' . $text . '</sup>';
+        }
+
+        // Bungkus formatting (underline, italic, bold) jika bukan spasi kosong saja
+        if (trim($text) !== '') {
+            if ($isUnderline) {
+                $text = '<u>' . $text . '</u>';
+            }
+            if ($isItalic) {
+                $text = '<em>' . $text . '</em>';
+            }
+            if ($isBold) {
+                $text = '<strong>' . $text . '</strong>';
+            }
+        }
+    }
+    return $text;
+}
+
+/**
+ * Extract content from PHPWord element (handles Text, TextRun, ListItemRun, ListItem, Image, Table)
  */
 function extractElementContent($element, $uploadDir, &$imageCounter) {
     $content = '';
@@ -214,7 +411,7 @@ function extractElementContent($element, $uploadDir, &$imageCounter) {
                 $inner .= extractElementContent($child, $uploadDir, $imageCounter);
             }
         } elseif (method_exists($element, 'getText')) {
-            $inner = $element->getText();
+            $inner = formatFormattedText($element);
         }
         $inner = trim($inner);
         if ($inner !== '') {
@@ -248,11 +445,11 @@ function extractElementContent($element, $uploadDir, &$imageCounter) {
     }
 
     if ($element instanceof Text) {
-        $content = $element->getText();
+        $content = formatFormattedText($element);
     } elseif ($element instanceof TextRun) {
         foreach ($element->getElements() as $child) {
             if ($child instanceof Text) {
-                $content .= $child->getText();
+                $content .= formatFormattedText($child);
             } elseif ($child instanceof Image) {
                 $imageSrc = saveImage($child, $uploadDir, $imageCounter);
                 if ($imageSrc) {
@@ -272,9 +469,18 @@ function extractElementContent($element, $uploadDir, &$imageCounter) {
             $content .= extractElementContent($child, $uploadDir, $imageCounter);
         }
     } elseif (method_exists($element, 'getText')) {
-        $content = $element->getText();
+        $content = formatFormattedText($element);
     }
     
+    // Gabungkan tag formatting berurutan (misal <strong>kata</strong><strong>kunci</strong> atau <sub>2</sub><sub>0</sub>)
+    $content = preg_replace('/<\/sub>(\s*)<sub>/i', '$1', $content);
+    $content = preg_replace('/<\/sup>(\s*)<sup>/i', '$1', $content);
+    $content = preg_replace('/<\/strong>(\s*)<strong>/i', '$1', $content);
+    $content = preg_replace('/<\/b>(\s*)<b>/i', '$1', $content);
+    $content = preg_replace('/<\/em>(\s*)<em>/i', '$1', $content);
+    $content = preg_replace('/<\/i>(\s*)<i>/i', '$1', $content);
+    $content = preg_replace('/<\/u>(\s*)<u>/i', '$1', $content);
+
     return $content;
 }
 
@@ -307,7 +513,6 @@ function saveImage($imageElement, $uploadDir, &$imageCounter) {
     try {
         $imageData = $imageElement->getImageStringData(true);
         if (empty($imageData)) {
-            // Try getting from source
             $source = $imageElement->getSource();
             if (file_exists($source)) {
                 $imageData = base64_encode(file_get_contents($source));
@@ -330,10 +535,7 @@ function saveImage($imageElement, $uploadDir, &$imageCounter) {
             $imageName = 'img_' . time() . '_' . $imageCounter . '.' . $ext;
             $imagePath = $uploadDir . $imageName;
             
-            // Simpan file ke server untuk cadangan fisik
             file_put_contents($imagePath, $rawBinary);
-            
-            // Kembalikan Base64 Data URI agar gambar 100% tampil di halaman admin (edit/view) maupun halaman ujian siswa tanpa terpengaruh direktori
             return 'data:' . $mime . ';base64,' . $imageData;
         }
     } catch (Exception $e) {
@@ -366,7 +568,6 @@ function parseQuestionsAndReferences($text, $defaultRefId = null) {
             $refKey = 'ref_' . $refCounter;
             $refTitle = isset($mRef[1]) ? trim($mRef[1]) : '';
             
-            // Ambil judul dari baris pertama jika tidak ada di dalam tag
             if (empty($refTitle)) {
                 $lines = explode("\n", $content);
                 if (!empty($lines) && preg_match('/^(?:Judul|Nama|Title)\s*:\s*(.+)$/i', trim($lines[0]), $mTitle)) {
@@ -388,7 +589,6 @@ function parseQuestionsAndReferences($text, $defaultRefId = null) {
             
             $refTitle = mb_substr($refTitle, 0, 250);
             
-            // Cek apakah ada gambar di dalam konten referensi
             $refImageBase64 = null;
             $refImageExt = 'jpg';
             if (preg_match('/<img[^>]+src=["\']([^"\']+)["\']/i', $content, $mImg)) {
@@ -400,11 +600,11 @@ function parseQuestionsAndReferences($text, $defaultRefId = null) {
                 }
             }
             
-            // Bersihkan teks (hapus tag <img> jika ada agar gambar tidak dobel karena sudah masuk image_path)
             $textOnly = trim(preg_replace('/<img[^>]+>/i', '', $content));
             $formattedContent = formatDocumentHtml($textOnly);
             
             $references[$refKey] = [
+                'key' => $refKey,
                 'title' => $refTitle,
                 'image_base64' => $refImageBase64,
                 'image_ext' => $refImageExt,
@@ -439,6 +639,9 @@ function parseQuestionsAndReferences($text, $defaultRefId = null) {
         
         if ($q) {
             $q['ref_key'] = $currentRefKey;
+            $q['temp_id'] = 'q_' . (count($questions) + 1);
+            $q['number'] = count($questions) + 1;
+            $q['ref_title'] = ($currentRefKey && isset($references[$currentRefKey])) ? $references[$currentRefKey]['title'] : null;
             $questions[] = $q;
             $i += 2;
         } else {
@@ -453,12 +656,11 @@ function parseQuestionsAndReferences($text, $defaultRefId = null) {
 }
 
 /**
- * Parse Pilihan Ganda (PG) question (supports inline image & multiline options)
+ * Parse Pilihan Ganda (PG) question with full validation
  */
 function parsePGQuestion($content) {
     $lines = array_filter(array_map('trim', explode("\n", $content)));
     
-    $questionText = '';
     $options = ['A' => '', 'B' => '', 'C' => '', 'D' => '', 'E' => ''];
     $correct = '';
     
@@ -467,24 +669,17 @@ function parsePGQuestion($content) {
     $questionLines = [];
     
     foreach ($lines as $line) {
-        // Check for option markers: [A] text/image or [A] alone
-        if (preg_match('/^\[([A-E])\]\s*(.*)$/i', $line, $match)) {
+        if (preg_match('/^(?:<[^>]+>)*\[([A-E])\](?:<\/[^>]+>)*\s*(.*)$/i', $line, $match)) {
             $letter = strtoupper($match[1]);
             $options[$letter] = trim($match[2]);
             $currentSection = 'options';
             $currentOption = $letter;
-        }
-        // Check for answer marker
-        elseif (preg_match('/^\[JAWABAN\]\s*([A-E])/i', $line, $match)) {
+        } elseif (preg_match('/^(?:<[^>]+>)*\[JAWABAN\](?:<\/[^>]+>)*\s*(?:<[^>]+>)*([A-E])/i', $line, $match)) {
             $correct = strtoupper($match[1]);
             $currentSection = 'answer';
-        }
-        // Part of option text or image on separate line below [A]
-        elseif ($currentSection === 'options' && !empty($currentOption)) {
+        } elseif ($currentSection === 'options' && !empty($currentOption)) {
             $options[$currentOption] .= ($options[$currentOption] !== '' ? '<br>' : '') . $line;
-        }
-        // Part of question text
-        elseif ($currentSection === 'question') {
+        } elseif ($currentSection === 'question') {
             $questionLines[] = $line;
         }
     }
@@ -492,24 +687,46 @@ function parsePGQuestion($content) {
     $questionText = implode('<br>', $questionLines);
     $questionText = preg_replace('/<br>\s*(<(?:div|table|tbody|thead|tr|td|th))/i', '$1', $questionText);
     $questionText = preg_replace('/(<\/(?:div|table|tbody|thead|tr|td|th)>)\s*<br>/i', '$1', $questionText);
+    $questionText = trim($questionText);
     
-    if (empty($questionText) || empty($correct)) {
+    // Filter non-empty options
+    $filledOptions = array_filter($options, function($v) {
+        return trim(strip_tags($v, '<img>')) !== '';
+    });
+    
+    $warnings = [];
+    if (empty($questionText)) {
+        $warnings[] = 'Teks pertanyaan kosong.';
+    }
+    if (count($filledOptions) < 2) {
+        $warnings[] = 'Pilihan jawaban kurang lengkap (hanya terdeteksi ' . count($filledOptions) . ' pilihan).';
+    }
+    if (empty($correct)) {
+        $warnings[] = 'Kunci jawaban belum ditentukan.';
+    } elseif (!isset($options[$correct]) || empty(trim($options[$correct]))) {
+        $warnings[] = "Kunci jawaban [$correct] dipilih, tapi pilihan tersebut kosong.";
+    }
+    
+    if (empty($questionText) && count($filledOptions) === 0 && empty($correct)) {
         return null;
     }
     
     return [
         'question_text' => $questionText,
         'question_type' => 'pg',
+        'question_type_label' => 'Pilihan Ganda',
         'answer_data' => [
             'type' => 'single_choice',
             'options' => $options,
             'correct' => $correct
-        ]
+        ],
+        'warnings' => $warnings,
+        'is_valid' => empty($warnings)
     ];
 }
 
 /**
- * Parse Benar/Salah (BS) question
+ * Parse Benar/Salah (BS) question with full validation
  */
 function parseBSQuestion($content) {
     $lines = array_filter(array_map('trim', explode("\n", $content)));
@@ -519,35 +736,42 @@ function parseBSQuestion($content) {
     $foundStatement = false;
     
     foreach ($lines as $line) {
-        // Check for statement pattern: [1] text [BENAR] or [SALAH]
-        if (preg_match('/^\[(\d+)\]\s*(.*?)\s*\[(BENAR|SALAH)\]\s*$/i', $line, $match)) {
+        if (preg_match('/^(?:<[^>]+>)*\[(\d+)\](?:<\/[^>]+>)*\s*(.*?)\s*(?:<[^>]+>)*\[(BENAR|SALAH)\](?:<\/[^>]+>)*\s*$/i', $line, $match)) {
             $statements[] = [
                 'text' => trim($match[2]),
                 'is_correct' => strtoupper($match[3]) === 'BENAR' ? 1 : 0
             ];
             $foundStatement = true;
-        }
-        // Part of main question (before statements)
-        elseif (!$foundStatement) {
+        } elseif (!$foundStatement) {
             $questionLines[] = $line;
         }
     }
     
-    $questionText = implode('<br>', $questionLines);
+    $questionText = trim(implode('<br>', $questionLines));
+    $warnings = [];
+    if (empty($questionText)) {
+        $warnings[] = 'Teks pertanyaan kosong.';
+    }
+    if (empty($statements)) {
+        $warnings[] = 'Belum ada pernyataan [1] ... [BENAR/SALAH] yang terdeteksi.';
+    }
     
-    if (empty($questionText) || empty($statements)) {
+    if (empty($questionText) && empty($statements)) {
         return null;
     }
     
     return [
         'question_text' => $questionText,
         'question_type' => 'bs',
-        'answer_data' => $statements
+        'question_type_label' => 'Benar / Salah',
+        'answer_data' => $statements,
+        'warnings' => $warnings,
+        'is_valid' => empty($warnings)
     ];
 }
 
 /**
- * Parse Multi Checkbox question
+ * Parse Multi Checkbox question with full validation
  */
 function parseMultiQuestion($content) {
     $lines = array_filter(array_map('trim', explode("\n", $content)));
@@ -555,36 +779,49 @@ function parseMultiQuestion($content) {
     $questionLines = [];
     $options = [];
     $foundOption = false;
+    $hasCorrect = false;
     
     foreach ($lines as $line) {
-        // Check for option pattern: [1] text [V] or []
-        if (preg_match('/^\[(\d+)\]\s*(.*?)\s*\[(V?)\]\s*$/i', $line, $match)) {
+        if (preg_match('/^(?:<[^>]+>)*\[(\d+)\](?:<\/[^>]+>)*\s*(.*?)\s*(?:<[^>]+>)*\[(V?)\](?:<\/[^>]+>)*\s*$/i', $line, $match)) {
+            $isCorrect = !empty($match[3]) ? 1 : 0;
+            if ($isCorrect) $hasCorrect = true;
             $options[] = [
                 'text' => trim($match[2]),
-                'is_correct' => !empty($match[3]) ? 1 : 0
+                'is_correct' => $isCorrect
             ];
             $foundOption = true;
-        }
-        // Part of main question (before options)
-        elseif (!$foundOption) {
+        } elseif (!$foundOption) {
             $questionLines[] = $line;
         }
     }
     
-    $questionText = implode('<br>', $questionLines);
+    $questionText = trim(implode('<br>', $questionLines));
+    $warnings = [];
+    if (empty($questionText)) {
+        $warnings[] = 'Teks pertanyaan kosong.';
+    }
+    if (empty($options)) {
+        $warnings[] = 'Belum ada opsi pilihan [1] ... [V] yang terdeteksi.';
+    } elseif (!$hasCorrect) {
+        $warnings[] = 'Belum ada opsi jawaban benar yang ditandai dengan [V].';
+    }
     
-    if (empty($questionText) || empty($options)) {
+    if (empty($questionText) && empty($options)) {
         return null;
     }
     
     return [
         'question_text' => $questionText,
         'question_type' => 'multi',
-        'answer_data' => $options
+        'question_type_label' => 'Pilihan Ganda Kompleks',
+        'answer_data' => $options,
+        'warnings' => $warnings,
+        'is_valid' => empty($warnings)
     ];
 }
+
 /**
- * Parse Jawaban Singkat (Isian) question
+ * Parse Jawaban Singkat (Isian) question with full validation
  */
 function parseIsianQuestion($content) {
     $lines = array_filter(array_map('trim', explode("\n", $content)));
@@ -593,28 +830,35 @@ function parseIsianQuestion($content) {
     $correct = '';
     
     foreach ($lines as $line) {
-        // Check for answer marker
-        if (preg_match('/^\[JAWABAN\]\s*(.*)$/i', $line, $match)) {
-            $correct = trim($match[1]);
-        }
-        // Part of question text
-        else {
+        if (preg_match('/^(?:<[^>]+>)*\[(?:JAWABAN|KUNCI)\](?:<\/[^>]+>)*\s*(.*)$/i', $line, $match)) {
+            $correct = trim(strip_tags($match[1]));
+        } else {
             $questionLines[] = $line;
         }
     }
     
-    $questionText = implode('<br>', $questionLines);
+    $questionText = trim(implode('<br>', $questionLines));
+    $warnings = [];
+    if (empty($questionText)) {
+        $warnings[] = 'Teks pertanyaan kosong.';
+    }
+    if ($correct === '') {
+        $warnings[] = 'Kunci jawaban singkat belum ditentukan [JAWABAN].';
+    }
     
-    if (empty($questionText) || empty($correct)) {
+    if (empty($questionText) && $correct === '') {
         return null;
     }
     
     return [
         'question_text' => $questionText,
         'question_type' => 'isian',
+        'question_type_label' => 'Jawaban Singkat',
         'answer_data' => [
             'type' => 'short_answer',
             'correct' => $correct
-        ]
+        ],
+        'warnings' => $warnings,
+        'is_valid' => empty($warnings)
     ];
 }
