@@ -1,10 +1,10 @@
 <?php
 // Ambil query parameter
-$filter_subject = isset($_GET['subject_id']) && $_GET['subject_id'] !== '' ? (int)$_GET['subject_id'] : null;
-$filter_type    = isset($_GET['type']) && in_array($_GET['type'], ['text', 'image', 'sound']) ? $_GET['type'] : '';
-$search         = isset($_GET['search']) ? trim($_GET['search']) : '';
-$page_num       = max(1, (int)($_GET['p'] ?? 1));
-$per_page       = 10; // Jumlah item per halaman
+$filter_subject = isset($_GET['subject_id']) && $_GET['subject_id'] !== '' ? (int) $_GET['subject_id'] : null;
+$filter_type = isset($_GET['type']) && in_array($_GET['type'], ['text', 'image', 'sound']) ? $_GET['type'] : '';
+$search = isset($_GET['search']) ? trim($_GET['search']) : '';
+$page_num = max(1, (int) ($_GET['p'] ?? 1));
+$per_page = 10; // Jumlah item per halaman
 
 // Ambil semua daftar Mapel lengkap dengan nama Ujian untuk dropdown filter
 $stmt_subs = $pdo->query("
@@ -23,10 +23,10 @@ foreach ($all_subjects as $s) {
 }
 
 // Statistik umum untuk summary cards
-$stats_total = (int)$pdo->query("SELECT COUNT(*) FROM `references`")->fetchColumn();
-$stats_text  = (int)$pdo->query("SELECT COUNT(*) FROM `references` WHERE type = 'text'")->fetchColumn();
-$stats_image = (int)$pdo->query("SELECT COUNT(*) FROM `references` WHERE type = 'image'")->fetchColumn();
-$stats_used  = (int)$pdo->query("SELECT COUNT(DISTINCT reference_id) FROM questions WHERE reference_id IS NOT NULL")->fetchColumn();
+$stats_total = (int) $pdo->query("SELECT COUNT(*) FROM `references`")->fetchColumn();
+$stats_text = (int) $pdo->query("SELECT COUNT(*) FROM `references` WHERE type = 'text'")->fetchColumn();
+$stats_image = (int) $pdo->query("SELECT COUNT(*) FROM `references` WHERE type = 'image'")->fetchColumn();
+$stats_used = (int) $pdo->query("SELECT COUNT(DISTINCT reference_id) FROM questions WHERE reference_id IS NOT NULL")->fetchColumn();
 
 // Bangun WHERE clause dinamis
 $where = [];
@@ -59,10 +59,10 @@ $count_sql = "SELECT COUNT(*) FROM `references` r
               LEFT JOIN exams e ON s.exam_id = e.id" . $where_sql;
 $stmt_count = $pdo->prepare($count_sql);
 $stmt_count->execute($params);
-$total_items = (int)$stmt_count->fetchColumn();
+$total_items = (int) $stmt_count->fetchColumn();
 
 // Hitung total halaman & offset
-$total_pages = max(1, (int)ceil($total_items / $per_page));
+$total_pages = max(1, (int) ceil($total_items / $per_page));
 if ($page_num > $total_pages) {
     $page_num = $total_pages;
 }
@@ -82,7 +82,8 @@ $stmt_data->execute($params);
 $references = $stmt_data->fetchAll(PDO::FETCH_ASSOC);
 
 // Helper function untuk menjaga parameter query saat pagination / filter
-function refQueryUrl($newParams = []) {
+function refQueryUrl($newParams = [])
+{
     $params = $_GET;
     foreach ($newParams as $k => $v) {
         if ($v === null || $v === '') {
@@ -95,9 +96,12 @@ function refQueryUrl($newParams = []) {
 }
 
 // Algoritma sliding window pagination agar tidak menampilkan semua angka
-function getSlidingPagination($current, $total, $delta = 2) {
-    if ($total <= 1) return [];
-    if ($total <= 7) return range(1, $total);
+function getSlidingPagination($current, $total, $delta = 2)
+{
+    if ($total <= 1)
+        return [];
+    if ($total <= 7)
+        return range(1, $total);
 
     $range = [];
     $left = max(2, $current - $delta);
@@ -125,7 +129,8 @@ $pagination_pages = getSlidingPagination($page_num, $total_pages, 2);
 
 <div class="references-module">
     <!-- Header Page -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+    <div
+        class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
         <div>
             <h3 class="fw-bold mb-1 text-dark">
                 <i class="bi bi-journal-bookmark-fill text-primary me-2"></i>Bank Referensi Soal
@@ -135,7 +140,8 @@ $pagination_pages = getSlidingPagination($page_num, $total_pages, 2);
             </p>
         </div>
         <div class="d-flex gap-2">
-            <a href="dashboard.php?page=references_form" class="btn btn-primary d-inline-flex align-items-center shadow-sm">
+            <a href="dashboard.php?page=references_form"
+                class="btn btn-primary d-inline-flex align-items-center shadow-sm">
                 <i class="bi bi-plus-circle-fill me-2"></i> Tambah Referensi
             </a>
         </div>
@@ -143,80 +149,27 @@ $pagination_pages = getSlidingPagination($page_num, $total_pages, 2);
 
     <!-- Alert Notifications -->
     <?php if (isset($_GET['status']) && $_GET['status'] == 'success'): ?>
-        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm d-flex align-items-center mb-4" role="alert">
+        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm d-flex align-items-center mb-4"
+            role="alert">
             <i class="bi bi-check-circle-fill fs-5 text-success me-2"></i>
             <div>Data referensi berhasil disimpan dan diperbarui!</div>
             <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
         </div>
     <?php elseif (isset($_GET['status']) && $_GET['status'] == 'deleted'): ?>
-        <div class="alert alert-warning alert-dismissible fade show border-0 shadow-sm d-flex align-items-center mb-4" role="alert">
+        <div class="alert alert-warning alert-dismissible fade show border-0 shadow-sm d-flex align-items-center mb-4"
+            role="alert">
             <i class="bi bi-trash-fill fs-5 text-warning me-2"></i>
             <div>Referensi berhasil dihapus dari sistem.</div>
             <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
         </div>
     <?php elseif (isset($_GET['status']) && $_GET['status'] == 'error_unique'): ?>
-        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm d-flex align-items-center mb-4" role="alert">
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm d-flex align-items-center mb-4"
+            role="alert">
             <i class="bi bi-exclamation-triangle-fill fs-5 text-danger me-2"></i>
             <div>Nama referensi sudah pernah digunakan pada mapel tersebut! Silakan gunakan nama lain.</div>
             <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
         </div>
     <?php endif; ?>
-
-    <!-- Summary Stats Strip -->
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100">
-                <div class="d-flex align-items-center">
-                    <div class="rounded-3 p-2 bg-primary bg-opacity-10 text-primary me-3">
-                        <i class="bi bi-collection-fill fs-4"></i>
-                    </div>
-                    <div>
-                        <div class="text-muted small">Total Stimulus</div>
-                        <div class="fw-bold fs-5 text-dark"><?= number_format($stats_total) ?></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100">
-                <div class="d-flex align-items-center">
-                    <div class="rounded-3 p-2 bg-info bg-opacity-10 text-info me-3">
-                        <i class="bi bi-file-earmark-text-fill fs-4"></i>
-                    </div>
-                    <div>
-                        <div class="text-muted small">Teks / Bacaan</div>
-                        <div class="fw-bold fs-5 text-dark"><?= number_format($stats_text) ?></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100">
-                <div class="d-flex align-items-center">
-                    <div class="rounded-3 p-2 bg-warning bg-opacity-10 text-warning me-3">
-                        <i class="bi bi-image-fill fs-4"></i>
-                    </div>
-                    <div>
-                        <div class="text-muted small">Gambar / Diagram</div>
-                        <div class="fw-bold fs-5 text-dark"><?= number_format($stats_image) ?></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-3 p-3 bg-white h-100">
-                <div class="d-flex align-items-center">
-                    <div class="rounded-3 p-2 bg-success bg-opacity-10 text-success me-3">
-                        <i class="bi bi-patch-check-fill fs-4"></i>
-                    </div>
-                    <div>
-                        <div class="text-muted small">Terpakai di Soal</div>
-                        <div class="fw-bold fs-5 text-dark"><?= number_format($stats_used) ?></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Filter & Search Toolbar -->
     <div class="card border-0 shadow-sm rounded-3 mb-4">
@@ -230,11 +183,13 @@ $pagination_pages = getSlidingPagination($page_num, $total_pages, 2);
                             <span class="input-group-text bg-white border-end-0 text-muted">
                                 <i class="bi bi-search"></i>
                             </span>
-                            <input type="text" name="search" class="form-control border-start-0 ps-0" 
-                                   placeholder="Cari judul, isi teks, mapel, atau ujian..." 
-                                   value="<?= htmlspecialchars($search) ?>" autocomplete="off">
+                            <input type="text" name="search" class="form-control border-start-0 ps-0"
+                                placeholder="Cari judul, isi teks, mapel, atau ujian..."
+                                value="<?= htmlspecialchars($search) ?>" autocomplete="off">
                             <?php if ($search !== ''): ?>
-                                <a href="<?= refQueryUrl(['search' => null, 'p' => 1]) ?>" class="input-group-text bg-white text-muted text-decoration-none border-start-0" title="Hapus pencarian">
+                                <a href="<?= refQueryUrl(['search' => null, 'p' => 1]) ?>"
+                                    class="input-group-text bg-white text-muted text-decoration-none border-start-0"
+                                    title="Hapus pencarian">
                                     <i class="bi bi-x-circle-fill"></i>
                                 </a>
                             <?php endif; ?>
@@ -248,7 +203,7 @@ $pagination_pages = getSlidingPagination($page_num, $total_pages, 2);
                             <?php foreach ($grouped_subjects as $examName => $subs): ?>
                                 <optgroup label="📋 Ujian: <?= htmlspecialchars($examName) ?>">
                                     <?php foreach ($subs as $s): ?>
-                                        <option value="<?= $s['id'] ?>" <?= $filter_subject === (int)$s['id'] ? 'selected' : '' ?>>
+                                        <option value="<?= $s['id'] ?>" <?= $filter_subject === (int) $s['id'] ? 'selected' : '' ?>>
                                             <?= htmlspecialchars($s['name']) ?> — (<?= htmlspecialchars($examName) ?>)
                                         </option>
                                     <?php endforeach; ?>
@@ -272,7 +227,8 @@ $pagination_pages = getSlidingPagination($page_num, $total_pages, 2);
                             <i class="bi bi-filter me-1"></i> Terapkan
                         </button>
                         <?php if ($search !== '' || $filter_subject !== null || $filter_type !== ''): ?>
-                            <a href="dashboard.php?page=references" class="btn btn-outline-secondary" title="Reset Semua Filter">
+                            <a href="dashboard.php?page=references" class="btn btn-outline-secondary"
+                                title="Reset Semua Filter">
                                 <i class="bi bi-arrow-counterclockwise"></i>
                             </a>
                         <?php endif; ?>
@@ -283,25 +239,31 @@ $pagination_pages = getSlidingPagination($page_num, $total_pages, 2);
                 <?php if ($search !== '' || $filter_subject !== null || $filter_type !== ''): ?>
                     <div class="d-flex flex-wrap align-items-center gap-2 mt-3 pt-2 border-top">
                         <small class="text-muted fw-semibold me-1"><i class="bi bi-funnel me-1"></i>Filter Aktif:</small>
-                        
+
                         <?php if ($search !== ''): ?>
                             <span class="badge bg-light text-dark border d-inline-flex align-items-center py-1 px-2">
                                 Kata Kunci: "<?= htmlspecialchars($search) ?>"
-                                <a href="<?= refQueryUrl(['search' => null, 'p' => 1]) ?>" class="text-secondary ms-2 text-decoration-none">
+                                <a href="<?= refQueryUrl(['search' => null, 'p' => 1]) ?>"
+                                    class="text-secondary ms-2 text-decoration-none">
                                     <i class="bi bi-x-circle-fill"></i>
                                 </a>
                             </span>
                         <?php endif; ?>
 
-                        <?php if ($filter_subject !== null): 
+                        <?php if ($filter_subject !== null):
                             $matchedSub = null;
                             foreach ($all_subjects as $sub) {
-                                if ((int)$sub['id'] === $filter_subject) { $matchedSub = $sub; break; }
+                                if ((int) $sub['id'] === $filter_subject) {
+                                    $matchedSub = $sub;
+                                    break;
+                                }
                             }
-                        ?>
+                            ?>
                             <span class="badge bg-light text-dark border d-inline-flex align-items-center py-1 px-2">
-                                Mapel: <?= htmlspecialchars($matchedSub ? $matchedSub['name'] . ' (' . $matchedSub['exam_name'] . ')' : 'ID ' . $filter_subject) ?>
-                                <a href="<?= refQueryUrl(['subject_id' => null, 'p' => 1]) ?>" class="text-secondary ms-2 text-decoration-none">
+                                Mapel:
+                                <?= htmlspecialchars($matchedSub ? $matchedSub['name'] . ' (' . $matchedSub['exam_name'] . ')' : 'ID ' . $filter_subject) ?>
+                                <a href="<?= refQueryUrl(['subject_id' => null, 'p' => 1]) ?>"
+                                    class="text-secondary ms-2 text-decoration-none">
                                     <i class="bi bi-x-circle-fill"></i>
                                 </a>
                             </span>
@@ -310,13 +272,15 @@ $pagination_pages = getSlidingPagination($page_num, $total_pages, 2);
                         <?php if ($filter_type !== ''): ?>
                             <span class="badge bg-light text-dark border d-inline-flex align-items-center py-1 px-2">
                                 Tipe: <?= $filter_type === 'text' ? 'Teks Bacaan' : 'Gambar/Diagram' ?>
-                                <a href="<?= refQueryUrl(['type' => null, 'p' => 1]) ?>" class="text-secondary ms-2 text-decoration-none">
+                                <a href="<?= refQueryUrl(['type' => null, 'p' => 1]) ?>"
+                                    class="text-secondary ms-2 text-decoration-none">
                                     <i class="bi bi-x-circle-fill"></i>
                                 </a>
                             </span>
                         <?php endif; ?>
 
-                        <a href="dashboard.php?page=references" class="badge bg-secondary text-white text-decoration-none py-1 px-2">
+                        <a href="dashboard.php?page=references"
+                            class="badge bg-secondary text-white text-decoration-none py-1 px-2">
                             Reset Semua
                         </a>
                     </div>
@@ -329,7 +293,9 @@ $pagination_pages = getSlidingPagination($page_num, $total_pages, 2);
     <div class="d-flex justify-content-between align-items-center mb-3 text-muted small">
         <div>
             <?php if ($total_items > 0): ?>
-                Menampilkan <strong><?= $offset + 1 ?></strong> - <strong><?= min($offset + $per_page, $total_items) ?></strong> dari total <strong><?= number_format($total_items) ?></strong> referensi
+                Menampilkan <strong><?= $offset + 1 ?></strong> -
+                <strong><?= min($offset + $per_page, $total_items) ?></strong> dari total
+                <strong><?= number_format($total_items) ?></strong> referensi
             <?php else: ?>
                 Menampilkan 0 referensi
             <?php endif; ?>
@@ -348,10 +314,14 @@ $pagination_pages = getSlidingPagination($page_num, $total_pages, 2);
                     <div class="card-header bg-white border-0 pt-3 px-3 pb-2">
                         <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-1">
                             <div class="d-flex align-items-center flex-wrap gap-1">
-                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle px-2 py-1" style="font-size: 0.75rem;">
+                                <span
+                                    class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle px-2 py-1"
+                                    style="font-size: 0.75rem;">
                                     <i class="bi bi-book me-1"></i><?= htmlspecialchars($r['subject_name']) ?>
                                 </span>
-                                <span class="badge bg-light text-secondary border px-2 py-1 text-truncate" style="font-size: 0.72rem; max-width: 170px;" title="Ujian: <?= htmlspecialchars($r['exam_name']) ?>">
+                                <span class="badge bg-light text-secondary border px-2 py-1 text-truncate"
+                                    style="font-size: 0.72rem; max-width: 170px;"
+                                    title="Ujian: <?= htmlspecialchars($r['exam_name']) ?>">
                                     <i class="bi bi-calendar-event me-1"></i><?= htmlspecialchars($r['exam_name']) ?>
                                 </span>
                             </div>
@@ -381,26 +351,26 @@ $pagination_pages = getSlidingPagination($page_num, $total_pages, 2);
                     <!-- Card Body Content Preview -->
                     <div class="card-body px-3 py-2">
                         <?php if ($r['type'] === 'text'): ?>
-                            <div class="ref-text-preview rounded-3 p-3 bg-light border position-relative" style="max-height: 140px; overflow: hidden;">
+                            <div class="ref-text-preview rounded-3 p-3 bg-light border position-relative"
+                                style="max-height: 140px; overflow: hidden;">
                                 <div class="small text-muted line-clamp-preview">
                                     <?= $r['content'] ?>
                                 </div>
                                 <div class="preview-gradient-overlay"></div>
                             </div>
-                            <button type="button" class="btn btn-sm btn-link text-decoration-none text-primary px-0 py-1 small fw-semibold mt-1 d-inline-flex align-items-center" 
-                                    data-bs-toggle="modal" data-bs-target="#previewModal<?= $r['id'] ?>">
+                            <button type="button"
+                                class="btn btn-sm btn-link text-decoration-none text-primary px-0 py-1 small fw-semibold mt-1 d-inline-flex align-items-center"
+                                data-bs-toggle="modal" data-bs-target="#previewModal<?= $r['id'] ?>">
                                 <i class="bi bi-arrows-fullscreen me-1"></i> Baca Selengkapnya
                             </button>
                         <?php elseif ($r['type'] === 'image'): ?>
-                            <div class="ref-image-preview rounded-3 bg-light border text-center p-2 d-flex align-items-center justify-content-center" 
-                                 style="height: 140px; cursor: pointer; overflow: hidden;"
-                                 data-bs-toggle="modal" data-bs-target="#previewModal<?= $r['id'] ?>"
-                                 title="Klik untuk memperbesar gambar">
+                            <div class="ref-image-preview rounded-3 bg-light border text-center p-2 d-flex align-items-center justify-content-center"
+                                style="height: 140px; cursor: pointer; overflow: hidden;" data-bs-toggle="modal"
+                                data-bs-target="#previewModal<?= $r['id'] ?>" title="Klik untuk memperbesar gambar">
                                 <?php if (!empty($r['image_path']) && file_exists("../assets/uploads/references/" . $r['image_path'])): ?>
-                                    <img src="../assets/uploads/references/<?= htmlspecialchars($r['image_path']) ?>" 
-                                         class="img-fluid rounded mh-100 object-fit-contain" 
-                                         alt="<?= htmlspecialchars($r['title']) ?>" 
-                                         loading="lazy">
+                                    <img src="../assets/uploads/references/<?= htmlspecialchars($r['image_path']) ?>"
+                                        class="img-fluid rounded mh-100 object-fit-contain"
+                                        alt="<?= htmlspecialchars($r['title']) ?>" loading="lazy">
                                 <?php else: ?>
                                     <div class="text-muted small">
                                         <i class="bi bi-image text-secondary fs-3 d-block mb-1"></i>
@@ -408,8 +378,9 @@ $pagination_pages = getSlidingPagination($page_num, $total_pages, 2);
                                     </div>
                                 <?php endif; ?>
                             </div>
-                            <button type="button" class="btn btn-sm btn-link text-decoration-none text-primary px-0 py-1 small fw-semibold mt-1 d-inline-flex align-items-center" 
-                                    data-bs-toggle="modal" data-bs-target="#previewModal<?= $r['id'] ?>">
+                            <button type="button"
+                                class="btn btn-sm btn-link text-decoration-none text-primary px-0 py-1 small fw-semibold mt-1 d-inline-flex align-items-center"
+                                data-bs-toggle="modal" data-bs-target="#previewModal<?= $r['id'] ?>">
                                 <i class="bi bi-zoom-in me-1"></i> Perbesar Gambar
                             </button>
                         <?php else: ?>
@@ -424,12 +395,14 @@ $pagination_pages = getSlidingPagination($page_num, $total_pages, 2);
                         <div class="d-flex justify-content-between align-items-center border-top pt-2">
                             <!-- Left: Usage Status -->
                             <div class="d-flex align-items-center">
-                                <?php if ((int)$r['question_count'] > 0): ?>
-                                    <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle" style="font-size: 0.72rem;" title="Jumlah soal yang menggunakan stimulus ini">
+                                <?php if ((int) $r['question_count'] > 0): ?>
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle"
+                                        style="font-size: 0.72rem;" title="Jumlah soal yang menggunakan stimulus ini">
                                         <i class="bi bi-link-45deg me-1"></i><?= $r['question_count'] ?> Soal Terhubung
                                     </span>
                                 <?php else: ?>
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle" style="font-size: 0.72rem;" title="Belum ada soal yang memakai referensi ini">
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle"
+                                        style="font-size: 0.72rem;" title="Belum ada soal yang memakai referensi ini">
                                         <i class="bi bi-dash-circle me-1"></i>Belum Terpakai
                                     </span>
                                 <?php endif; ?>
@@ -437,20 +410,17 @@ $pagination_pages = getSlidingPagination($page_num, $total_pages, 2);
 
                             <!-- Right: Action Buttons -->
                             <div class="btn-group btn-group-sm">
-                                <button type="button" class="btn btn-outline-secondary" 
-                                        data-bs-toggle="modal" data-bs-target="#previewModal<?= $r['id'] ?>" 
-                                        title="Pratinjau Stimulus">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal"
+                                    data-bs-target="#previewModal<?= $r['id'] ?>" title="Pratinjau Stimulus">
                                     <i class="bi bi-eye"></i>
                                 </button>
-                                <a href="dashboard.php?page=references_form&id=<?= $r['id'] ?>" 
-                                   class="btn btn-outline-primary" 
-                                   title="Edit Referensi">
+                                <a href="dashboard.php?page=references_form&id=<?= $r['id'] ?>"
+                                    class="btn btn-outline-primary" title="Edit Referensi">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <a href="modules/references/process.php?action=delete&id=<?= $r['id'] ?>" 
-                                   class="btn btn-outline-danger" 
-                                   title="Hapus Referensi" 
-                                   onclick="return confirm('<?= (int)$r['question_count'] > 0 ? 'PERINGATAN: Referensi ini sedang terhubung dengan ' . $r['question_count'] . ' butir soal! Menghapusnya akan memutus kaitan soal dengan stimulus ini. Lanjutkan hapus?' : 'Apakah Anda yakin ingin menghapus referensi ini?' ?>')">
+                                <a href="modules/references/process.php?action=delete&id=<?= $r['id'] ?>"
+                                    class="btn btn-outline-danger" title="Hapus Referensi"
+                                    onclick="return confirm('<?= (int) $r['question_count'] > 0 ? 'PERINGATAN: Referensi ini sedang terhubung dengan ' . $r['question_count'] . ' butir soal! Menghapusnya akan memutus kaitan soal dengan stimulus ini. Lanjutkan hapus?' : 'Apakah Anda yakin ingin menghapus referensi ini?' ?>')">
                                     <i class="bi bi-trash"></i>
                                 </a>
                             </div>
@@ -460,7 +430,8 @@ $pagination_pages = getSlidingPagination($page_num, $total_pages, 2);
             </div>
 
             <!-- Modal Pratinjau Lengkap -->
-            <div class="modal fade" id="previewModal<?= $r['id'] ?>" tabindex="-1" aria-labelledby="previewModalLabel<?= $r['id'] ?>" aria-hidden="true">
+            <div class="modal fade" id="previewModal<?= $r['id'] ?>" tabindex="-1"
+                aria-labelledby="previewModalLabel<?= $r['id'] ?>" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
                     <div class="modal-content border-0 shadow">
                         <div class="modal-header border-bottom pb-3">
@@ -480,23 +451,24 @@ $pagination_pages = getSlidingPagination($page_num, $total_pages, 2);
                                     <?= htmlspecialchars($r['title']) ?>
                                 </h5>
                             </div>
-                            <button type="button" class="btn-close align-self-start" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <button type="button" class="btn-close align-self-start" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
                         </div>
                         <div class="modal-body p-4 bg-light bg-opacity-50">
                             <?php if ($r['type'] === 'text'): ?>
-                                <div class="bg-white p-4 rounded-3 border shadow-xs fs-6 text-dark leading-relaxed content-math-render" style="line-height: 1.75;">
+                                <div class="bg-white p-4 rounded-3 border shadow-xs fs-6 text-dark leading-relaxed content-math-render"
+                                    style="line-height: 1.75;">
                                     <?= $r['content'] ?>
                                 </div>
                             <?php elseif ($r['type'] === 'image'): ?>
                                 <div class="text-center bg-white p-3 rounded-3 border shadow-xs">
                                     <?php if (!empty($r['image_path']) && file_exists("../assets/uploads/references/" . $r['image_path'])): ?>
-                                        <img src="../assets/uploads/references/<?= htmlspecialchars($r['image_path']) ?>" 
-                                             class="img-fluid rounded" 
-                                             alt="<?= htmlspecialchars($r['title']) ?>" 
-                                             style="max-height: 550px;">
+                                        <img src="../assets/uploads/references/<?= htmlspecialchars($r['image_path']) ?>"
+                                            class="img-fluid rounded" alt="<?= htmlspecialchars($r['title']) ?>"
+                                            style="max-height: 550px;">
                                         <div class="mt-3">
-                                            <a href="../assets/uploads/references/<?= htmlspecialchars($r['image_path']) ?>" 
-                                               target="_blank" class="btn btn-sm btn-outline-secondary">
+                                            <a href="../assets/uploads/references/<?= htmlspecialchars($r['image_path']) ?>"
+                                                target="_blank" class="btn btn-sm btn-outline-secondary">
                                                 <i class="bi bi-box-arrow-up-right me-1"></i> Buka Gambar di Tab Baru
                                             </a>
                                         </div>
@@ -509,15 +481,17 @@ $pagination_pages = getSlidingPagination($page_num, $total_pages, 2);
                             <div class="mt-3 d-flex justify-content-between align-items-center text-muted small">
                                 <div>
                                     <i class="bi bi-link-45deg me-1"></i>
-                                    Digunakan oleh <strong><?= (int)$r['question_count'] ?></strong> soal
+                                    Digunakan oleh <strong><?= (int) $r['question_count'] ?></strong> soal
                                 </div>
                                 <div>
-                                    <i class="bi bi-clock me-1"></i> Dibuat: <?= date('d M Y, H:i', strtotime($r['created_at'])) ?>
+                                    <i class="bi bi-clock me-1"></i> Dibuat:
+                                    <?= date('d M Y, H:i', strtotime($r['created_at'])) ?>
                                 </div>
                             </div>
                         </div>
                         <div class="modal-footer border-top bg-white">
-                            <a href="dashboard.php?page=references_form&id=<?= $r['id'] ?>" class="btn btn-outline-primary btn-sm">
+                            <a href="dashboard.php?page=references_form&id=<?= $r['id'] ?>"
+                                class="btn btn-outline-primary btn-sm">
                                 <i class="bi bi-pencil me-1"></i> Edit Referensi Ini
                             </a>
                             <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
@@ -564,7 +538,9 @@ $pagination_pages = getSlidingPagination($page_num, $total_pages, 2);
         <div class="card border-0 shadow-sm rounded-3 p-3 bg-white mb-4">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
                 <div class="text-muted small order-2 order-md-1">
-                    Menampilkan data ke-<strong><?= $offset + 1 ?></strong> hingga <strong><?= min($offset + $per_page, $total_items) ?></strong> dari total <strong><?= number_format($total_items) ?></strong>
+                    Menampilkan data ke-<strong><?= $offset + 1 ?></strong> hingga
+                    <strong><?= min($offset + $per_page, $total_items) ?></strong> dari total
+                    <strong><?= number_format($total_items) ?></strong>
                 </div>
 
                 <nav aria-label="Pagination Referensi" class="order-1 order-md-2">
@@ -576,7 +552,8 @@ $pagination_pages = getSlidingPagination($page_num, $total_pages, 2);
                             </a>
                         </li>
                         <li class="page-item <?= ($page_num <= 1) ? 'disabled' : '' ?>">
-                            <a class="page-link" href="<?= refQueryUrl(['p' => max(1, $page_num - 1)]) ?>" title="Halaman Sebelumnya">
+                            <a class="page-link" href="<?= refQueryUrl(['p' => max(1, $page_num - 1)]) ?>"
+                                title="Halaman Sebelumnya">
                                 <i class="bi bi-chevron-left"></i>
                             </a>
                         </li>
@@ -600,7 +577,8 @@ $pagination_pages = getSlidingPagination($page_num, $total_pages, 2);
 
                         <!-- Next & Last Page Button -->
                         <li class="page-item <?= ($page_num >= $total_pages) ? 'disabled' : '' ?>">
-                            <a class="page-link" href="<?= refQueryUrl(['p' => min($total_pages, $page_num + 1)]) ?>" title="Halaman Selanjutnya">
+                            <a class="page-link" href="<?= refQueryUrl(['p' => min($total_pages, $page_num + 1)]) ?>"
+                                title="Halaman Selanjutnya">
                                 <i class="bi bi-chevron-right"></i>
                             </a>
                         </li>
@@ -617,63 +595,70 @@ $pagination_pages = getSlidingPagination($page_num, $total_pages, 2);
 </div>
 
 <style>
-.reference-card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    border: 1px solid rgba(0,0,0,0.06) !important;
-}
-.reference-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 0.5rem 1.25rem rgba(0,0,0,0.08) !important;
-}
-.ref-text-preview {
-    font-size: 0.86rem;
-    line-height: 1.5;
-}
-.ref-text-preview img {
-    max-width: 100% !important;
-    height: auto !important;
-}
-.preview-gradient-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 40px;
-    background: linear-gradient(180deg, rgba(248, 249, 250, 0) 0%, rgba(248, 249, 250, 0.95) 100%);
-    pointer-events: none;
-}
-.pagination-sm .page-link {
-    padding: 0.35rem 0.65rem;
-    color: #495057;
-    border-radius: 6px;
-    margin: 0 2px;
-}
-.pagination-sm .page-item.active .page-link {
-    background-color: var(--brand-primary, #1e40af);
-    border-color: var(--brand-primary, #1e40af);
-    color: #fff;
-}
-.pagination-sm .page-item.disabled .page-link {
-    background-color: transparent;
-    color: #adb5bd;
-}
+    .reference-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 1px solid rgba(0, 0, 0, 0.06) !important;
+    }
+
+    .reference-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.08) !important;
+    }
+
+    .ref-text-preview {
+        font-size: 0.86rem;
+        line-height: 1.5;
+    }
+
+    .ref-text-preview img {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+
+    .preview-gradient-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 40px;
+        background: linear-gradient(180deg, rgba(248, 249, 250, 0) 0%, rgba(248, 249, 250, 0.95) 100%);
+        pointer-events: none;
+    }
+
+    .pagination-sm .page-link {
+        padding: 0.35rem 0.65rem;
+        color: #495057;
+        border-radius: 6px;
+        margin: 0 2px;
+    }
+
+    .pagination-sm .page-item.active .page-link {
+        background-color: var(--brand-primary, #1e40af);
+        border-color: var(--brand-primary, #1e40af);
+        color: #fff;
+    }
+
+    .pagination-sm .page-item.disabled .page-link {
+        background-color: transparent;
+        color: #adb5bd;
+    }
 </style>
 
 <script>
-// Trigger MathJax render when preview modal is opened so any math formulas render crisp
-document.addEventListener('DOMContentLoaded', function() {
-    const modals = document.querySelectorAll('.modal');
-    modals.forEach(function(modal) {
-        modal.addEventListener('shown.bs.modal', function() {
-            if (window.MathJax && window.MathJax.typesetPromise) {
-                const mathContainers = modal.querySelectorAll('.content-math-render');
-                if (mathContainers.length > 0) {
-                    MathJax.typesetPromise(Array.from(mathContainers)).catch(function(err) {
-                        console.error('MathJax modal render error:', err);
-                    });
+    // Trigger MathJax render when preview modal is opened so any math formulas render crisp
+    document.addEventListener('DOMContentLoaded', function () {
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(function (modal) {
+            modal.addEventListener('shown.bs.modal', function () {
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    const mathContainers = modal.querySelectorAll('.content-math-render');
+                    if (mathContainers.length > 0) {
+                        MathJax.typesetPromise(Array.from(mathContainers)).catch(function (err) {
+                            console.error('MathJax modal render error:', err);
+                        });
+                    }
                 }
-            }
+            });
         });
     });
-});
 </script>
