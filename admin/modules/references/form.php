@@ -9,7 +9,20 @@ if ($id) {
     $data = $stmt->fetch();
 }
 
-$subjects = $pdo->query("SELECT * FROM subjects ORDER BY name ASC")->fetchAll();
+$stmt_subs = $pdo->query("
+    SELECT s.*, COALESCE(e.exam_name, 'Tanpa Ujian') as exam_name 
+    FROM subjects s 
+    LEFT JOIN exams e ON s.exam_id = e.id 
+    ORDER BY e.exam_name ASC, s.name ASC
+");
+$subjects = $stmt_subs->fetchAll(PDO::FETCH_ASSOC);
+
+// Kelompokkan mapel berdasarkan ujian
+$grouped_form_subjects = [];
+foreach ($subjects as $s) {
+    $examName = $s['exam_name'] ?: 'Tanpa Ujian';
+    $grouped_form_subjects[$examName][] = $s;
+}
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -36,15 +49,20 @@ $subjects = $pdo->query("SELECT * FROM subjects ORDER BY name ASC")->fetchAll();
             <input type="hidden" name="image_base64" id="refImageBase64">
             
             <div class="mb-3">
-                <label class="form-label">Mata Pelajaran</label>
+                <label class="form-label fw-bold">Mata Pelajaran & Ujian</label>
                 <select name="subject_id" class="form-select" required>
-                    <option value="">-- Pilih Mapel --</option>
-                    <?php foreach ($subjects as $s): ?>
-                        <option value="<?= $s['id'] ?>" <?= ($data['subject_id'] ?? ($returnSubjectId ?? '')) == $s['id'] ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($s['name']) ?>
-                        </option>
+                    <option value="">-- Pilih Mata Pelajaran --</option>
+                    <?php foreach ($grouped_form_subjects as $examName => $subs): ?>
+                        <optgroup label="📋 Ujian: <?= htmlspecialchars($examName) ?>">
+                            <?php foreach ($subs as $s): ?>
+                                <option value="<?= $s['id'] ?>" <?= ($data['subject_id'] ?? ($returnSubjectId ?? '')) == $s['id'] ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($s['name']) ?> — (<?= htmlspecialchars($examName) ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </optgroup>
                     <?php endforeach; ?>
                 </select>
+                <div class="form-text small">Pilih mata pelajaran dan jadwal ujian yang sesuai untuk stimulus ini.</div>
             </div>
             <div class="mb-3">
         <label class="form-label fw-bold">Nama / Judul Referensi</label>
