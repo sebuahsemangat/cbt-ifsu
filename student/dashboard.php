@@ -394,9 +394,9 @@ function formatIndoSchedule($startStr, $endStr) {
 
 <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
     <div class="container">
-        <a class="navbar-brand fw-bold" href="#">
-            <img src="../assets/img/<?= htmlspecialchars($bimbel_logo) . $logo_version ?>" alt="Logo" class="navbar-logo me-2">
-            <span>CBT - <?= htmlspecialchars($bimbel_name) ?></span>
+        <a class="navbar-brand fw-bold d-flex align-items-center" href="#">
+            <img src="../assets/img/<?= htmlspecialchars($bimbel_logo) . $logo_version ?>" alt="Logo" class="navbar-logo me-md-2">
+            <span class="d-none d-md-inline">CBT - <?= htmlspecialchars($bimbel_name) ?></span>
         </a>
         <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon" style="filter: invert(1);"></span>

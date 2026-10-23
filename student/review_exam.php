@@ -489,8 +489,9 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
 
 <nav class="navbar navbar-custom sticky-top">
     <div class="container">
-        <a class="navbar-brand" href="#">
-            <i class="bi bi-mortarboard-fill me-2"></i>CBT - <?= htmlspecialchars($bimbel_name) ?>
+        <a class="navbar-brand d-flex align-items-center" href="#">
+            <i class="bi bi-mortarboard-fill me-md-2"></i>
+            <span class="d-none d-md-inline">CBT - <?= htmlspecialchars($bimbel_name) ?></span>
         </a>
         <div class="d-flex align-items-center gap-3">
             <a href="dashboard.php" class="btn btn-sm btn-outline-light rounded-pill d-print-none">
