@@ -96,6 +96,9 @@ if (!$stmtCheck->fetch()) {
     $clientIp = $_SERVER['REMOTE_ADDR'] ?? '';
     $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'CBT-Client';
 
+    $savedNamaSiswa = $isAnonim ? 'Anonim' : $session['full_name'];
+    $savedNis       = $isAnonim ? null : $session['nis'];
+
     // 1. Simpan ke cbt_survey_responden_local
     $stmtInsert = $pdo->prepare("
         INSERT INTO `cbt_survey_responden_local` 
@@ -108,9 +111,9 @@ if (!$stmtCheck->fetch()) {
         $subjectId,
         $surveyCode,
         $teacherName,
-        $session['full_name'],
+        $savedNamaSiswa,
         $session['class'],
-        $session['nis'],
+        $savedNis,
         $isAnonim,
         json_encode($formattedAnswers, JSON_UNESCAPED_UNICODE)
     ]);

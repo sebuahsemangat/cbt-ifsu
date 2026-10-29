@@ -199,7 +199,7 @@ $site_bimbel_logo = $app_settings['bimbel_logo'] ?? 'logo-bimbel.png';
         }
 
         /* Nav Links */
-        .nav-link { 
+        .sidebar .nav-link { 
             color: rgba(255, 255, 255, 0.72); 
             font-weight: 500;
             font-size: 0.875rem;
@@ -210,27 +210,27 @@ $site_bimbel_logo = $app_settings['bimbel_logo'] ?? 'logo-bimbel.png';
             align-items: center;
             transition: all 0.2s ease;
         }
-        .nav-link i {
+        .sidebar .nav-link i {
             font-size: 1.15rem;
             transition: all 0.2s ease;
         }
-        .nav-link:hover { 
+        .sidebar .nav-link:hover { 
             color: #ffffff; 
             background: rgba(255, 255, 255, 0.08); 
             transform: translateX(4px);
         }
-        .nav-link.active {
+        .sidebar .nav-link.active {
             color: #ffffff; 
             background: linear-gradient(90deg, rgba(30, 64, 175, 0.45) 0%, rgba(30, 64, 175, 0.1) 100%);
             border-left: 4px solid var(--brand-accent);
             font-weight: 600;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
         }
-        .nav-link.active i {
+        .sidebar .nav-link.active i {
             color: var(--brand-accent) !important;
         }
 
-        .nav-logout {
+        .sidebar .nav-logout {
             margin-top: 24px;
             background: rgba(239, 68, 68, 0.12) !important;
             border: 1px solid rgba(239, 68, 68, 0.25) !important;

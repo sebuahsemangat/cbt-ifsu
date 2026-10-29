@@ -32,6 +32,80 @@ $stmtResp = $pdo->query("
 $responsesList = $stmtResp->fetchAll();
 ?>
 
+<style>
+/* Styling Tab Navigasi Khusus Halaman Survei */
+.survey-tabs-header {
+    background: #ffffff !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    padding: 0 16px !important;
+    border-top-left-radius: 14px !important;
+    border-top-right-radius: 14px !important;
+}
+.survey-card-tabs {
+    border-bottom: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 4px;
+    display: flex;
+}
+.survey-card-tabs .nav-item {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+.survey-card-tabs .nav-link {
+    color: #475569 !important;
+    font-weight: 600 !important;
+    font-size: 0.875rem !important;
+    padding: 12px 20px !important;
+    margin: 0 !important;
+    border: none !important;
+    border-bottom: 3px solid transparent !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    transition: all 0.15s ease !important;
+    position: relative;
+    top: 1px; /* Tepat menempel pada border-bottom card-header */
+}
+.survey-card-tabs .nav-link:hover {
+    color: #1e40af !important;
+    background-color: #f8fafc !important;
+    border-bottom-color: #cbd5e1 !important;
+}
+.survey-card-tabs .nav-link.active {
+    color: #1e40af !important;
+    font-weight: 700 !important;
+    background-color: #ffffff !important;
+    border-bottom: 3px solid #1e40af !important;
+    box-shadow: none !important;
+}
+.survey-card-tabs .nav-link.active i {
+    color: #1e40af !important;
+}
+
+/* Tabel Survei */
+.table-survey thead th {
+    background-color: #f8fafc !important;
+    color: #334155 !important;
+    font-weight: 700 !important;
+    font-size: 0.8rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+    padding-top: 14px !important;
+    padding-bottom: 14px !important;
+}
+.table-survey tbody td {
+    padding-top: 14px !important;
+    padding-bottom: 14px !important;
+    color: #1e293b !important;
+    font-size: 0.875rem !important;
+}
+.table-survey tbody tr:hover td {
+    background-color: #f8fafc !important;
+}
+</style>
 <div class="container-fluid px-0">
     <!-- Header -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
@@ -139,8 +213,8 @@ $responsesList = $stmtResp->fetchAll();
 
     <!-- Main Navigation Tabs -->
     <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-bottom pt-3 pb-0">
-            <ul class="nav nav-tabs card-header-tabs" role="tablist">
+        <div class="card-header survey-tabs-header">
+            <ul class="nav nav-tabs survey-card-tabs border-0" role="tablist">
                 <li class="nav-item">
                     <button class="nav-link active fw-semibold" data-bs-toggle="tab" data-bs-target="#tabSurveys">
                         <i class="bi bi-journal-text me-1"></i> Data Kuesioner Guru (<?= count($surveysList) ?>)
@@ -162,7 +236,7 @@ $responsesList = $stmtResp->fetchAll();
                 <!-- TAB 1: Kuesioner Survei Lokal -->
                 <div class="tab-pane fade show active p-0" id="tabSurveys">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
+                        <table class="table table-hover align-middle mb-0 table-survey">
                             <thead class="table-light">
                                 <tr>
                                     <th class="px-4" style="width: 50px;">#</th>
@@ -280,7 +354,7 @@ $responsesList = $stmtResp->fetchAll();
                 <!-- TAB 2: Respon Siswa Lokal -->
                 <div class="tab-pane fade p-0" id="tabResponses">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
+                        <table class="table table-hover align-middle mb-0 table-survey">
                             <thead class="table-light">
                                 <tr>
                                     <th class="px-4" style="width: 50px;">#</th>
@@ -306,8 +380,9 @@ $responsesList = $stmtResp->fetchAll();
                                         <td class="px-4 text-muted"><?= $idx + 1 ?></td>
                                         <td>
                                             <?php if ($resp['is_anonim']): ?>
-                                                <span class="badge bg-secondary me-1"><i class="bi bi-incognito me-1"></i>Anonim</span>
-                                                <small class="text-muted">(<?= htmlspecialchars($resp['nama_siswa']) ?>)</small>
+                                                <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle px-2 py-1">
+                                                    <i class="bi bi-incognito me-1"></i> Anonim
+                                                </span>
                                             <?php else: ?>
                                                 <span class="fw-semibold text-dark"><?= htmlspecialchars($resp['nama_siswa']) ?></span>
                                                 <?php if ($resp['nisn']): ?>
