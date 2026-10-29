@@ -19,6 +19,21 @@ if ($action == 'add' && $_SERVER['REQUEST_METHOD'] == 'POST') {
         
         $stmt = $pdo->prepare("INSERT INTO subjects (name, exam_id, duration, max_score, sort_order) VALUES (?, ?, ?, ?, ?)");
         $stmt->execute([$name, $exam_id, $duration, $max_score, $nextOrder]);
+        $subjectId = (int)$pdo->lastInsertId();
+
+        // Simpan relasi guru survei jika dipilih
+        $surveyCodes = $_POST['survey_codes'] ?? [];
+        if (!empty($surveyCodes) && is_array($surveyCodes)) {
+            $stmtInsertSS = $pdo->prepare("INSERT INTO subject_surveys (subject_id, teacher_name, survey_code) VALUES (?, ?, ?)");
+            $stmtLookup = $pdo->prepare("SELECT guru_nama FROM cbt_surveys_local WHERE kode_akses = ? LIMIT 1");
+            foreach ($surveyCodes as $code) {
+                $code = trim($code);
+                if (empty($code)) continue;
+                $stmtLookup->execute([$code]);
+                $tName = $stmtLookup->fetchColumn() ?: 'Guru Pengampu';
+                $stmtInsertSS->execute([$subjectId, $tName, $code]);
+            }
+        }
     }
     header("Location: ../../dashboard.php?page=exams");
     exit;
@@ -33,6 +48,21 @@ if ($action == 'edit' && $_SERVER['REQUEST_METHOD'] == 'POST') {
         $max_score = (float)$_POST['max_score'];
         $stmt = $pdo->prepare("UPDATE subjects SET name = ?, duration = ?, max_score = ? WHERE id = ?");
         $stmt->execute([$name, $duration, $max_score, $id]);
+
+        // Update relasi guru survei
+        $pdo->prepare("DELETE FROM subject_surveys WHERE subject_id = ?")->execute([$id]);
+        $surveyCodes = $_POST['survey_codes'] ?? [];
+        if (!empty($surveyCodes) && is_array($surveyCodes)) {
+            $stmtInsertSS = $pdo->prepare("INSERT INTO subject_surveys (subject_id, teacher_name, survey_code) VALUES (?, ?, ?)");
+            $stmtLookup = $pdo->prepare("SELECT guru_nama FROM cbt_surveys_local WHERE kode_akses = ? LIMIT 1");
+            foreach ($surveyCodes as $code) {
+                $code = trim($code);
+                if (empty($code)) continue;
+                $stmtLookup->execute([$code]);
+                $tName = $stmtLookup->fetchColumn() ?: 'Guru Pengampu';
+                $stmtInsertSS->execute([$id, $tName, $code]);
+            }
+        }
     }
     header("Location: ../../dashboard.php?page=exams");
     exit;
@@ -40,6 +70,7 @@ if ($action == 'edit' && $_SERVER['REQUEST_METHOD'] == 'POST') {
 
 if ($action == 'delete' && isset($_GET['id'])) {
     $id = (int)$_GET['id'];
+    $pdo->prepare("DELETE FROM subject_surveys WHERE subject_id = ?")->execute([$id]);
     $stmt = $pdo->prepare("DELETE FROM subjects WHERE id = ?");
     $stmt->execute([$id]);
     

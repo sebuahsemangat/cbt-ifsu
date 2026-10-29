@@ -376,6 +376,11 @@ $site_bimbel_logo = $app_settings['bimbel_logo'] ?? 'logo-bimbel.png';
             </a>
         </li>
         <li class="nav-item">
+            <a href="dashboard.php?page=surveys" class="nav-link <?= ($_GET['page'] ?? '') == 'surveys' ? 'active' : '' ?>">
+                <i class="bi bi-clipboard2-check me-2"></i> Survei Guru
+            </a>
+        </li>
+        <li class="nav-item">
             <a href="dashboard.php?page=settings" class="nav-link <?= ($_GET['page'] ?? '') == 'settings' ? 'active' : '' ?>">
                 <i class="bi bi-gear me-2"></i> Pengaturan
             </a>

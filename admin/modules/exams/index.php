@@ -25,6 +25,16 @@ while ($row = $stmt_ec->fetch(PDO::FETCH_ASSOC)) {
 // Ambil pengaturan batas minimal durasi ujian (%)
 $stmt_min_dur = $pdo->query("SELECT setting_value FROM settings WHERE setting_key = 'min_exam_duration_percent'");
 $min_exam_duration_percent = (int)($stmt_min_dur->fetchColumn() ?: 50);
+
+// Ambil kuesioner survei lokal untuk pilihan guru pengampu
+$allLocalSurveys = $pdo->query("SELECT kode_akses, guru_nama, guru_nip, judul, mata_pelajaran FROM cbt_surveys_local ORDER BY guru_nama ASC")->fetchAll();
+
+// Ambil pemetaan survei guru per mata pelajaran
+$stmt_ss = $pdo->query("SELECT subject_id, teacher_name, survey_code FROM subject_surveys");
+$subject_surveys_map = [];
+while ($row = $stmt_ss->fetch(PDO::FETCH_ASSOC)) {
+    $subject_surveys_map[$row['subject_id']][] = $row;
+}
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -250,7 +260,19 @@ $min_exam_duration_percent = (int)($stmt_min_dur->fetchColumn() ?: 50);
                                                     <i class="bi bi-grip-vertical text-muted"></i>
                                                 <?php endif; ?>
                                             </td>
-                                            <td class="px-3"><?= htmlspecialchars($s['name']) ?></td>
+                                            <td class="px-3">
+                                                <div class="fw-bold"><?= htmlspecialchars($s['name']) ?></div>
+                                                <?php $assignedTeachers = $subject_surveys_map[$s['id']] ?? []; ?>
+                                                <?php if (!empty($assignedTeachers)): ?>
+                                                    <div class="mt-1 d-flex flex-wrap gap-1">
+                                                        <?php foreach ($assignedTeachers as $at): ?>
+                                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25" style="font-size: 0.72rem;" title="Kode: <?= htmlspecialchars($at['survey_code']) ?>">
+                                                                <i class="bi bi-person-badge me-1"></i><?= htmlspecialchars($at['teacher_name']) ?>
+                                                            </span>
+                                                        <?php endforeach; ?>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </td>
                                             <td>
                                                 <?= $s['duration'] ?> Menit
                                                 <?php if ($min_exam_duration_percent > 0): ?>
@@ -324,6 +346,33 @@ $min_exam_duration_percent = (int)($stmt_min_dur->fetchColumn() ?: 50);
                                                     <label class="form-label">Skor Maksimal</label>
                                                     <input type="number" name="max_score" class="form-control" required value="<?= $s['max_score'] ?>" step="0.01">
                                                 </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label fw-bold d-flex justify-content-between align-items-center mb-1">
+                                                        <span>Guru Pengampu & Survei Evaluasi</span>
+                                                        <span class="badge bg-light text-secondary border small fw-normal">Bisa 1-3 guru</span>
+                                                    </label>
+                                                    <?php 
+                                                    $assignedCodes = array_column($subject_surveys_map[$s['id']] ?? [], 'survey_code');
+                                                    if (empty($allLocalSurveys)): ?>
+                                                        <div class="alert alert-light border small py-2 mb-0">
+                                                            <i class="bi bi-info-circle me-1 text-primary"></i> Belum ada survei guru. Silakan tarik data di menu <a href="dashboard.php?page=surveys" target="_blank" class="fw-bold">Survei Guru</a>.
+                                                        </div>
+                                                    <?php else: ?>
+                                                        <div class="border rounded p-2 bg-light" style="max-height: 160px; overflow-y: auto;">
+                                                            <?php foreach ($allLocalSurveys as $lsrv): ?>
+                                                                <div class="form-check py-1 border-bottom border-light">
+                                                                    <input class="form-check-input" type="checkbox" name="survey_codes[]" value="<?= htmlspecialchars($lsrv['kode_akses']) ?>" id="chk_edit_<?= $s['id'] ?>_<?= $lsrv['kode_akses'] ?>" <?= in_array($lsrv['kode_akses'], $assignedCodes) ? 'checked' : '' ?>>
+                                                                    <label class="form-check-label small" for="chk_edit_<?= $s['id'] ?>_<?= $lsrv['kode_akses'] ?>">
+                                                                        <strong><?= htmlspecialchars($lsrv['guru_nama']) ?></strong> 
+                                                                        <span class="text-muted">(<?= htmlspecialchars($lsrv['judul']) ?>)</span>
+                                                                    </label>
+                                                                </div>
+                                                            <?php endforeach; ?>
+                                                        </div>
+                                                        <div class="form-text small text-muted">Centang 1 hingga 3 guru pengampu. Siswa di kelas akan memilih salah satu guru ini untuk diisi surveinya.</div>
+                                                    <?php endif; ?>
+                                                </div>
                                             </div>
                                             <div class="modal-footer">
                                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
@@ -373,6 +422,31 @@ $min_exam_duration_percent = (int)($stmt_min_dur->fetchColumn() ?: 50);
                                         <div class="mb-3">
                                             <label class="form-label">Skor Maksimal</label>
                                             <input type="number" name="max_score" class="form-control" required step="0.01" placeholder="Contoh: 100">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold d-flex justify-content-between align-items-center mb-1">
+                                                <span>Guru Pengampu & Survei Evaluasi</span>
+                                                <span class="badge bg-light text-secondary border small fw-normal">Bisa 1-3 guru</span>
+                                            </label>
+                                            <?php if (empty($allLocalSurveys)): ?>
+                                                <div class="alert alert-light border small py-2 mb-0">
+                                                    <i class="bi bi-info-circle me-1 text-primary"></i> Belum ada survei guru. Silakan tarik data di menu <a href="dashboard.php?page=surveys" target="_blank" class="fw-bold">Survei Guru</a>.
+                                                </div>
+                                            <?php else: ?>
+                                                <div class="border rounded p-2 bg-light" style="max-height: 160px; overflow-y: auto;">
+                                                    <?php foreach ($allLocalSurveys as $lsrv): ?>
+                                                        <div class="form-check py-1 border-bottom border-light">
+                                                            <input class="form-check-input" type="checkbox" name="survey_codes[]" value="<?= htmlspecialchars($lsrv['kode_akses']) ?>" id="chk_add_<?= $e['id'] ?>_<?= $lsrv['kode_akses'] ?>">
+                                                            <label class="form-check-label small" for="chk_add_<?= $e['id'] ?>_<?= $lsrv['kode_akses'] ?>">
+                                                                <strong><?= htmlspecialchars($lsrv['guru_nama']) ?></strong> 
+                                                                <span class="text-muted">(<?= htmlspecialchars($lsrv['judul']) ?>)</span>
+                                                            </label>
+                                                        </div>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                                <div class="form-text small text-muted">Centang 1 hingga 3 guru pengampu. Siswa di kelas akan memilih salah satu guru ini untuk diisi surveinya.</div>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                     <div class="modal-footer">

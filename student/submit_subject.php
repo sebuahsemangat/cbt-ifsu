@@ -209,6 +209,24 @@ if ($isAllDone) {
     }
 }
 
+// Cek apakah mata pelajaran ini memiliki guru pengampu & kuesioner survei evaluasi
+$stmtSurv = $pdo->prepare("SELECT COUNT(*) FROM subject_surveys WHERE subject_id = ?");
+$stmtSurv->execute([$subjectId]);
+$hasSubjectSurveys = (int)$stmtSurv->fetchColumn() > 0;
+
+if ($hasSubjectSurveys) {
+    // Cek apakah siswa sudah mengisi kuesioner untuk mapel ini
+    $stmtCheckDone = $pdo->prepare("SELECT COUNT(*) FROM cbt_survey_responden_local WHERE student_id = ? AND subject_id = ?");
+    $stmtCheckDone->execute([$_SESSION['user_id'], $subjectId]);
+    $alreadyDone = (int)$stmtCheckDone->fetchColumn() > 0;
+
+    if (!$alreadyDone) {
+        // Arahkan siswa mengisi kuesioner evaluasi guru terlebih dahulu
+        header("Location: survey.php?session_id=" . $sessionId);
+        exit;
+    }
+}
+
 // Logika Pengalihan Berdasarkan Pengaturan show_score:
 if (empty($showScore)) {
     // Jika nonaktif:

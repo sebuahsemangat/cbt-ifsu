@@ -150,6 +150,17 @@ foreach ($subjects as $sub) {
     $sess = $stmtSess->fetch();
     
     if ($sess && $sess['status'] === 'finished') {
+        // Proteksi: Pastikan kuesioner survei guru telah diisi jika ada
+        $stmtSurvPending = $pdo->prepare("
+            SELECT COUNT(*) FROM subject_surveys ss
+            LEFT JOIN cbt_survey_responden_local csr ON csr.student_id = ? AND csr.subject_id = ?
+            WHERE ss.subject_id = ? AND csr.id IS NULL
+        ");
+        $stmtSurvPending->execute([$student_id, $sub['id'], $sub['id']]);
+        if ((int)$stmtSurvPending->fetchColumn() > 0) {
+            header("Location: survey.php?session_id=" . $sess['id']);
+            exit;
+        }
         continue;
     }
     
