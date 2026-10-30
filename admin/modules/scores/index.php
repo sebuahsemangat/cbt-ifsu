@@ -53,6 +53,8 @@ if ($exam_id):
             sb.max_score,
             es.score,
             es.status,
+            es.synced,
+            es.synced_at,
             es.start_time,
             es.end_time
         FROM exam_sessions es
@@ -137,7 +139,12 @@ if ($exam_id):
                 <?= date('d M Y H:i', strtotime($exam['start_date'])) ?> - <?= date('d M Y H:i', strtotime($exam['end_date'])) ?>
             </p>
         </div>
-        <div class="d-flex gap-2 align-items-end">
+        <div class="d-flex gap-2 align-items-end flex-wrap">
+            <!-- Tombol Upload ke Cloud -->
+            <button class="btn btn-primary shadow-sm" onclick="openUploadCloudModal()" title="Upload Nilai ke CBT Cloud">
+                <i class="bi bi-cloud-arrow-up-fill me-1"></i> Upload Nilai ke Cloud
+            </button>
+
             <!-- Tombol Refresh -->
             <button class="btn btn-outline-primary" onclick="window.location.reload();" title="Refresh Data">
                 <i class="bi bi-arrow-clockwise"></i>
@@ -171,6 +178,7 @@ if ($exam_id):
                             <th scope="col">Mata Pelajaran</th>
                             <th scope="col">Nilai</th>
                             <th scope="col">Waktu Selesai</th>
+                            <th scope="col" class="text-center" style="width: 140px;">Status Cloud</th>
                             <th scope="col" class="text-center" style="width: 80px;">Aksi</th>
                         </tr>
                     </thead>
@@ -208,6 +216,17 @@ if ($exam_id):
                                         </small>
                                     </td>
                                     <td class="text-center">
+                                        <?php if (!empty($row['synced'])): ?>
+                                            <span class="badge bg-success bg-opacity-10 text-success border border-success" title="Tersinkron: <?= htmlspecialchars($row['synced_at'] ?? '-') ?>">
+                                                <i class="bi bi-cloud-check-fill me-1"></i> Tersinkron
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border" title="Belum diupload ke cloud">
+                                                <i class="bi bi-cloud-arrow-up me-1"></i> Belum Upload
+                                            </span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="text-center">
                                         <div class="d-flex justify-content-center gap-1">
                                             <button class="btn btn-danger btn-sm" onclick="deleteScore(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['full_name'])) ?>')" title="Hapus Nilai">
                                                 <i class="bi bi-trash"></i>
@@ -218,7 +237,7 @@ if ($exam_id):
                             <?php endforeach; ?>
                         <?php endif; ?>
                         <tr id="noData" style="display: none;">
-                            <td colspan="7" class="text-center p-4 text-muted">
+                            <td colspan="9" class="text-center p-4 text-muted">
                                 <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                                 Data tidak ditemukan.
                             </td>
@@ -354,6 +373,203 @@ if ($exam_id):
             kelompokSelect.disabled = false;
         }
     }
+
+    // Fungsi membuka modal upload nilai ke cloud
+    function openUploadCloudModal() {
+        const modalEl = document.getElementById('uploadCloudModal');
+        const myModal = new bootstrap.Modal(modalEl);
+        myModal.show();
+
+        const loadingDiv = document.getElementById('cloudCheckLoading');
+        const contentDiv = document.getElementById('cloudCheckContent');
+        const alertContainer = document.getElementById('cloudEligibilityAlert');
+        const btnUpload = document.getElementById('btnStartCloudUpload');
+        const summaryDiv = document.getElementById('cloudSummaryDetails');
+
+        loadingDiv.style.display = 'block';
+        contentDiv.style.display = 'none';
+        btnUpload.disabled = true;
+
+        fetch('modules/scores/sync_process.php?action=check_eligibility&exam_id=<?= $exam_id ?>')
+            .then(async res => {
+                const rawText = await res.text();
+                try {
+                    return JSON.parse(rawText);
+                } catch (e) {
+                    const cleanMsg = rawText.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+                    throw new Error(cleanMsg ? cleanMsg.substring(0, 300) : "Respon server kosong");
+                }
+            })
+            .then(data => {
+                loadingDiv.style.display = 'none';
+                contentDiv.style.display = 'block';
+
+                if (!data.success) {
+                    alertContainer.className = 'alert alert-danger';
+                    alertContainer.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-2"></i>' + (data.message || 'Gagal memeriksa status.');
+                    btnUpload.disabled = true;
+                    return;
+                }
+
+                if (!data.can_upload) {
+                    // Blokir upload
+                    let reasonsHtml = '<ul class="mb-0 mt-2 ps-3">';
+                    (data.reasons || []).forEach(r => {
+                        reasonsHtml += `<li><strong>${r}</strong></li>`;
+                    });
+                    reasonsHtml += '</ul>';
+
+                    let actionLinks = '<div class="mt-3 d-flex flex-wrap gap-2">';
+                    if (data.ongoing_count > 0) {
+                        actionLinks += '<a href="dashboard.php" class="btn btn-sm btn-outline-danger"><i class="bi bi-check-circle me-1"></i> Buka Dashboard (Selesaikan Ujian)</a>';
+                    }
+                    if (data.logged_in_count > 0) {
+                        actionLinks += '<a href="dashboard.php?page=students" class="btn btn-sm btn-outline-warning text-dark"><i class="bi bi-box-arrow-right me-1"></i> Buka Halaman Siswa (Reset Login)</a>';
+                    }
+                    actionLinks += '</div>';
+
+                    alertContainer.className = 'alert alert-danger border-2';
+                    alertContainer.innerHTML = `
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-shield-x fs-2 text-danger me-3"></i>
+                            <div>
+                                <h6 class="fw-bold mb-1 text-danger">Upload Nilai Diblokir!</h6>
+                                <p class="mb-0 small">Nilai belum dapat diunggah ke cloud karena beberapa syarat belum terpenuhi:</p>
+                                ${reasonsHtml}
+                                ${actionLinks}
+                            </div>
+                        </div>
+                    `;
+                    btnUpload.disabled = true;
+                } else {
+                    // Boleh upload
+                    alertContainer.className = 'alert alert-success border-2';
+                    alertContainer.innerHTML = `
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-check-circle-fill fs-2 text-success me-3"></i>
+                            <div>
+                                <h6 class="fw-bold mb-1 text-success">Syarat Terpenuhi & Siap Diupload!</h6>
+                                <p class="mb-0 small">Seluruh siswa sudah logout dan seluruh sesi ujian telah selesai (status <code>finished</code>). Data siap disatukan ke server pusat.</p>
+                            </div>
+                        </div>
+                    `;
+                    btnUpload.disabled = false;
+                }
+
+                // Render ringkasan
+                summaryDiv.innerHTML = `
+                    <div class="list-group list-group-flush border rounded-3 small">
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span class="text-muted"><i class="bi bi-globe me-2"></i>Server Cloud Target:</span>
+                            <span class="fw-bold text-primary">${data.cloud_url || 'http://cbt.page.gd'}</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span class="text-muted"><i class="bi bi-people me-2"></i>Siswa Sedang Login:</span>
+                            <span class="badge ${data.logged_in_count > 0 ? 'bg-danger' : 'bg-success'}">${data.logged_in_count} Siswa</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span class="text-muted"><i class="bi bi-hourglass-split me-2"></i>Sesi Masih Berlangsung:</span>
+                            <span class="badge ${data.ongoing_count > 0 ? 'bg-danger' : 'bg-success'}">${data.ongoing_count} Sesi</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span class="text-muted"><i class="bi bi-file-earmark-check me-2"></i>Nilai Selesai (Siap Upload):</span>
+                            <span class="badge bg-primary fs-6">${data.finished_count} Nilai</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span class="text-muted"><i class="bi bi-cloud-arrow-up me-2"></i>Nilai Belum Pernah Upload:</span>
+                            <span class="badge ${data.pending_sync_count > 0 ? 'bg-warning text-dark' : 'bg-secondary'}">${data.pending_sync_count} Nilai</span>
+                        </div>
+                    </div>
+                `;
+            })
+            .catch(err => {
+                loadingDiv.style.display = 'none';
+                contentDiv.style.display = 'block';
+                alertContainer.className = 'alert alert-danger';
+                alertContainer.innerHTML = '<i class="bi bi-x-circle me-2"></i> Terjadi kesalahan: ' + err.message;
+                btnUpload.disabled = true;
+            });
+    }
+
+    // Fungsi eksekusi upload nilai ke server cloud
+    function startUploadScores() {
+        const btnUpload = document.getElementById('btnStartCloudUpload');
+        const btnCancel = document.getElementById('btnCancelCloudUpload');
+        const progressArea = document.getElementById('cloudUploadProgress');
+        const alertContainer = document.getElementById('cloudEligibilityAlert');
+
+        btnUpload.disabled = true;
+        btnCancel.disabled = true;
+        btnUpload.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengunggah Nilai...';
+        progressArea.style.display = 'block';
+
+        const formData = new FormData();
+        formData.append('action', 'upload_scores');
+        formData.append('exam_id', '<?= $exam_id ?>');
+
+        fetch('modules/scores/sync_process.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(async res => {
+            const rawText = await res.text();
+            try {
+                return JSON.parse(rawText);
+            } catch (e) {
+                const cleanMsg = rawText.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+                throw new Error(cleanMsg ? cleanMsg.substring(0, 300) : "Respon server kosong");
+            }
+        })
+        .then(data => {
+            progressArea.style.display = 'none';
+            btnUpload.innerHTML = '<i class="bi bi-cloud-arrow-up-fill me-1"></i> Mulai Upload Sekarang';
+
+            if (data.success) {
+                alertContainer.className = 'alert alert-success border-2';
+                alertContainer.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-check-circle-fill fs-2 text-success me-3"></i>
+                        <div>
+                            <h6 class="fw-bold mb-1 text-success">Upload Berhasil!</h6>
+                            <p class="mb-0 small">${data.message}</p>
+                        </div>
+                    </div>
+                `;
+                btnUpload.style.display = 'none';
+                btnCancel.disabled = false;
+                btnCancel.textContent = 'Tutup & Segarkan Halaman';
+                btnCancel.className = 'btn btn-success px-4';
+                btnCancel.onclick = function() {
+                    window.location.reload();
+                };
+
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                btnUpload.disabled = false;
+                btnCancel.disabled = false;
+                alertContainer.className = 'alert alert-danger border-2';
+                alertContainer.innerHTML = `
+                    <div class="d-flex align-items-start">
+                        <i class="bi bi-exclamation-triangle-fill fs-3 text-danger me-3"></i>
+                        <div>
+                            <h6 class="fw-bold mb-1 text-danger">Upload Gagal</h6>
+                            <p class="mb-0 small">${data.message}</p>
+                        </div>
+                    </div>
+                `;
+            }
+        })
+        .catch(err => {
+            progressArea.style.display = 'none';
+            btnUpload.disabled = false;
+            btnCancel.disabled = false;
+            btnUpload.innerHTML = '<i class="bi bi-cloud-arrow-up-fill me-1"></i> Mulai Upload Sekarang';
+            alertContainer.className = 'alert alert-danger';
+            alertContainer.innerHTML = '<i class="bi bi-x-circle me-2"></i> Error: ' + err.message;
+        });
+    }
     </script>
 
     <!-- Modal Konfirmasi Hapus Semua -->
@@ -452,11 +668,74 @@ if ($exam_id):
         </div>
     </div>
 
+    <!-- Modal Upload Nilai ke CBT Cloud (cbt.page.gd) -->
+    <div class="modal fade" id="uploadCloudModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-primary text-white border-0 py-3">
+                    <h5 class="modal-title fw-bold">
+                        <i class="bi bi-cloud-arrow-up-fill me-2"></i>Upload Nilai ke CBT Cloud
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" id="btnCloseCloudModalHeader"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <!-- Loading Status -->
+                    <div id="cloudCheckLoading" class="text-center py-4">
+                        <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+                        <h6 class="fw-bold text-dark">Memeriksa Status Siswa & Sesi Ujian...</h6>
+                        <p class="text-muted small mb-0">Memastikan seluruh siswa sudah logout dan tidak ada ujian yang masih berjalan.</p>
+                    </div>
+
+                    <!-- Content Area -->
+                    <div id="cloudCheckContent" style="display: none;">
+                        <!-- Alert Kelayakan -->
+                        <div id="cloudEligibilityAlert" class="alert alert-info"></div>
+
+                        <!-- Progress Bar saat upload -->
+                        <div id="cloudUploadProgress" class="my-3" style="display: none;">
+                            <div class="d-flex justify-content-between small text-muted mb-1">
+                                <span>Mengunggah paket data nilai & lembar jawaban siswa...</span>
+                                <span class="spinner-border spinner-border-sm text-primary"></span>
+                            </div>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width: 100%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Ringkasan Info -->
+                        <div class="mt-3">
+                            <h6 class="fw-bold mb-2 text-dark"><i class="bi bi-info-circle me-1"></i> Ringkasan Ujian</h6>
+                            <div id="cloudSummaryDetails"></div>
+                        </div>
+
+                        <div class="alert alert-light border small text-muted mt-3 mb-0">
+                            <i class="bi bi-shield-lock me-1"></i> <strong>Keamanan Multi-Lab:</strong>
+                            Data nilai dan jawaban diidentifikasi berdasarkan NIS siswa dan nama ujian. Jika diunggah ulang, data di server cloud akan diperbarui (update) tanpa membuat duplikasi baris.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-3 pt-0 justify-content-between">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal" id="btnCancelCloudUpload">Tutup</button>
+                    <button type="button" class="btn btn-primary px-4 fw-bold" id="btnStartCloudUpload" onclick="startUploadScores()" disabled>
+                        <i class="bi bi-cloud-arrow-up-fill me-1"></i> Mulai Upload Sekarang
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 <?php 
 // === TAMPILAN PILIH UJIAN (UTAMA) ===
 else: 
-    // Ambil daftar ujian yang aktif maupun tidak
-    $stmt = $pdo->query("SELECT * FROM exams ORDER BY created_at DESC");
+    // Ambil daftar ujian beserta statistik nilai selesai dan status sinkronisasi cloud
+    $stmt = $pdo->query("
+        SELECT 
+            e.*,
+            (SELECT COUNT(*) FROM exam_sessions WHERE exam_id = e.id AND status = 'finished') AS total_finished,
+            (SELECT COUNT(*) FROM exam_sessions WHERE exam_id = e.id AND status = 'finished' AND (synced = 0 OR synced IS NULL)) AS total_pending_sync
+        FROM exams e 
+        ORDER BY e.created_at DESC
+    ");
     $exams = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
@@ -478,10 +757,21 @@ else:
                             <?php endif; ?>
                         </div>
                         
-                        <p class="card-text text-muted small mb-4">
+                        <p class="card-text text-muted small mb-3">
                             <i class="bi bi-clock me-1"></i> Mulai: <?= date('d M Y H:i', strtotime($exam['start_date'])) ?><br>
                             <i class="bi bi-clock-history me-1"></i> Selesai: <?= date('d M Y H:i', strtotime($exam['end_date'])) ?>
                         </p>
+
+                        <div class="d-flex justify-content-between align-items-center mb-4 p-2 bg-light rounded-3 small">
+                            <span class="fw-semibold text-dark"><i class="bi bi-person-check me-1"></i> <?= (int)$exam['total_finished'] ?> Selesai</span>
+                            <?php if ($exam['total_pending_sync'] > 0): ?>
+                                <span class="badge bg-warning text-dark"><i class="bi bi-cloud-arrow-up me-1"></i><?= $exam['total_pending_sync'] ?> Belum Upload</span>
+                            <?php elseif ($exam['total_finished'] > 0): ?>
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success"><i class="bi bi-cloud-check-fill me-1"></i>Tersinkron</span>
+                            <?php else: ?>
+                                <span class="text-muted small">Belum ada nilai</span>
+                            <?php endif; ?>
+                        </div>
 
                         <a href="dashboard.php?page=scores&exam_id=<?= $exam['id'] ?>" class="btn btn-primary w-100">
                             <i class="bi bi-eye me-2"></i> Lihat Nilai

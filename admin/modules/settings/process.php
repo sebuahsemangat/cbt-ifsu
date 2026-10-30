@@ -118,6 +118,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['update_settings']) |
         $stmt = $pdo->prepare("INSERT INTO settings (setting_key, setting_value) VALUES ('enable_anti_cheating', ?) ON DUPLICATE KEY UPDATE setting_value = ?");
         $stmt->execute([$enable_anti_cheating, $enable_anti_cheating]);
 
+        // Update Pengaturan Cloud Sync CBT
+        if (isset($_POST['cbt_cloud_sync_url'])) {
+            $cloud_url = trim($_POST['cbt_cloud_sync_url']);
+            $stmt = $pdo->prepare("INSERT INTO settings (setting_key, setting_value) VALUES ('cbt_cloud_sync_url', ?) ON DUPLICATE KEY UPDATE setting_value = ?");
+            $stmt->execute([$cloud_url, $cloud_url]);
+        }
+        if (isset($_POST['cbt_cloud_sync_token'])) {
+            $cloud_token = trim($_POST['cbt_cloud_sync_token']);
+            $stmt = $pdo->prepare("INSERT INTO settings (setting_key, setting_value) VALUES ('cbt_cloud_sync_token', ?) ON DUPLICATE KEY UPDATE setting_value = ?");
+            $stmt->execute([$cloud_token, $cloud_token]);
+        }
+
         // Handle Logo Upload (Mendukung Base64 untuk bypass OpenResty 403 pada multipart/form-data)
         $logo_processed = false;
 

@@ -23,6 +23,9 @@ $bimbel_logo = $settings['bimbel_logo'] ?? 'logo-bimbel.png';
 $allow_student_change_password = ($settings['allow_student_change_password'] ?? '1') === '1';
 $min_exam_duration_percent = (int) ($settings['min_exam_duration_percent'] ?? 50);
 $enable_anti_cheating = ($settings['enable_anti_cheating'] ?? '1') === '1';
+$cbt_cloud_sync_url = $settings['cbt_cloud_sync_url'] ?? 'http://cbt.page.gd';
+$cbt_cloud_sync_token = $settings['cbt_cloud_sync_token'] ?? 'cbt-cloud-secret-key-2026';
+$cbt_cloud_last_upload = $settings['cbt_cloud_last_upload'] ?? '';
 ?>
 
 <div class="row">
@@ -121,6 +124,51 @@ $enable_anti_cheating = ($settings['enable_anti_cheating'] ?? '1') === '1';
 
 
 
+                        <div class="mb-4 pt-3 border-top">
+                            <label class="form-label fw-bold d-block text-primary">
+                                <i class="bi bi-cloud-arrow-up me-1"></i> Sinkronisasi CBT Cloud (cbt.page.gd)
+                            </label>
+                            <p class="text-muted small mb-3">
+                                Konfigurasi server cloud terpusat untuk mengunggah nilai dan lembar jawaban siswa dari multi-lab offline.
+                            </p>
+
+                            <div class="mb-3">
+                                <label for="cbt_cloud_sync_url" class="form-label fw-semibold small">URL Server CBT Cloud</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="bi bi-globe"></i></span>
+                                    <input type="url" class="form-control" id="cbt_cloud_sync_url" name="cbt_cloud_sync_url"
+                                        value="<?= htmlspecialchars($cbt_cloud_sync_url) ?>" placeholder="http://cbt.page.gd" required>
+                                </div>
+                                <div class="form-text">Alamat root domain server CBT Cloud.</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="cbt_cloud_sync_token" class="form-label fw-semibold small">Token Rahasia Sinkronisasi (Sync Token)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="bi bi-key"></i></span>
+                                    <input type="password" class="form-control" id="cbt_cloud_sync_token" name="cbt_cloud_sync_token"
+                                        value="<?= htmlspecialchars($cbt_cloud_sync_token) ?>" placeholder="Masukkan token rahasia" required>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="toggleTokenVisibility()">
+                                        <i class="bi bi-eye" id="toggleTokenIcon"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text">Kunci otentikasi rahasia yang sama dengan yang dipasang di server cloud.</div>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-3 mt-2">
+                                <button type="button" class="btn btn-outline-primary btn-sm px-3" id="btnTestCloudConn" onclick="testCloudConnection()">
+                                    <i class="bi bi-broadcast me-1"></i> Tes Koneksi Cloud
+                                </button>
+                                <span id="testCloudResult" class="small"></span>
+                            </div>
+
+                            <?php if (!empty($cbt_cloud_last_upload)): ?>
+                                <div class="mt-2 text-muted small">
+                                    <i class="bi bi-clock-history me-1"></i> Terakhir berhasil upload nilai: <strong><?= date('d M Y H:i:s', strtotime($cbt_cloud_last_upload)) ?></strong>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+
                         <div class="d-grid gap-2 d-md-flex justify-content-md-start">
                             <button type="submit" name="update_settings" class="btn btn-primary px-4 py-2">
                                 <i class="bi bi-save me-2"></i> Simpan Perubahan
@@ -187,4 +235,67 @@ $enable_anti_cheating = ($settings['enable_anti_cheating'] ?? '1') === '1';
             reader.readAsDataURL(logoInput.files[0]);
         }
     });
+
+    // Toggle tampilan token rahasia
+    function toggleTokenVisibility() {
+        const tokenInput = document.getElementById('cbt_cloud_sync_token');
+        const icon = document.getElementById('toggleTokenIcon');
+        if (tokenInput.type === 'password') {
+            tokenInput.type = 'text';
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        } else {
+            tokenInput.type = 'password';
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
+    }
+
+    // Tes koneksi ke server cloud
+    function testCloudConnection() {
+        const btn = document.getElementById('btnTestCloudConn');
+        const resSpan = document.getElementById('testCloudResult');
+        const urlInput = document.getElementById('cbt_cloud_sync_url');
+        const tokenInput = document.getElementById('cbt_cloud_sync_token');
+
+        const url = urlInput ? urlInput.value.trim() : '';
+        const token = tokenInput ? tokenInput.value.trim() : '';
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menguji...';
+        resSpan.innerHTML = '';
+
+        const formData = new FormData();
+        formData.append('action', 'test_connection');
+        formData.append('url', url);
+        formData.append('token', token);
+
+        fetch('modules/scores/sync_process.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(async r => {
+            const rawText = await r.text();
+            try {
+                return JSON.parse(rawText);
+            } catch (e) {
+                const cleanMsg = rawText.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+                throw new Error(cleanMsg ? cleanMsg.substring(0, 250) : "Respon server kosong");
+            }
+        })
+        .then(data => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-broadcast me-1"></i> Tes Koneksi Cloud';
+            if (data.success) {
+                resSpan.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i> ' + (data.message || 'Terhubung dengan baik') + '</span>';
+            } else {
+                resSpan.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-x-circle-fill me-1"></i> ' + (data.message || 'Koneksi gagal') + '</span>';
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-broadcast me-1"></i> Tes Koneksi Cloud';
+            resSpan.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-x-circle-fill me-1"></i> Error: ' + err.message + '</span>';
+        });
+    }
 </script>
