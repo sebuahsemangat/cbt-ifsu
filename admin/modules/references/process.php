@@ -124,10 +124,10 @@ if ($action == 'save' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     $type = $_POST['type'];
     $content = $_POST['content'] ?? null;
     
-    // 1. Validasi Nama Unik
-    $checkSql = "SELECT COUNT(*) FROM `references` WHERE title = ? AND id != ?";
+    // 1. Validasi Nama Unik per Mata Pelajaran
+    $checkSql = "SELECT COUNT(*) FROM `references` WHERE subject_id = ? AND title = ? AND id != ?";
     $checkStmt = $pdo->prepare($checkSql);
-    $checkStmt->execute([$title, $id ?? 0]);
+    $checkStmt->execute([$subject_id, $title, $id ?? 0]);
     
     if ($checkStmt->fetchColumn() > 0) {
         $redirectUrl = "../../dashboard.php?page=references_form" . ($id ? "&id=$id" : "");
@@ -174,11 +174,14 @@ if ($action == 'save' && $_SERVER['REQUEST_METHOD'] == 'POST') {
             header("Location: ../../dashboard.php?page=references_form&status=error_upload" . ($id ? "&id=$id" : ""));
             exit;
         }
-    } elseif ($type == 'image' && $id) {
-        // Jika mode edit tapi tidak ganti gambar, pakai gambar lama
+    } elseif ($id) {
+        // Jika mode edit tapi tidak ganti gambar, pertahankan gambar lama
         $stmt = $pdo->prepare("SELECT image_path FROM `references` WHERE id = ?");
         $stmt->execute([$id]);
-        $imagePath = $stmt->fetchColumn();
+        $oldImgPath = $stmt->fetchColumn();
+        if ($oldImgPath) {
+            $imagePath = $oldImgPath;
+        }
     }
 
     // 3. Simpan ke Database

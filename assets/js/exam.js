@@ -75,11 +75,14 @@ function renderQuestion(index) {
     qCol.className = "col-md-7";
 
     let html = "";
-    if (q.ref_data.image_path) {
-      html += `<img src="../assets/uploads/references/${q.ref_data.image_path}" class="review-img" alt="Ref Image" style="max-height:600px;">`;
-    }
     if (q.ref_data.content) {
-      html += `<div>${q.ref_data.content}</div>`;
+      html += `<div class="reference-text mb-3">${resolveImgPath(q.ref_data.content)}</div>`;
+    }
+    if (q.ref_data.image_path) {
+      const imgSrc = resolveRefImgSrc(q.ref_data.image_path);
+      html += `<div class="text-center mb-3">
+        <img src="${imgSrc}" class="img-fluid rounded shadow-sm reference-img" alt="${q.ref_data.title || 'Stimulus'}" style="max-height: 550px; width: auto; object-fit: contain;">
+      </div>`;
     }
     refBody.innerHTML = formatMathFormulas(html);
   } else {
@@ -87,9 +90,32 @@ function renderQuestion(index) {
     qCol.className = "col-md-12";
   }
 
+  function resolveRefImgSrc(imgPath) {
+    if (!imgPath || typeof imgPath !== "string") return "";
+    let p = imgPath.trim();
+    if (p.startsWith("data:") || p.startsWith("http://") || p.startsWith("https://")) {
+      return p;
+    }
+    if (p.startsWith("../")) {
+      return p;
+    }
+    if (p.startsWith("assets/uploads/references/")) {
+      return "../" + p;
+    }
+    if (p.startsWith("uploads/questions/")) {
+      return "../" + p;
+    }
+    if (p.startsWith("img_")) {
+      return "../uploads/questions/" + p;
+    }
+    return "../assets/uploads/references/" + p;
+  }
+
   function resolveImgPath(html) {
     if (!html || typeof html !== "string") return html;
-    return html.replace(/src=["']uploads\/questions\//g, 'src="../uploads/questions/');
+    return html
+      .replace(/src=["'](?:\.\.\/)?uploads\/questions\//gi, 'src="../uploads/questions/')
+      .replace(/src=["'](?:\.\.\/)?assets\/uploads\/references\//gi, 'src="../assets/uploads/references/');
   }
 
   function cleanOptionHtml(html) {

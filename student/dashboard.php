@@ -73,10 +73,84 @@ $stmt = $pdo->prepare("SELECT e.*,
     (SELECT COUNT(*) FROM subjects s WHERE s.exam_id = e.id) as total_subjects_cnt,
     (SELECT COUNT(*) FROM exam_sessions es WHERE es.exam_id = e.id AND es.student_id = ? AND es.status = 'finished') as finished_subjects_cnt
 FROM exams e
-JOIN exam_classes ec ON ec.exam_id = e.id AND ec.class_name = ?
-ORDER BY e.start_date DESC");
+JOIN exam_classes ec ON ec.exam_id = e.id AND ec.class_name = ?");
 $stmt->execute([$student_id, $student_class]);
 $exams = $stmt->fetchAll();
+
+// --- URUTKAN UJIAN DARI YANG SUDAH BISA DIKERJAKAN ---
+$now = date('Y-m-d H:i:s');
+
+foreach ($exams as &$exam) {
+    $start = $exam['start_date'];
+    $end = $exam['end_date'];
+    $totalSubjects = (int)$exam['total_subjects_cnt'];
+    $finishedSubjects = (int)$exam['finished_subjects_cnt'];
+    $progress = ($totalSubjects > 0) ? round(($finishedSubjects / $totalSubjects) * 100) : 0;
+
+    // Tingkat Prioritas:
+    // 1: Sedang Dikerjakan (Rentang waktu aktif, sudah mulai tapi belum tuntas) -> Bisa dikerjakan
+    // 2: Berlangsung (Rentang waktu aktif, belum mulai) -> Bisa dikerjakan
+    // 3: Belum Mulai (Jadwal belum tiba)
+    // 4: Sudah Selesai (Siswa sudah menuntaskan 100% mapel)
+    // 5: Waktu Habis (Jadwal ujian sudah berakhir)
+    if ($progress >= 100 && $totalSubjects > 0) {
+        $exam['exam_priority'] = 4;
+        $exam['status_label'] = 'Sudah Dikerjakan';
+        $exam['badge_class'] = 'bg-primary';
+        $exam['btn_disabled'] = true;
+    } elseif ($now < $start) {
+        $exam['exam_priority'] = 3;
+        $exam['status_label'] = 'Belum Mulai';
+        $exam['badge_class'] = 'bg-warning text-dark';
+        $exam['btn_disabled'] = true;
+    } elseif ($now > $end) {
+        $exam['exam_priority'] = 5;
+        $exam['status_label'] = 'Selesai (Waktu Habis)';
+        $exam['badge_class'] = 'bg-danger';
+        $exam['btn_disabled'] = true;
+    } else {
+        // Berada di dalam rentang waktu pelaksanaan (Bisa dikerjakan)
+        if ($progress > 0) {
+            $exam['exam_priority'] = 1; // Prioritas utama: lanjutkan ujian yang sedang berjalan
+            $exam['status_label'] = 'Sedang Dikerjakan';
+            $exam['badge_class'] = 'bg-info text-dark';
+        } else {
+            $exam['exam_priority'] = 2; // Siap dimulai
+            $exam['status_label'] = 'Berlangsung';
+            $exam['badge_class'] = 'bg-success';
+        }
+        $exam['btn_disabled'] = false;
+    }
+    $exam['progress'] = $progress;
+}
+unset($exam);
+
+// Urutkan:
+// 1. Yang sudah bisa dikerjakan (Priority 1 & 2) berada di paling atas.
+//    Diurutkan berdasarkan end_date ASC agar yang tenggat waktunya paling dekat didahulukan.
+// 2. Yang belum mulai (Priority 3) diurutkan berdasarkan start_date ASC (segera mulai).
+// 3. Yang sudah selesai (Priority 4) & waktu habis (Priority 5) di bagian bawah.
+usort($exams, function ($a, $b) {
+    if ($a['exam_priority'] !== $b['exam_priority']) {
+        return $a['exam_priority'] <=> $b['exam_priority'];
+    }
+    
+    // Antar ujian yang bisa dikerjakan: dahulukan yang waktu berakhirnya paling cepat (mendesak)
+    if ($a['exam_priority'] <= 2) {
+        if ($a['end_date'] !== $b['end_date']) {
+            return strcmp($a['end_date'], $b['end_date']);
+        }
+        return strcmp($a['start_date'], $b['start_date']);
+    }
+    
+    // Antar ujian yang belum mulai: dahulukan yang waktu mulainya paling dekat
+    if ($a['exam_priority'] === 3) {
+        return strcmp($a['start_date'], $b['start_date']);
+    }
+    
+    // Sudah selesai atau waktu habis: urutkan dari yang terbaru
+    return strcmp($b['start_date'], $a['start_date']);
+});
 
 /**
  * Format jadwal ujian ke format lokal Indonesia dengan durasi
@@ -469,44 +543,14 @@ function formatIndoSchedule($startStr, $endStr) {
         <?php else: ?>
             <?php foreach ($exams as $exam): ?>
                 <?php 
-                    $now = date('Y-m-d H:i:s');
                     $start = $exam['start_date'];
                     $end = $exam['end_date'];
-                    
-                    // --- Progress Calculation (Optimized) ---
-                    $totalSubjects = $exam['total_subjects_cnt'];
-                    $finishedSubjects = $exam['finished_subjects_cnt'];
-
-                    $progress = ($totalSubjects > 0) ? round(($finishedSubjects / $totalSubjects) * 100) : 0;
-                    
-                    $status = '';
-                    $badgeClass = '';
-                    $btnDisabled = false;
-
-                    // Override logic based on progress
-                    if ($progress >= 100 && $totalSubjects > 0) {
-                        $status = 'Sudah Dikerjakan';
-                        $badgeClass = 'bg-primary'; // Blue for completed by user
-                         $btnDisabled = true;
-                    } elseif ($now < $start) {
-                        $status = 'Belum Mulai';
-                        $badgeClass = 'bg-warning text-dark';
-                        $btnDisabled = true;
-                    } elseif ($now > $end) {
-                        $status = 'Selesai (Waktu Habis)';
-                        $badgeClass = 'bg-danger';
-                        $btnDisabled = true;
-                    } else {
-                        // Ongoing range
-                        if ($progress > 0) {
-                             $status = 'Sedang Dikerjakan';
-                             $badgeClass = 'bg-info text-dark';
-                        } else {
-                             $status = 'Berlangsung';
-                             $badgeClass = 'bg-success';
-                        }
-                        $btnDisabled = false;
-                    }
+                    $totalSubjects = (int)$exam['total_subjects_cnt'];
+                    $finishedSubjects = (int)$exam['finished_subjects_cnt'];
+                    $progress = $exam['progress'];
+                    $status = $exam['status_label'];
+                    $badgeClass = $exam['badge_class'];
+                    $btnDisabled = $exam['btn_disabled'];
                 ?>
                 
                 <div class="col-md-6 col-lg-4">

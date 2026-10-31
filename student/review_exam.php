@@ -51,7 +51,24 @@ if ($finishedSubjects < $totalSubjects) {
 
 function resolveStudentImg($html) {
     if (!is_string($html) || empty($html)) return $html;
-    return preg_replace('/src=["\']uploads\/questions\//i', 'src="../uploads/questions/', $html);
+    $html = preg_replace('/src=["\'](?:\.\.\/)?uploads\/questions\//i', 'src="../uploads/questions/', $html);
+    $html = preg_replace('/src=["\'](?:\.\.\/)?assets\/uploads\/references\//i', 'src="../assets/uploads/references/', $html);
+    return $html;
+}
+
+function resolveRefImgSrc($path) {
+    if (empty($path) || !is_string($path)) return '';
+    $path = trim($path);
+    if (strpos($path, 'data:') === 0 || strpos($path, 'http://') === 0 || strpos($path, 'https://') === 0 || strpos($path, '../') === 0) {
+        return $path;
+    }
+    if (strpos($path, 'assets/uploads/references/') === 0 || strpos($path, 'uploads/questions/') === 0) {
+        return '../' . $path;
+    }
+    if (strpos($path, 'img_') === 0) {
+        return '../uploads/questions/' . $path;
+    }
+    return '../assets/uploads/references/' . $path;
 }
 
 function cleanOptionReviewHtml($html) {
@@ -80,10 +97,25 @@ foreach ($subjects as $sub) {
     $session = $stmtSess->fetch(PDO::FETCH_ASSOC);
     if (!$session) continue;
 
+    // Get references
+    $stmtRef = $pdo->prepare("SELECT * FROM `references` WHERE subject_id = ?");
+    $stmtRef->execute([$sub['id']]);
+    $references = $stmtRef->fetchAll(PDO::FETCH_ASSOC);
+    $refMap = [];
+    foreach ($references as $r) {
+        $refMap[$r['id']] = $r;
+    }
+
     // Get questions
     $stmtQ = $pdo->prepare("SELECT * FROM questions WHERE subject_id = ? ORDER BY id ASC");
     $stmtQ->execute([$sub['id']]);
-    $questions = $stmtQ->fetchAll(PDO::FETCH_ASSOC);
+    $rawQuestions = $stmtQ->fetchAll(PDO::FETCH_ASSOC);
+    $questions = [];
+    foreach ($rawQuestions as $rq) {
+        $rid = $rq['reference_id'] ?? null;
+        $rq['ref_data'] = ($rid && isset($refMap[$rid])) ? $refMap[$rid] : null;
+        $questions[] = $rq;
+    }
 
     // Jika sesi memiliki urutan soal tersimpan, sesuaikan urutan tampilannya
     if (!empty($session['question_order'])) {
@@ -759,6 +791,26 @@ $app_name    = $settings['app_name'] ?? 'CBT Simulation';
                     <?php endif; ?>
                 </div>
                 <div class="question-card-body">
+                    <?php if (!empty($q['ref_data'])): 
+                        $ref = $q['ref_data'];
+                    ?>
+                        <div class="reference-box mb-3 p-3 rounded" style="background-color: #f8fafc; border: 1.5px solid #e2e8f0;">
+                            <div class="fw-bold text-uppercase mb-2 text-primary" style="font-size: 0.82rem; letter-spacing: 0.5px;">
+                                <i class="bi bi-file-text me-1"></i><?= htmlspecialchars($ref['title'] ?? 'Stimulus / Referensi') ?>
+                            </div>
+                            <?php if (!empty($ref['content'])): ?>
+                                <div class="reference-text mb-2" style="font-size: 0.95rem; color: #334155; line-height: 1.7;">
+                                    <?= resolveStudentImg($ref['content']) ?>
+                                </div>
+                            <?php endif; ?>
+                            <?php if (!empty($ref['image_path'])): ?>
+                                <div class="text-center mb-2">
+                                    <img src="<?= htmlspecialchars(resolveRefImgSrc($ref['image_path'])) ?>" class="img-fluid rounded shadow-sm" alt="Stimulus" style="max-height: 400px; object-fit: contain;">
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+
                     <!-- Question Text -->
                     <div class="question-text-content"><?= resolveStudentImg($q['question_text']) ?></div>
 

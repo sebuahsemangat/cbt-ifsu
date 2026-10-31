@@ -5,7 +5,11 @@ require_once '../includes/auth_check.php';
 // Wajib ada subject_id
 $subject_id = $_GET['subject_id'] ?? null;
 if (!$subject_id) {
-    header("Location: dashboard.php?page=exams"); // Tendang balik jika tidak ada ID
+    if (!headers_sent()) {
+        header("Location: dashboard.php?page=exams"); // Tendang balik jika tidak ada ID
+    } else {
+        echo "<script>window.location.href='dashboard.php?page=exams';</script>";
+    }
     exit;
 }
 

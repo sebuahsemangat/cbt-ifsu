@@ -43,7 +43,7 @@ foreach ($subjects as $s) {
         <?php if (isset($_GET['status']) && $_GET['status'] == 'error_unique'): ?>
     <div class="alert alert-danger">Nama Referensi sudah digunakan! Gunakan nama lain.</div>
 <?php endif; ?>
-        <form action="modules/references/process.php?action=save" method="POST" id="referenceForm">
+        <form action="modules/references/process.php?action=save" method="POST" id="referenceForm" enctype="multipart/form-data">
             <input type="hidden" name="id" value="<?= $id ?>">
             <input type="hidden" name="return_to_subject_id" value="<?= htmlspecialchars($returnSubjectId ?? '') ?>">
             <input type="hidden" name="image_base64" id="refImageBase64">

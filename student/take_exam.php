@@ -482,6 +482,15 @@ $isSessionLocked = ((int)($curSessData['is_locked'] ?? 0) === 1);
         .reference-section { border-right: 1.5px solid #f1f5f9; padding-right: 1.5rem; height: 100%; overflow-y: auto; scrollbar-width: thin; }
         .reference-title { font-weight: 700; color: #0f172a; margin-bottom: 1.2rem; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.5px; }
         .reference-content { color: #334155; font-size: 0.98rem; line-height: 1.8; }
+        .reference-content img, .reference-img {
+            max-width: 100% !important;
+            height: auto !important;
+            display: block;
+            margin: 0.75rem auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            object-fit: contain;
+        }
         
         /* MathJax Styling: Rata tengah & proporsional dengan teks */
         mjx-container { display: inline-block !important; margin: 0 3px !important; vertical-align: middle !important; }

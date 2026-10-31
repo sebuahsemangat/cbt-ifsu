@@ -2,9 +2,9 @@
 ob_start();
 libxml_use_internal_errors(true);
 
-require_once '../../../config/database.php';
-require_once '../../../includes/auth_check.php';
-require_once '../../../vendor/autoload.php';
+require_once __DIR__ . '/../../../config/database.php';
+require_once __DIR__ . '/../../../includes/auth_check.php';
+require_once __DIR__ . '/../../../vendor/autoload.php';
 
 use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\Element\Text;
@@ -69,7 +69,7 @@ if ($action === 'confirm_save') {
     
     try {
         $refKeyToId = [];
-        $targetRefDir = '../../../assets/uploads/references/';
+        $targetRefDir = __DIR__ . '/../../../assets/uploads/references/';
         if (!is_dir($targetRefDir)) {
             @mkdir($targetRefDir, 0755, true);
         }
@@ -86,22 +86,24 @@ if ($action === 'confirm_save') {
                 }
             }
 
-            $refType = !empty($refItem['content']) ? 'text' : 'image';
-            $refContent = $refItem['content'];
+            $refTitle = !empty($refItem['title']) ? trim($refItem['title']) : ('Referensi ' . $refKey);
+            $refTitle = mb_substr($refTitle, 0, 250);
+            $refType = !empty($imagePath) ? 'image' : 'text';
+            $refContent = $refItem['content'] ?? null;
 
             // Cek apakah sudah ada referensi dengan judul persis sama pada mapel ini
             $chk = $pdo->prepare("SELECT id, image_path FROM `references` WHERE subject_id = ? AND title = ?");
-            $chk->execute([$subject_id, $refItem['title']]);
+            $chk->execute([$subject_id, $refTitle]);
             $existing = $chk->fetch();
 
             if ($existing) {
                 $refId = $existing['id'];
-                if ($imagePath && empty($existing['image_path'])) {
-                    $pdo->prepare("UPDATE `references` SET image_path = ? WHERE id = ?")->execute([$imagePath, $refId]);
+                if ($imagePath && (empty($existing['image_path']) || !file_exists($targetRefDir . $existing['image_path']))) {
+                    $pdo->prepare("UPDATE `references` SET image_path = ?, type = 'image' WHERE id = ?")->execute([$imagePath, $refId]);
                 }
             } else {
                 $insRef = $pdo->prepare("INSERT INTO `references` (subject_id, title, type, content, image_path) VALUES (?, ?, ?, ?, ?)");
-                $insRef->execute([$subject_id, $refItem['title'], $refType, $refContent, $imagePath]);
+                $insRef->execute([$subject_id, $refTitle, $refType, $refContent, $imagePath]);
                 $refId = $pdo->lastInsertId();
                 $refCreatedCount++;
             }
@@ -111,7 +113,8 @@ if ($action === 'confirm_save') {
 
         // 2. Simpan Soal
         $stmt = $pdo->prepare("INSERT INTO questions (subject_id, reference_id, question_text, question_type, answer_data) VALUES (?, ?, ?, ?, ?)");
-        
+        $validTypes = ['pg', 'bs', 'multi', 'isian'];
+
         foreach ($questions as $q) {
             $qRefId = null;
             if (!empty($q['ref_key']) && isset($refKeyToId[$q['ref_key']])) {
@@ -120,12 +123,20 @@ if ($action === 'confirm_save') {
                 $qRefId = $reference_id; // Fallback jika tidak ada referensi inline
             }
 
-            $answerJson = is_string($q['answer_data']) ? $q['answer_data'] : json_encode($q['answer_data'], JSON_UNESCAPED_UNICODE);
+            $rawType = strtolower(trim($q['question_type'] ?? 'pg'));
+            if ($rawType === 'pilihan_ganda' || $rawType === 'mcq') $rawType = 'pg';
+            if ($rawType === 'benar_salah') $rawType = 'bs';
+            if ($rawType === 'multiple_choice' || $rawType === 'pg_kompleks') $rawType = 'multi';
+            $qType = in_array($rawType, $validTypes, true) ? $rawType : 'pg';
+
+            $qText = !empty($q['question_text']) ? $q['question_text'] : '-';
+            $answerJson = is_string($q['answer_data']) ? $q['answer_data'] : json_encode($q['answer_data'] ?? [], JSON_UNESCAPED_UNICODE);
+
             $stmt->execute([
                 $subject_id,
                 $qRefId,
-                $q['question_text'],
-                $q['question_type'],
+                $qText,
+                $qType,
                 $answerJson
             ]);
             $insertedCount++;
@@ -186,7 +197,7 @@ if (!empty($_POST['word_base64'])) {
 }
 
 // Create uploads directory for question images
-$uploadDir = '../../../uploads/questions/';
+$uploadDir = __DIR__ . '/../../../uploads/questions/';
 if (!is_dir($uploadDir)) {
     mkdir($uploadDir, 0755, true);
 }
@@ -211,8 +222,9 @@ try {
     // Join all paragraphs
     $documentText = implode("\n", $fullContent);
     
-    // Bersihkan tag HTML formatting yang mungkin membungkus marker sistem seperti [SOAL], [REFERENSI]
-    $documentText = preg_replace_callback('/(?:<[a-z0-9]+[^>]*>|\s)*\[(?:<[a-z0-9]+[^>]*>|\s)*(SOAL|SOAL-BS|SOAL-MULTI|SOAL-ISIAN|TANPA-REFERENSI|NO-REFERENSI|REFERENSI(?:\s*:\s*[^\n\]]+)?)(?:<\/[a-z0-9]+>|\s)*\](?:<\/[a-z0-9]+>|\s)*/i', function($m) {
+    // Bersihkan tag HTML formatting teks inline yang mungkin membungkus marker sistem seperti [SOAL], [REFERENSI]
+    // Catatan: Hanya bersihkan tag formatting teks (p, strong, b, em, i, u, span, div) dan JANGAN sentuh tag <img>
+    $documentText = preg_replace_callback('/(?:<(?:p|strong|b|em|i|u|span|div)[^>]*>|[ \t])*\[(?:<(?:strong|b|em|i|u|span)[^>]*>|[ \t])*(SOAL|SOAL-BS|SOAL-MULTI|SOAL-ISIAN|TANPA-REFERENSI|NO-REFERENSI|REFERENSI(?:\s*:\s*[^\n\]]+)?)(?:<\/(?:strong|b|em|i|u|span)>|[ \t])*\](?:<\/(?:p|strong|b|em|i|u|span|div)>|[ \t])*/i', function($m) {
         return "\n[" . strip_tags($m[1]) . "]\n";
     }, $documentText);
     
@@ -256,7 +268,7 @@ try {
     
     try {
         $refKeyToId = [];
-        $targetRefDir = '../../../assets/uploads/references/';
+        $targetRefDir = __DIR__ . '/../../../assets/uploads/references/';
         if (!is_dir($targetRefDir)) {
             @mkdir($targetRefDir, 0755, true);
         }
@@ -272,21 +284,23 @@ try {
                 }
             }
 
-            $refType = !empty($refItem['content']) ? 'text' : 'image';
-            $refContent = $refItem['content'];
+            $refTitle = !empty($refItem['title']) ? trim($refItem['title']) : ('Referensi ' . $refKey);
+            $refTitle = mb_substr($refTitle, 0, 250);
+            $refType = !empty($imagePath) ? 'image' : 'text';
+            $refContent = $refItem['content'] ?? null;
 
             $chk = $pdo->prepare("SELECT id, image_path FROM `references` WHERE subject_id = ? AND title = ?");
-            $chk->execute([$subject_id, $refItem['title']]);
+            $chk->execute([$subject_id, $refTitle]);
             $existing = $chk->fetch();
 
             if ($existing) {
                 $refId = $existing['id'];
-                if ($imagePath && empty($existing['image_path'])) {
-                    $pdo->prepare("UPDATE `references` SET image_path = ? WHERE id = ?")->execute([$imagePath, $refId]);
+                if ($imagePath && (empty($existing['image_path']) || !file_exists($targetRefDir . $existing['image_path']))) {
+                    $pdo->prepare("UPDATE `references` SET image_path = ?, type = 'image' WHERE id = ?")->execute([$imagePath, $refId]);
                 }
             } else {
                 $insRef = $pdo->prepare("INSERT INTO `references` (subject_id, title, type, content, image_path) VALUES (?, ?, ?, ?, ?)");
-                $insRef->execute([$subject_id, $refItem['title'], $refType, $refContent, $imagePath]);
+                $insRef->execute([$subject_id, $refTitle, $refType, $refContent, $imagePath]);
                 $refId = $pdo->lastInsertId();
                 $refCreatedCount++;
             }
@@ -295,7 +309,8 @@ try {
         }
 
         $stmt = $pdo->prepare("INSERT INTO questions (subject_id, reference_id, question_text, question_type, answer_data) VALUES (?, ?, ?, ?, ?)");
-        
+        $validTypes = ['pg', 'bs', 'multi', 'isian'];
+
         foreach ($questions as $q) {
             $qRefId = null;
             if (!empty($q['ref_key']) && isset($refKeyToId[$q['ref_key']])) {
@@ -304,12 +319,20 @@ try {
                 $qRefId = $reference_id;
             }
 
-            $answerJson = is_string($q['answer_data']) ? $q['answer_data'] : json_encode($q['answer_data'], JSON_UNESCAPED_UNICODE);
+            $rawType = strtolower(trim($q['question_type'] ?? 'pg'));
+            if ($rawType === 'pilihan_ganda' || $rawType === 'mcq') $rawType = 'pg';
+            if ($rawType === 'benar_salah') $rawType = 'bs';
+            if ($rawType === 'multiple_choice' || $rawType === 'pg_kompleks') $rawType = 'multi';
+            $qType = in_array($rawType, $validTypes, true) ? $rawType : 'pg';
+
+            $qText = !empty($q['question_text']) ? $q['question_text'] : '-';
+            $answerJson = is_string($q['answer_data']) ? $q['answer_data'] : json_encode($q['answer_data'] ?? [], JSON_UNESCAPED_UNICODE);
+
             $stmt->execute([
                 $subject_id,
                 $qRefId,
-                $q['question_text'],
-                $q['question_type'],
+                $qText,
+                $qType,
                 $answerJson
             ]);
             $insertedCount++;

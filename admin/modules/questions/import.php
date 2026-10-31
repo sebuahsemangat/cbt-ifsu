@@ -5,7 +5,11 @@ require_once '../includes/auth_check.php';
 $subject_id = $_GET['subject_id'] ?? null;
 
 if (!$subject_id) {
-    header("Location: dashboard.php?page=exams");
+    if (!headers_sent()) {
+        header("Location: dashboard.php?page=exams");
+    } else {
+        echo "<script>window.location.href='dashboard.php?page=exams';</script>";
+    }
     exit;
 }
 
@@ -646,15 +650,22 @@ Ibu kota Indonesia adalah...
         let html = '<div class="row g-3">';
         refKeys.forEach((key, idx) => {
             const ref = currentReferences[key];
+            const typeBadge = (ref.has_image && ref.content) 
+                ? '<span class="badge bg-primary text-white ms-auto" style="font-size: 0.72rem;">Teks & Gambar</span>'
+                : (ref.has_image 
+                    ? '<span class="badge bg-success text-white ms-auto" style="font-size: 0.72rem;">Gambar</span>'
+                    : '<span class="badge bg-secondary text-white ms-auto" style="font-size: 0.72rem;">Teks Bacaan</span>');
+
             html += `
                 <div class="col-md-6">
-                    <div class="p-3 border rounded bg-light h-100">
+                    <div class="p-3 border rounded bg-light h-100 shadow-sm">
                         <div class="d-flex align-items-center mb-2">
                             <span class="badge bg-info text-dark me-2">Stimulus #${idx + 1}</span>
-                            <strong class="text-dark">${escapeHtml(ref.title)}</strong>
+                            <strong class="text-dark text-truncate" title="${escapeHtml(ref.title)}">${escapeHtml(ref.title)}</strong>
+                            ${typeBadge}
                         </div>
-                        ${ref.has_image ? `<div class="mb-2 text-center"><img src="data:image/${ref.image_ext};base64,${ref.image_base64}" class="img-fluid rounded border" style="max-height: 180px;"></div>` : ''}
-                        ${ref.content ? `<div class="small text-secondary" style="max-height: 140px; overflow-y: auto;">${ref.content}</div>` : ''}
+                        ${ref.content ? `<div class="small text-secondary mb-2" style="max-height: 140px; overflow-y: auto;">${ref.content}</div>` : ''}
+                        ${ref.has_image ? `<div class="mb-2 text-center"><img src="data:image/${ref.image_ext};base64,${ref.image_base64}" class="img-fluid rounded border shadow-sm" style="max-height: 200px; object-fit: contain;"></div>` : ''}
                     </div>
                 </div>
             `;
@@ -976,23 +987,25 @@ Ibu kota Indonesia adalah...
                 btn.disabled = false;
                 btn.innerHTML = oldHtml;
 
-                if (xhrSave.status === 200) {
-                    try {
-                        const res = JSON.parse(xhrSave.responseText);
-                        if (res.status === 'success') {
-                            window.location.href = `dashboard.php?page=questions_import&subject_id=<?= $subject_id ?>&status=success&count=${res.count}&ref_count=${res.ref_count || 0}`;
-                        } else {
-                            alert('Gagal menyimpan: ' + (res.msg || 'Terjadi kesalahan sistem.'));
-                        }
-                    } catch (e) {
-                        alert('Terjadi kesalahan saat membaca respon server. Periksa konsol browser.');
-                        console.error('Server response:', xhrSave.responseText);
-                    }
+                let res = null;
+                try {
+                    res = JSON.parse(xhrSave.responseText);
+                } catch (e) {}
+
+                if (xhrSave.status === 200 && res && res.status === 'success') {
+                    window.location.href = `dashboard.php?page=questions_import&subject_id=<?= $subject_id ?>&status=success&count=${res.count}&ref_count=${res.ref_count || 0}`;
+                } else if (res && res.msg) {
+                    alert('Gagal menyimpan: ' + res.msg);
                 } else if (xhrSave.status === 404) {
-                    alert('Error 404 Not Found: Server web Nginx tidak menemukan endpoint atau menolak ukuran payload. Pastikan file script terbaru telah di-upload ke server hosting.');
+                    alert('Error 404 Not Found: Server web tidak menemukan endpoint atau menolak ukuran payload. Pastikan file script terbaru telah di-upload ke server.');
                     console.error('Server 404 response:', xhrSave.responseText);
                 } else {
-                    alert('Gagal menghubungi server (Status: ' + xhrSave.status + ').');
+                    let errMsg = 'Gagal menghubungi server (Status: ' + xhrSave.status + ').';
+                    if (xhrSave.responseText) {
+                        errMsg += '\n\nRespon server:\n' + xhrSave.responseText.substring(0, 300);
+                    }
+                    alert(errMsg);
+                    console.error('Server error response:', xhrSave.responseText);
                 }
             }
         };

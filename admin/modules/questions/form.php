@@ -6,7 +6,11 @@ $subject_id = $_GET['subject_id'] ?? null;
 $id = $_GET['id'] ?? null;
 
 if (!$subject_id) {
-    header("Location: dashboard.php?page=exams");
+    if (!headers_sent()) {
+        header("Location: dashboard.php?page=exams");
+    } else {
+        echo "<script>window.location.href='dashboard.php?page=exams';</script>";
+    }
     exit;
 }
 
