@@ -95,7 +95,15 @@ foreach ($subjects as $s) {
             </div>
 
             <div class="mb-3" id="inputImage" style="display: none;">
-                <label class="form-label">Upload Gambar</label>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Perintah / Keterangan Gambar <span class="text-muted fw-normal">(Opsional)</span></label>
+                    <input type="text" name="image_instruction" id="imageInstruction" class="form-control" 
+                           placeholder="Contoh: Perhatikan gambar berikut ini." 
+                           value="<?= htmlspecialchars(($data['type'] ?? '') === 'image' ? ($data['content'] ?? '') : '') ?>">
+                    <small class="text-muted">Gunakan jika gambar memiliki teks perintah atau pengantar sebelum gambar.</small>
+                </div>
+
+                <label class="form-label fw-bold">Upload Gambar</label>
                 <input type="file" id="refImageInput" name="image" class="form-control" accept="image/jpeg,image/png,image/jpg">
                 <small class="text-muted">Format: JPG, PNG. Maks 2MB.</small>
                 

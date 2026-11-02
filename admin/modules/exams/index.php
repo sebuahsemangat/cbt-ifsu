@@ -421,7 +421,7 @@ while ($row = $stmt_ss->fetch(PDO::FETCH_ASSOC)) {
                                         </div>
                                         <div class="mb-3">
                                             <label class="form-label">Skor Maksimal</label>
-                                            <input type="number" name="max_score" class="form-control" required step="0.01" placeholder="Contoh: 100">
+                                            <input type="number" name="max_score" class="form-control" required value="100" step="0.01" placeholder="Contoh: 100">
                                         </div>
 
                                         <div class="mb-3">

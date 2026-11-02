@@ -364,6 +364,11 @@ $pagination_pages = getSlidingPagination($page_num, $total_pages, 2);
                                 <i class="bi bi-arrows-fullscreen me-1"></i> Baca Selengkapnya
                             </button>
                         <?php elseif ($r['type'] === 'image'): ?>
+                            <?php if (!empty($r['content'])): ?>
+                                <div class="text-muted small mb-2 fst-italic text-truncate" title="<?= htmlspecialchars($r['content']) ?>">
+                                    <i class="bi bi-chat-left-text me-1"></i><?= htmlspecialchars($r['content']) ?>
+                                </div>
+                            <?php endif; ?>
                             <div class="ref-image-preview rounded-3 bg-light border text-center p-2 d-flex align-items-center justify-content-center"
                                 style="height: 140px; cursor: pointer; overflow: hidden;" data-bs-toggle="modal"
                                 data-bs-target="#previewModal<?= $r['id'] ?>" title="Klik untuk memperbesar gambar">
@@ -461,6 +466,11 @@ $pagination_pages = getSlidingPagination($page_num, $total_pages, 2);
                                     <?= $r['content'] ?>
                                 </div>
                             <?php elseif ($r['type'] === 'image'): ?>
+                                <?php if (!empty($r['content'])): ?>
+                                    <div class="alert alert-light border mb-3 text-dark fw-medium">
+                                        <i class="bi bi-info-circle me-1 text-primary"></i> <?= nl2br(htmlspecialchars($r['content'])) ?>
+                                    </div>
+                                <?php endif; ?>
                                 <div class="text-center bg-white p-3 rounded-3 border shadow-xs">
                                     <?php if (!empty($r['image_path']) && file_exists("../assets/uploads/references/" . $r['image_path'])): ?>
                                         <img src="../assets/uploads/references/<?= htmlspecialchars($r['image_path']) ?>"

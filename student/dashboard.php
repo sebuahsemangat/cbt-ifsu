@@ -580,7 +580,7 @@ function formatIndoSchedule($startStr, $endStr) {
                                 <div class="schedule-time-grid">
                                     <div class="time-pill start-pill">
                                         <div class="time-pill-label text-success">
-                                            <i class="bi bi-play-circle-fill"></i> Mulai <?= !$sch['isSameDay'] ? '(' . $sch['startDateShort'] . ')' : '' ?>
+                                            <i class="bi bi-play-circle-fill"></i> Mulai
                                         </div>
                                         <div class="time-pill-value">
                                             <?= $sch['startClock'] ?> <small class="text-muted fw-normal" style="font-size: 0.7rem;">WIB</small>
@@ -591,7 +591,7 @@ function formatIndoSchedule($startStr, $endStr) {
                                     </div>
                                     <div class="time-pill end-pill">
                                         <div class="time-pill-label text-danger">
-                                            <i class="bi bi-stop-circle-fill"></i> Selesai <?= !$sch['isSameDay'] ? '(' . $sch['endDateShort'] . ')' : '' ?>
+                                            <i class="bi bi-stop-circle-fill"></i> Selesai
                                         </div>
                                         <div class="time-pill-value">
                                             <?= $sch['endClock'] ?> <small class="text-muted fw-normal" style="font-size: 0.7rem;">WIB</small>

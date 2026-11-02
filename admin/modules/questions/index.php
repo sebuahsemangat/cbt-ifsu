@@ -550,6 +550,7 @@ $questions = $stmt->fetchAll();
                     bodyHtml = `<div class="p-3 bg-light rounded">${refData.content || '<em class="text-muted">Konten teks kosong</em>'}</div>`;
                 } else if (refData.type === 'image') {
                     bodyHtml = `
+                        ${refData.content ? `<div class="alert alert-light border mb-3 text-dark fw-medium text-start"><i class="bi bi-info-circle me-1 text-primary"></i> ${refData.content}</div>` : ''}
                         <div class="text-center">
                             <img src="../assets/uploads/references/${refData.image_path}" class="img-fluid rounded shadow-sm" alt="${refData.title}">
                         </div>

@@ -8,9 +8,8 @@ if ($action == 'add' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     $name = trim($_POST['name']);
     $exam_id = (int)$_POST['exam_id'];
     $duration = (int)$_POST['duration'];
-
     if (!empty($name) && $duration > 0) {
-        $max_score = (float)$_POST['max_score'];
+        $max_score = !empty($_POST['max_score']) ? (float)$_POST['max_score'] : 100.0;
         
         // Hitung sort_order berikutnya untuk exam ini
         $stmtMax = $pdo->prepare("SELECT COALESCE(MAX(sort_order), 0) + 1 FROM subjects WHERE exam_id = ?");
@@ -43,9 +42,8 @@ if ($action == 'edit' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     $id = (int)$_POST['id'];
     $name = trim($_POST['name']);
     $duration = (int)$_POST['duration'];
-
     if (!empty($name) && $duration > 0 && $id > 0) {
-        $max_score = (float)$_POST['max_score'];
+        $max_score = !empty($_POST['max_score']) ? (float)$_POST['max_score'] : 100.0;
         $stmt = $pdo->prepare("UPDATE subjects SET name = ?, duration = ?, max_score = ? WHERE id = ?");
         $stmt->execute([$name, $duration, $max_score, $id]);
 

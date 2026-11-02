@@ -122,7 +122,12 @@ if ($action == 'save' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     $title = trim($_POST['title']);
     $subject_id = $_POST['subject_id'];
     $type = $_POST['type'];
-    $content = $_POST['content'] ?? null;
+    if ($type === 'image') {
+        $rawInstruction = isset($_POST['image_instruction']) ? trim($_POST['image_instruction']) : '';
+        $content = $rawInstruction !== '' ? $rawInstruction : null;
+    } else {
+        $content = $_POST['content'] ?? null;
+    }
     
     // 1. Validasi Nama Unik per Mata Pelajaran
     $checkSql = "SELECT COUNT(*) FROM `references` WHERE subject_id = ? AND title = ? AND id != ?";
