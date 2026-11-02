@@ -132,7 +132,7 @@ $section->addText('[JAWABAN] C', ['bold' => true, 'color' => '16a34a']);
 $section->addTextBreak(2);
 
 // ==================== RUMUS MATEMATIKA & PECAHAN ====================
-$section->addTitle('6. RUMUS MATEMATIKA & PECAHAN VERTIKAL', 2);
+$section->addTitle('6. RUMUS MATEMATIKA DAN PECAHAN VERTIKAL', 2);
 $section->addText('Gunakan format LaTeX \( \frac{a}{b} \) agar rumus dan pecahan tampil vertikal (bertumpuk normal), bukan garis miring.', ['size' => 10, 'color' => '4a5568']);
 $section->addTextBreak();
 
@@ -158,6 +158,11 @@ $section->addListItem('Untuk rumus matematika dan pecahan vertikal/normal, gunak
 $section->addListItem('Untuk soal PG, kunci jawaban WAJIB dicantumkan dengan [JAWABAN] A/B/C/D/E', 0, ['size' => 10]);
 $section->addListItem('Gambar bisa disisipkan di dalam soal atau referensi (harus inline, bukan floating)', 0, ['size' => 10]);
 $section->addListItem('Jangan sisipkan baris kosong di antara opsi jawaban', 0, ['size' => 10]);
+
+// Bersihkan output buffer sebelum streaming file binary
+if (ob_get_length()) {
+    ob_end_clean();
+}
 
 // Generate and download
 $filename = 'template_import_soal.docx';

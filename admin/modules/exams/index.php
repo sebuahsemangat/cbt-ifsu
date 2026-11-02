@@ -37,11 +37,19 @@ while ($row = $stmt_ss->fetch(PDO::FETCH_ASSOC)) {
 }
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="fw-bold">Manajemen Jadwal Ujian</h3>
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addExamModal">
-        <i class="bi bi-calendar-plus"></i> Buat Jadwal Baru
-    </button>
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h3 class="fw-bold mb-1">Manajemen Jadwal Ujian</h3>
+        <p class="text-muted small mb-0">Kelola jadwal ujian, token, dan sinkronisasi data dari Cloud</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#syncPullModal" onclick="initSyncPullModal()">
+            <i class="bi bi-cloud-arrow-down me-1"></i> Tarik Data dari Cloud
+        </button>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addExamModal">
+            <i class="bi bi-calendar-plus me-1"></i> Buat Jadwal Baru
+        </button>
+    </div>
 </div>
 
 <?php if (isset($_GET['status']) && $_GET['status'] == 'success'): ?>
@@ -619,6 +627,213 @@ while ($row = $stmt_ss->fetch(PDO::FETCH_ASSOC)) {
     </div>
 </div>
 
+<!-- Modal Tarik Data Ujian dari Cloud -->
+<div class="modal fade" id="syncPullModal" tabindex="-1" data-bs-backdrop="static" aria-labelledby="syncPullModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content shadow border-0">
+            <div class="modal-header bg-light border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-2 text-primary">
+                        <i class="bi bi-cloud-arrow-down-fill fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="syncPullModalLabel">Tarik Data Ujian dari Cloud</h5>
+                        <small class="text-muted">Sinkronisasi paket ujian, bank soal, siswa, dan gambar dari server pusat</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" id="btnSyncPullClose" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body p-4">
+                <!-- Status Koneksi Server Cloud -->
+                <div class="card border bg-light mb-4 shadow-xs">
+                    <div class="card-body p-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-hdd-network text-secondary fs-5"></i>
+                            <div>
+                                <div class="small fw-semibold text-secondary">Server Cloud Pusat:</div>
+                                <span class="fw-bold text-dark font-monospace small" id="cloudUrlDisplay">Memeriksa koneksi...</span>
+                            </div>
+                        </div>
+                        <div id="cloudConnStatusBadge">
+                            <span class="badge bg-secondary"><span class="spinner-border spinner-border-sm me-1"></span>Mengecek status...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alert Notifikasi / Error -->
+                <div id="syncPullAlert" style="display: none;"></div>
+
+                <!-- Bagian 1: Pemilihan Ujian dari Cloud -->
+                <div id="syncPullSelectSection">
+                    <div id="syncLoadingExams" class="text-center py-4">
+                        <div class="spinner-border text-primary mb-2" role="status"></div>
+                        <p class="text-muted small mb-0">Menghubungkan ke Cloud dan mengambil daftar ujian...</p>
+                    </div>
+
+                    <div id="syncExamsContent" style="display: none;">
+                        <label class="form-label fw-bold text-dark">Pilih Paket Ujian yang Ingin Ditarik:</label>
+                        <select class="form-select form-select-lg mb-3 shadow-xs" id="selectCloudExam" onchange="onSelectCloudExamChange()">
+                            <option value="">-- Pilih Ujian dari Cloud --</option>
+                        </select>
+
+                        <!-- Detail Paket Ujian Terpilih -->
+                        <div id="selectedExamDetailCard" class="card border rounded-3 p-3 bg-white mb-3" style="display: none;">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="text-muted small">Nama Jadwal:</div>
+                                    <div class="fw-bold text-primary" id="detailExamName">-</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="text-muted small">Waktu Pelaksanaan:</div>
+                                    <div class="fw-semibold text-dark small" id="detailExamTime">-</div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="text-muted small">Jumlah Mapel:</div>
+                                    <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 fs-6" id="detailSubjectCount">0</span>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="text-muted small">Jumlah Soal:</div>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 fs-6" id="detailQuestionCount">0</span>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="text-muted small">Siswa Terkait:</div>
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 fs-6" id="detailStudentCount">0</span>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="text-muted small">Akses Kelas:</div>
+                                    <div class="small fw-semibold text-truncate" id="detailClasses">-</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Opsi Sinkronisasi -->
+                        <div class="border rounded-3 p-3 bg-light mb-3">
+                            <label class="form-label fw-bold small text-secondary mb-2">Item yang Akan Disinkronkan:</label>
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" checked disabled id="chkSyncMeta">
+                                        <label class="form-check-label small" for="chkSyncMeta">
+                                            Jadwal Ujian, Pengaturan & Mapel
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" checked disabled id="chkSyncQuestions">
+                                        <label class="form-check-label small" for="chkSyncQuestions">
+                                            Bank Soal, Opsi Jawaban & Stimulus
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" checked id="chkSyncStudents">
+                                        <label class="form-check-label small fw-semibold text-dark" for="chkSyncStudents">
+                                            Data Siswa Terkait & Token Ujian
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" checked id="chkSyncMedia">
+                                        <label class="form-check-label small fw-semibold text-dark" for="chkSyncMedia">
+                                            Unduh Otomatis File Gambar & Audio
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info py-2 px-3 small mb-0">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Sinkronisasi akan mengunduh paket ujian ini ke database lokal lab. File gambar yang sudah ada tidak akan diunduh ulang.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bagian 2: Tampilan Progres Sinkronisasi Real-Time -->
+                <div id="syncPullProgressSection" style="display: none;">
+                    <div class="text-center mb-3">
+                        <div class="d-inline-flex align-items-center justify-content-center p-3 rounded-circle bg-primary bg-opacity-10 text-primary mb-2">
+                            <i class="bi bi-arrow-repeat fs-2 animate-spin" id="syncSpinIcon"></i>
+                        </div>
+                        <h5 class="fw-bold mb-1" id="syncProgressTitle">Sedang Menyinkronkan Data...</h5>
+                        <p class="text-muted small mb-0" id="syncProgressDetail">Memulai proses sinkronisasi...</p>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="progress mb-4" style="height: 18px; border-radius: 9px;">
+                        <div id="syncProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary fw-bold" role="progressbar" style="width: 0%; font-size: 0.75rem;">0%</div>
+                    </div>
+
+                    <!-- Step-by-Step Checklist Cards -->
+                    <div class="list-group shadow-xs mb-3">
+                        <div class="list-group-item d-flex align-items-center justify-content-between py-2 px-3" id="stepItem1">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="step-icon text-muted" id="stepIcon1"><i class="bi bi-circle"></i></span>
+                                <span class="small fw-semibold">1. Handshake & Verifikasi Token Cloud</span>
+                            </div>
+                            <span class="badge bg-light text-secondary border small step-status" id="stepStatus1">Menunggu</span>
+                        </div>
+                        <div class="list-group-item d-flex align-items-center justify-content-between py-2 px-3" id="stepItem2">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="step-icon text-muted" id="stepIcon2"><i class="bi bi-circle"></i></span>
+                                <span class="small fw-semibold">2. Struktur Ujian, Kelas & Mata Pelajaran</span>
+                            </div>
+                            <span class="badge bg-light text-secondary border small step-status" id="stepStatus2">Menunggu</span>
+                        </div>
+                        <div class="list-group-item d-flex align-items-center justify-content-between py-2 px-3" id="stepItem3">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="step-icon text-muted" id="stepIcon3"><i class="bi bi-circle"></i></span>
+                                <span class="small fw-semibold">3. Bank Soal, Opsi Jawaban & Stimulus Referensi</span>
+                            </div>
+                            <span class="badge bg-light text-secondary border small step-status" id="stepStatus3">Menunggu</span>
+                        </div>
+                        <div class="list-group-item d-flex align-items-center justify-content-between py-2 px-3" id="stepItem4">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="step-icon text-muted" id="stepIcon4"><i class="bi bi-circle"></i></span>
+                                <span class="small fw-semibold">4. Data Siswa Peserta Ujian & Token</span>
+                            </div>
+                            <span class="badge bg-light text-secondary border small step-status" id="stepStatus4">Menunggu</span>
+                        </div>
+                        <div class="list-group-item d-flex align-items-center justify-content-between py-2 px-3" id="stepItem5">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="step-icon text-muted" id="stepIcon5"><i class="bi bi-circle"></i></span>
+                                <span class="small fw-semibold">5. Unduh File Gambar & Media Pendukung Soal</span>
+                            </div>
+                            <span class="badge bg-light text-secondary border small step-status" id="stepStatus5">Menunggu</span>
+                        </div>
+                    </div>
+
+                    <!-- Summary Card Hasil Sinkronisasi -->
+                    <div id="syncResultSummaryCard" class="card border-success bg-success bg-opacity-10 p-3 rounded-3" style="display: none;">
+                        <div class="d-flex align-items-center gap-3">
+                            <i class="bi bi-check-circle-fill text-success fs-2"></i>
+                            <div>
+                                <h6 class="fw-bold text-success mb-1">Sinkronisasi Data Berhasil!</h6>
+                                <p class="small text-dark mb-0" id="syncResultSummaryText">Semua data ujian dan berkas gambar telah siap digunakan di server lab lokal.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light border-top">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="btnCancelSync">Batal</button>
+                <button type="button" class="btn btn-primary px-4" id="btnStartPullSync" onclick="startPullSync()" disabled>
+                    <i class="bi bi-cloud-arrow-down-fill me-1"></i> Mulai Tarik Data
+                </button>
+                <button type="button" class="btn btn-success px-4" id="btnFinishReload" onclick="location.reload()" style="display: none;">
+                    <i class="bi bi-arrow-clockwise me-1"></i> Selesai & Refresh Halaman
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <script>
 // Object untuk menyimpan interval timer agar tidak tumpang tindih
 const tokenTimers = {};
@@ -740,6 +955,342 @@ document.addEventListener('input', function(e) {
         }
     }
 });
+
+// ========================================================
+// JAVASCRIPT LOGIC: SINKRONISASI DATA DARI CLOUD (PULL SYNC)
+// ========================================================
+let cloudExamsCache = [];
+let isPullSyncInProgress = false;
+
+function initSyncPullModal() {
+    isPullSyncInProgress = false;
+    
+    // Reset view visibility
+    document.getElementById('syncPullSelectSection').style.display = 'block';
+    document.getElementById('syncPullProgressSection').style.display = 'none';
+    document.getElementById('syncLoadingExams').style.display = 'block';
+    document.getElementById('syncExamsContent').style.display = 'none';
+    document.getElementById('selectedExamDetailCard').style.display = 'none';
+    document.getElementById('syncResultSummaryCard').style.display = 'none';
+    
+    // Reset buttons
+    const btnStart = document.getElementById('btnStartPullSync');
+    const btnCancel = document.getElementById('btnCancelSync');
+    const btnFinish = document.getElementById('btnFinishReload');
+    const btnClose = document.getElementById('btnSyncPullClose');
+
+    btnStart.style.display = 'inline-block';
+    btnStart.disabled = true;
+    btnCancel.disabled = false;
+    btnCancel.style.display = 'inline-block';
+    btnClose.style.display = 'inline-block';
+    btnFinish.style.display = 'none';
+
+    // Reset Progress & Steps
+    updateSyncProgressBar(0, 'Menyiapkan proses...', '');
+    for (let i = 1; i <= 5; i++) {
+        resetStepState(i);
+    }
+
+    const alertBox = document.getElementById('syncPullAlert');
+    alertBox.style.display = 'none';
+    alertBox.innerHTML = '';
+
+    const badge = document.getElementById('cloudConnStatusBadge');
+    badge.innerHTML = '<span class="badge bg-secondary"><span class="spinner-border spinner-border-sm me-1"></span>Mengecek status...</span>';
+
+    // 1. Tes Koneksi ke Cloud
+    fetch('modules/exams/sync_pull_process.php?action=test_connection')
+        .then(async r => {
+            const text = await r.text();
+            try { return JSON.parse(text); } catch (e) { throw new Error(text.replace(/<[^>]*>?/gm, ' ').trim().substring(0, 150)); }
+        })
+        .then(data => {
+            const urlDisp = document.getElementById('cloudUrlDisplay');
+            if (data.cloud_url) urlDisp.textContent = data.cloud_url;
+
+            if (data.success) {
+                badge.innerHTML = `<span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Terhubung (Waktu Cloud: ${data.server_time || '-'})</span>`;
+                // 2. Ambil daftar ujian dari cloud
+                return fetch('modules/exams/sync_pull_process.php?action=fetch_cloud_exams');
+            } else {
+                badge.innerHTML = '<span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>Gagal Terhubung</span>';
+                throw new Error(data.message || 'Tidak dapat terhubung ke server cloud.');
+            }
+        })
+        .then(async r => {
+            if (!r) return;
+            const text = await r.text();
+            try { return JSON.parse(text); } catch (e) { throw new Error(text.replace(/<[^>]*>?/gm, ' ').trim().substring(0, 150)); }
+        })
+        .then(data => {
+            if (!data) return;
+            document.getElementById('syncLoadingExams').style.display = 'none';
+            document.getElementById('syncExamsContent').style.display = 'block';
+
+            if (!data.success) {
+                throw new Error(data.message || 'Gagal memuat daftar ujian.');
+            }
+
+            cloudExamsCache = data.exams || [];
+            const selectEl = document.getElementById('selectCloudExam');
+            selectEl.innerHTML = '<option value="">-- Pilih Ujian dari Cloud --</option>';
+
+            if (cloudExamsCache.length === 0) {
+                selectEl.innerHTML = '<option value="">(Tidak ada ujian aktif di server cloud)</option>';
+                return;
+            }
+
+            cloudExamsCache.forEach(ex => {
+                const opt = document.createElement('option');
+                opt.value = ex.id;
+                opt.textContent = `${ex.exam_name} (${ex.subject_count} Mapel, ${ex.question_count} Soal)`;
+                selectEl.appendChild(opt);
+            });
+        })
+        .catch(err => {
+            document.getElementById('syncLoadingExams').style.display = 'none';
+            alertBox.className = 'alert alert-danger';
+            alertBox.style.display = 'block';
+            alertBox.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-2"></i><strong>Koneksi Gagal:</strong> ${err.message}<br><small class="mt-1 d-block">Pastikan server memiliki koneksi internet dan pengaturan <em>Token Sinkronisasi</em> di menu <strong>Pengaturan</strong> sudah sesuai.</small>`;
+        });
+}
+
+function onSelectCloudExamChange() {
+    const examId = parseInt(document.getElementById('selectCloudExam').value, 10);
+    const detailCard = document.getElementById('selectedExamDetailCard');
+    const btnStart = document.getElementById('btnStartPullSync');
+
+    if (!examId) {
+        detailCard.style.display = 'none';
+        btnStart.disabled = true;
+        return;
+    }
+
+    const exam = cloudExamsCache.find(e => parseInt(e.id, 10) === examId);
+    if (!exam) {
+        detailCard.style.display = 'none';
+        btnStart.disabled = true;
+        return;
+    }
+
+    document.getElementById('detailExamName').textContent = exam.exam_name;
+    document.getElementById('detailExamTime').textContent = `${exam.start_date} s/d ${exam.end_date}`;
+    document.getElementById('detailSubjectCount').textContent = exam.subject_count + ' Mapel';
+    document.getElementById('detailQuestionCount').textContent = exam.question_count + ' Butir Soal';
+    document.getElementById('detailStudentCount').textContent = exam.student_count + ' Siswa';
+    document.getElementById('detailClasses').textContent = (exam.classes && exam.classes.length > 0) ? exam.classes.join(', ') : 'Semua Kelas (Tanpa Filter)';
+
+    detailCard.style.display = 'block';
+    btnStart.disabled = false;
+}
+
+function updateSyncProgressBar(percent, title, detail) {
+    const bar = document.getElementById('syncProgressBar');
+    bar.style.width = percent + '%';
+    bar.textContent = percent + '%';
+    if (title) document.getElementById('syncProgressTitle').textContent = title;
+    if (detail) document.getElementById('syncProgressDetail').textContent = detail;
+}
+
+function resetStepState(stepNum) {
+    document.getElementById(`stepIcon${stepNum}`).innerHTML = '<i class="bi bi-circle text-muted"></i>';
+    const status = document.getElementById(`stepStatus${stepNum}`);
+    status.className = 'badge bg-light text-secondary border small';
+    status.textContent = 'Menunggu';
+}
+
+function setStepActive(stepNum, text) {
+    document.getElementById(`stepIcon${stepNum}`).innerHTML = '<span class="spinner-border spinner-border-sm text-primary"></span>';
+    const status = document.getElementById(`stepStatus${stepNum}`);
+    status.className = 'badge bg-primary text-white small';
+    status.textContent = text || 'Memproses...';
+}
+
+function setStepSuccess(stepNum, text) {
+    document.getElementById(`stepIcon${stepNum}`).innerHTML = '<i class="bi bi-check-circle-fill text-success fs-6"></i>';
+    const status = document.getElementById(`stepStatus${stepNum}`);
+    status.className = 'badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 small';
+    status.textContent = text || 'Selesai';
+}
+
+function setStepFailed(stepNum, text) {
+    document.getElementById(`stepIcon${stepNum}`).innerHTML = '<i class="bi bi-x-circle-fill text-danger fs-6"></i>';
+    const status = document.getElementById(`stepStatus${stepNum}`);
+    status.className = 'badge bg-danger text-white small';
+    status.textContent = text || 'Gagal';
+}
+
+async function startPullSync() {
+    const selectEl = document.getElementById('selectCloudExam');
+    const examId = parseInt(selectEl.value, 10);
+    if (!examId) return;
+
+    const exam = cloudExamsCache.find(e => parseInt(e.id, 10) === examId);
+    const examName = exam ? exam.exam_name : 'Ujian Terpilih';
+
+    if (!confirm(`Mulai sinkronisasi data untuk "${examName}"?\nData soal, opsi, dan gambar pendukung akan diunduh ke server lab.`)) {
+        return;
+    }
+
+    isPullSyncInProgress = true;
+
+    // Kunci tombol penutup modal
+    document.getElementById('btnCancelSync').disabled = true;
+    document.getElementById('btnSyncPullClose').style.display = 'none';
+    document.getElementById('btnStartPullSync').style.display = 'none';
+
+    // Beralih ke view progress
+    document.getElementById('syncPullSelectSection').style.display = 'none';
+    document.getElementById('syncPullProgressSection').style.display = 'block';
+
+    const spinIcon = document.getElementById('syncSpinIcon');
+    spinIcon.classList.add('animate-spin');
+
+    const syncStudents = document.getElementById('chkSyncStudents').checked;
+    const syncMedia = document.getElementById('chkSyncMedia').checked;
+
+    try {
+        // ======================================
+        // STEP 1: Handshake & Verifikasi Token
+        // ======================================
+        updateSyncProgressBar(10, 'Langkah 1/5: Verifikasi Token Cloud', 'Memeriksa otentikasi server...');
+        setStepActive(1, 'Memverifikasi...');
+        
+        const testRes = await fetchJson('modules/exams/sync_pull_process.php?action=test_connection');
+        if (!testRes.success) throw new Error('Otentikasi cloud gagal: ' + testRes.message);
+        setStepSuccess(1, 'Terhubung');
+
+        // ======================================
+        // STEP 2: Sinkronisasi Metadata Ujian & Mapel
+        // ======================================
+        updateSyncProgressBar(25, 'Langkah 2/5: Mengunduh Struktur Ujian', 'Menyimpan jadwal ujian & mata pelajaran...');
+        setStepActive(2, 'Mengunduh...');
+        
+        const metaFormData = new FormData();
+        metaFormData.append('action', 'sync_exam_meta');
+        metaFormData.append('exam_id', examId);
+        
+        const metaRes = await fetchJson('modules/exams/sync_pull_process.php', { method: 'POST', body: metaFormData });
+        if (!metaRes.success) throw new Error('Gagal sync metadata: ' + metaRes.message);
+        setStepSuccess(2, `${metaRes.total_subjects || 0} Mapel tersimpan`);
+
+        // ======================================
+        // STEP 3: Sinkronisasi Soal, Opsi, & Stimulus
+        // ======================================
+        updateSyncProgressBar(50, 'Langkah 3/5: Mengunduh Bank Soal', 'Menyimpan butir pertanyaan, opsi & referensi...');
+        setStepActive(3, 'Mengunduh...');
+
+        const qFormData = new FormData();
+        qFormData.append('action', 'sync_questions');
+        qFormData.append('exam_id', examId);
+
+        const qRes = await fetchJson('modules/exams/sync_pull_process.php', { method: 'POST', body: qFormData });
+        if (!qRes.success) throw new Error('Gagal sync soal: ' + qRes.message);
+        setStepSuccess(3, `${qRes.total_questions || 0} Soal, ${qRes.total_options || 0} Opsi`);
+
+        // ======================================
+        // STEP 4: Sinkronisasi Siswa Terkait
+        // ======================================
+        updateSyncProgressBar(70, 'Langkah 4/5: Menyelaraskan Siswa Peserta', 'Menyimpan akun siswa dan token...');
+        setStepActive(4, 'Menyelaraskan...');
+
+        let studentCount = 0;
+        if (syncStudents) {
+            const stuFormData = new FormData();
+            stuFormData.append('action', 'sync_students');
+            stuFormData.append('exam_id', examId);
+
+            const stuRes = await fetchJson('modules/exams/sync_pull_process.php', { method: 'POST', body: stuFormData });
+            if (!stuRes.success) throw new Error('Gagal sync siswa: ' + stuRes.message);
+            studentCount = stuRes.total_students || 0;
+            setStepSuccess(4, `${studentCount} Siswa tersimpan`);
+        } else {
+            setStepSuccess(4, 'Dilewati');
+        }
+
+        // ======================================
+        // STEP 5: Unduh File Media / Gambar
+        // ======================================
+        updateSyncProgressBar(80, 'Langkah 5/5: Memeriksa Aset Gambar', 'Menghitung berkas gambar pendukung soal...');
+        setStepActive(5, 'Memeriksa berkas...');
+
+        let totalDownloadedMedia = 0;
+        let cachedMedia = 0;
+
+        if (syncMedia) {
+            const queueRes = await fetchJson(`modules/exams/sync_pull_process.php?action=get_media_queue&exam_id=${examId}`);
+            if (!queueRes.success) throw new Error('Gagal memeriksa berkas media: ' + queueRes.message);
+
+            const queue = queueRes.queue || [];
+            cachedMedia = queueRes.already_cached || 0;
+            const totalQueue = queue.length;
+
+            if (totalQueue > 0) {
+                for (let i = 0; i < totalQueue; i++) {
+                    const item = queue[i];
+                    const pct = Math.round(80 + ((i + 1) / totalQueue) * 18); // Bergerak dari 80% ke 98%
+                    updateSyncProgressBar(pct, 'Langkah 5/5: Mengunduh Berkas Media', `Mengunduh ${item.file} (${i + 1}/${totalQueue})...`);
+                    setStepActive(5, `Download (${i + 1}/${totalQueue})...`);
+
+                    const mediaFormData = new FormData();
+                    mediaFormData.append('action', 'download_single_media');
+                    mediaFormData.append('type', item.type);
+                    mediaFormData.append('file', item.file);
+
+                    await fetchJson('modules/exams/sync_pull_process.php', { method: 'POST', body: mediaFormData });
+                    totalDownloadedMedia++;
+                }
+                setStepSuccess(5, `${totalDownloadedMedia} baru, ${cachedMedia} lokal`);
+            } else {
+                setStepSuccess(5, `${cachedMedia} berkas sudah lengkap`);
+            }
+        } else {
+            setStepSuccess(5, 'Dilewati');
+        }
+
+        // ======================================
+        // SELESAI 100%
+        // ======================================
+        updateSyncProgressBar(100, 'Sinkronisasi Selesai!', 'Seluruh paket data berhasil diunduh ke server lab.');
+        spinIcon.classList.remove('animate-spin');
+        spinIcon.className = 'bi bi-check2-all fs-2 text-success';
+
+        document.getElementById('syncResultSummaryCard').style.display = 'block';
+        document.getElementById('syncResultSummaryText').innerHTML = `
+            Paket ujian <strong>${examName}</strong> siap digunakan offline.<br>
+            <span class="small text-muted">&bull; Soal: ${qRes.total_questions || 0} &bull; Stimulus: ${qRes.total_references || 0} &bull; Siswa: ${studentCount} &bull; Gambar: ${totalDownloadedMedia} baru (${cachedMedia} sudah ada).</span>
+        `;
+
+        document.getElementById('btnFinishReload').style.display = 'inline-block';
+        document.getElementById('btnCancelSync').style.display = 'none';
+
+    } catch (err) {
+        spinIcon.classList.remove('animate-spin');
+        spinIcon.className = 'bi bi-exclamation-triangle fs-2 text-danger';
+
+        updateSyncProgressBar(100, 'Sinkronisasi Terhenti', 'Terjadi kesalahan saat memproses data.');
+        const bar = document.getElementById('syncProgressBar');
+        bar.className = 'progress-bar bg-danger';
+
+        alert(`Gagal menyelesaikan sinkronisasi:\n${err.message}`);
+        
+        // Aktifkan kembali tombol batal agar modal bisa ditutup
+        document.getElementById('btnCancelSync').disabled = false;
+        document.getElementById('btnSyncPullClose').style.display = 'inline-block';
+    }
+}
+
+async function fetchJson(url, options = {}) {
+    const res = await fetch(url, options);
+    const text = await res.text();
+    try {
+        return JSON.parse(text);
+    } catch (e) {
+        const cleanMsg = text.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+        throw new Error(cleanMsg ? cleanMsg.substring(0, 200) : 'Respon server kosong');
+    }
+}
 </script>
 
 <style>
@@ -747,4 +1298,7 @@ document.addEventListener('input', function(e) {
 .drag-handle:active { cursor: grabbing !important; }
 .sortable-ghost { opacity: 0.4; background-color: #cfe2ff !important; }
 .sortable-chosen { background-color: #e8f5e9 !important; }
+
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.animate-spin { animation: spin 0.9s linear infinite; }
 </style>

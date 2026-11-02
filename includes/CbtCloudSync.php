@@ -149,4 +149,119 @@ class CbtCloudSync {
         $cleanUrl = rtrim($baseUrl, '/') . '/api/sync/upload_scores.php';
         return self::request($cleanUrl, 'POST', $payload, $syncToken);
     }
+
+    /**
+     * Unduh file biner (gambar/audio) dari cloud dan simpan ke file lokal
+     */
+    public static function downloadFile(string $url, string $destinationPath, string $syncToken = ''): array {
+        if (!function_exists('curl_init')) {
+            return [
+                'success' => false,
+                'message' => 'Ekstensi PHP cURL belum aktif di php.ini.'
+            ];
+        }
+
+        $destDir = dirname($destinationPath);
+        if (!is_dir($destDir)) {
+            @mkdir($destDir, 0777, true);
+        }
+
+        $cookieFile = self::getCookiePath();
+        $ch = curl_init();
+
+        $defaultHeaders = [
+            'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'Accept: */*'
+        ];
+        if (!empty($syncToken)) {
+            $defaultHeaders[] = 'X-SYNC-TOKEN: ' . $syncToken;
+            $defaultHeaders[] = 'Authorization: Bearer ' . $syncToken;
+        }
+
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_COOKIEJAR, $cookieFile);
+        curl_setopt($ch, CURLOPT_COOKIEFILE, $cookieFile);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $defaultHeaders);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+
+        if ($curlError) {
+            curl_close($ch);
+            return [
+                'success' => false,
+                'http_code' => 0,
+                'message' => 'Gagal download file: ' . $curlError
+            ];
+        }
+
+        // Deteksi challenge JavaScript InfinityFree Anti-Bot
+        if (is_string($response) && preg_match('/a=toNumbers\("([0-9a-fA-F]+)"\),b=toNumbers\("([0-9a-fA-F]+)"\),c=toNumbers\("([0-9a-fA-F]+)"\)/', $response, $matches)) {
+            $keyHex = $matches[1];
+            $ivHex  = $matches[2];
+            $ctHex  = $matches[3];
+
+            $key = hex2bin($keyHex);
+            $iv  = hex2bin($ivHex);
+            $ct  = hex2bin($ctHex);
+
+            $decrypted = openssl_decrypt($ct, 'AES-128-CBC', $key, OPENSSL_RAW_DATA | OPENSSL_ZERO_PADDING, $iv);
+            $cookieVal = bin2hex($decrypted);
+
+            $parsedUrl = parse_url($url);
+            $rootUrl = ($parsedUrl['scheme'] ?? 'http') . '://' . ($parsedUrl['host'] ?? 'cbt.page.gd') . '/?i=1';
+
+            curl_setopt($ch, CURLOPT_URL, $rootUrl);
+            curl_setopt($ch, CURLOPT_COOKIE, "__test=" . $cookieVal);
+            curl_setopt($ch, CURLOPT_HTTPGET, true);
+            curl_exec($ch);
+
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_COOKIE, "__test=" . $cookieVal);
+            curl_setopt($ch, CURLOPT_HTTPGET, true);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        }
+
+        curl_close($ch);
+
+        if ($httpCode >= 200 && $httpCode < 300 && !empty($response)) {
+            // Validasi jika respon adalah pesan error HTML
+            if (is_string($response) && (strpos($response, '<html') !== false && (strpos($response, '404 Not Found') !== false || strpos($response, 'Error') !== false))) {
+                return [
+                    'success' => false,
+                    'http_code' => 404,
+                    'message' => 'File tidak ditemukan di server cloud atau gagal diakses'
+                ];
+            }
+
+            if (@file_put_contents($destinationPath, $response) !== false) {
+                return [
+                    'success' => true,
+                    'bytes' => strlen($response),
+                    'path' => $destinationPath
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'message' => 'Gagal menulis file ke direktori lokal: ' . $destinationPath
+                ];
+            }
+        }
+
+        return [
+            'success' => false,
+            'http_code' => $httpCode,
+            'message' => 'Gagal mengunduh file, server merespon kode ' . $httpCode
+        ];
+    }
 }
+

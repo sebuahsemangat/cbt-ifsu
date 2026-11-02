@@ -66,9 +66,17 @@ $questionText = fixAdminImagePaths($questionText);
         max-width: 100% !important;
         height: auto !important;
     }
-    .ql-editor {
+    #editor .ql-editor {
         min-height: 200px;
         max-height: 500px;
+        overflow-y: auto;
+    }
+    #optionsContainer .ql-container {
+        height: auto;
+    }
+    #optionsContainer .ql-editor {
+        min-height: 70px;
+        max-height: 200px;
         overflow-y: auto;
     }
     .col-md-7, .col-md-5 {
@@ -136,7 +144,7 @@ $questionText = fixAdminImagePaths($questionText);
                         </div>
                 </div>
             </div>
-            <button type="submit" class="btn btn-primary w-100 py-3 fw-bold">Simpan Soal</button>
+            <button type="submit" class="btn btn-primary w-100 py-3 fw-bold position-relative shadow-sm" style="z-index: 10;">Simpan Soal</button>
         </div>
     </div>
 </form>
@@ -312,7 +320,7 @@ function renderOptions() {
                             <i class="bi bi-eye me-1"></i>Pratinjau Rumus
                         </button>
                     </div>
-                    <div id="editor_pg_${let}" class="tex2jax_ignore" style="height: 100px;"></div>
+                    <div id="editor_pg_${let}" class="tex2jax_ignore" style="min-height: 70px;"></div>
                     <div id="preview_pg_${let}" class="p-2 bg-light rounded border mt-2 small d-none">
                         <span class="text-primary small fw-bold d-block mb-1"><i class="bi bi-calculator me-1"></i>Tampilan Visual Siswa:</span>
                         <div class="math-preview-target tex2jax_process fw-semibold text-dark"></div>
@@ -414,7 +422,7 @@ function addBSRow(text = '', isCorrect = 1) {
                 </select>
                 <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this, '${id}')"><i class="bi bi-x"></i></button>
              </div>
-             <div id="editor_${id}" class="tex2jax_ignore" style="height: 80px;"></div>
+             <div id="editor_${id}" class="tex2jax_ignore" style="min-height: 60px;"></div>
              <input type="hidden" name="statements[]" id="input_${id}">
         </div>`;
     document.getElementById('bs-rows').appendChild(div);
@@ -448,7 +456,7 @@ function addMultiRow(text = '', isCorrect = 0) {
                 </div>
                 <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRow(this, '${id}')"><i class="bi bi-x"></i></button>
              </div>
-             <div id="editor_${id}" class="tex2jax_ignore" style="height: 80px;"></div>
+             <div id="editor_${id}" class="tex2jax_ignore" style="min-height: 60px;"></div>
              <input type="hidden" name="multi_options[]" id="input_${id}">
         </div>`;
     document.getElementById('multi-rows').appendChild(div);
