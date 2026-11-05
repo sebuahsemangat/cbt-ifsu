@@ -276,6 +276,14 @@ ob_start();
                                         <td class="bio-colon">:</td>
                                         <td class="bio-value"><?= htmlspecialchars($s['class'] ?? '-') ?></td>
                                     </tr>
+                                    <tr>
+                                        <td class="bio-label">Ruang / Kel.</td>
+                                        <td class="bio-colon">:</td>
+                                        <td class="bio-value">
+                                            <?= (!empty($s['room']) && $s['room'] !== '0') ? htmlspecialchars($s['room']) : '-' ?>
+                                            <?= !empty($s['kelompok']) ? ' (' . htmlspecialchars($s['kelompok']) . ')' : '' ?>
+                                        </td>
+                                    </tr>
                                 </table>
 
                                 <!-- Tanda Tangan Kepala Sekolah (Kanan Bawah) -->
@@ -344,6 +352,14 @@ ob_start();
                                         <td class="bio-label">Kelas</td>
                                         <td class="bio-colon">:</td>
                                         <td class="bio-value"><?= htmlspecialchars($s['class'] ?? '-') ?></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="bio-label">Ruang / Kel.</td>
+                                        <td class="bio-colon">:</td>
+                                        <td class="bio-value">
+                                            <?= (!empty($s['room']) && $s['room'] !== '0') ? htmlspecialchars($s['room']) : '-' ?>
+                                            <?= !empty($s['kelompok']) ? ' (' . htmlspecialchars($s['kelompok']) . ')' : '' ?>
+                                        </td>
                                     </tr>
                                 </table>
 

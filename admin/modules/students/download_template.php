@@ -15,11 +15,11 @@ $output = fopen("php://output", "w");
 
 // Baris pertama (Header kolom) menggunakan pemisah titik koma (standard tabel di Excel Indonesia)
 // Kami menulis manual fputcsv dengan delimiter ;
-fputcsv($output, ["NIS", "Nama Lengkap", "Kelas", "Kelompok"], ";");
+fputcsv($output, ["NIS", "Nama Lengkap", "Kelas", "Kelompok", "Ruangan"], ";");
 
 // Contoh data (Opsional)
-fputcsv($output, ["1001", "Apep Wahyudin", "XII IPA 1", "Kelompok 1"], ";");
-fputcsv($output, ["1002", "Budi Santoso", "XII IPA 2", "Kelompok 2"], ";");
+fputcsv($output, ["1001", "Apep Wahyudin", "XII IPA 1", "Kelompok 1", "Ruang 1"], ";");
+fputcsv($output, ["1002", "Budi Santoso", "XII IPA 2", "Kelompok 2", "Ruang 2"], ";");
 
 fclose($output);
 exit;

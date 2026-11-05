@@ -4,13 +4,15 @@ require_once '../../../includes/auth_check.php';
 
 $action = $_GET['action'] ?? '';
 
-// --- FITUR: TAMBAH 1 SISWA DENGAN NIS & KELOMPOK ---
+// --- FITUR: TAMBAH 1 SISWA DENGAN NIS, KELOMPOK & RUANGAN ---
 if ($action == 'add_single' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     $nis = trim($_POST['nis'] ?? '');
     $nama = trim($_POST['full_name'] ?? '');
     $kelas = trim($_POST['class'] ?? '');
     $kelompok = trim($_POST['kelompok'] ?? '');
+    $room = trim($_POST['room'] ?? '');
     $kelompokVal = empty($kelompok) ? null : $kelompok;
+    $roomVal = empty($room) ? null : $room;
     
     if (!empty($nis) && !empty($nama)) {
         // Proteksi duplikat NIS
@@ -24,8 +26,8 @@ if ($action == 'add_single' && $_SERVER['REQUEST_METHOD'] == 'POST') {
         // Password Default: 123456
         $password = password_hash('123456', PASSWORD_DEFAULT);
 
-        $stmt = $pdo->prepare("INSERT INTO students (nis, password, full_name, class, kelompok) VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([$nis, $password, $nama, $kelas, $kelompokVal]);
+        $stmt = $pdo->prepare("INSERT INTO students (nis, password, full_name, class, kelompok, room) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$nis, $password, $nama, $kelas, $kelompokVal, $roomVal]);
         
         header("Location: ../../dashboard.php?page=students&status=success");
     } else {
@@ -34,14 +36,16 @@ if ($action == 'add_single' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     exit;
 }
 
-// --- FITUR: EDIT DATA SISWA, NIS & KELOMPOK ---
+// --- FITUR: EDIT DATA SISWA, NIS, KELOMPOK & RUANGAN ---
 if ($action == 'edit' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     $id = (int)$_POST['id'];
     $nis = trim($_POST['nis'] ?? '');
     $nama = trim($_POST['full_name'] ?? '');
     $kelas = trim($_POST['class'] ?? '');
     $kelompok = trim($_POST['kelompok'] ?? '');
+    $room = trim($_POST['room'] ?? '');
     $kelompokVal = empty($kelompok) ? null : $kelompok;
+    $roomVal = empty($room) ? null : $room;
     
     if (!empty($id) && !empty($nis) && !empty($nama)) {
         // Cek duplikasi NIS untuk siswa lain
@@ -52,8 +56,8 @@ if ($action == 'edit' && $_SERVER['REQUEST_METHOD'] == 'POST') {
             exit;
         }
 
-        $stmt = $pdo->prepare("UPDATE students SET nis = ?, full_name = ?, class = ?, kelompok = ? WHERE id = ?");
-        $stmt->execute([$nis, $nama, $kelas, $kelompokVal, $id]);
+        $stmt = $pdo->prepare("UPDATE students SET nis = ?, full_name = ?, class = ?, kelompok = ?, room = ? WHERE id = ?");
+        $stmt->execute([$nis, $nama, $kelas, $kelompokVal, $roomVal, $id]);
         header("Location: ../../dashboard.php?page=students&status=updated");
     } else {
         header("Location: ../../dashboard.php?page=students&status=error");
@@ -61,7 +65,7 @@ if ($action == 'edit' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     exit;
 }
 
-// Logika Import CSV dengan NIS & Kelompok (Mendukung Base64 untuk Bypass OpenResty 403)
+// Logika Import CSV dengan NIS, Kelompok & Ruangan (Mendukung Base64 untuk Bypass OpenResty 403)
 if ($action == 'import' && $_SERVER['REQUEST_METHOD'] == 'POST') {
     $handle = null;
     
@@ -91,7 +95,7 @@ if ($action == 'import' && $_SERVER['REQUEST_METHOD'] == 'POST') {
         fgetcsv($handle, 1000, $delimiter); // Skip baris header
 
         $password = password_hash('123456', PASSWORD_DEFAULT);
-        $stmt = $pdo->prepare("INSERT INTO students (nis, password, full_name, class, kelompok) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE full_name = VALUES(full_name), class = VALUES(class), kelompok = COALESCE(VALUES(kelompok), kelompok)");
+        $stmt = $pdo->prepare("INSERT INTO students (nis, password, full_name, class, kelompok, room) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE full_name = VALUES(full_name), class = VALUES(class), kelompok = COALESCE(VALUES(kelompok), kelompok), room = COALESCE(VALUES(room), room)");
 
         while (($data = fgetcsv($handle, 1000, $delimiter)) !== FALSE) {
             $nis = trim($data[0] ?? '');
@@ -99,13 +103,41 @@ if ($action == 'import' && $_SERVER['REQUEST_METHOD'] == 'POST') {
             $kelas = trim($data[2] ?? '');
             $kelompok = isset($data[3]) ? trim($data[3]) : null;
             $kelompokVal = empty($kelompok) ? null : $kelompok;
+            $room = isset($data[4]) ? trim($data[4]) : null;
+            $roomVal = empty($room) ? null : $room;
             if (empty($nis) || empty($nama)) continue;
 
-            $stmt->execute([$nis, $password, $nama, $kelas, $kelompokVal]);
+            $stmt->execute([$nis, $password, $nama, $kelas, $kelompokVal, $roomVal]);
         }
         fclose($handle);
         header("Location: ../../dashboard.php?page=students&status=success");
     } else {
+        header("Location: ../../dashboard.php?page=students&status=error");
+    }
+    exit;
+}
+
+// --- FITUR UTAMA: UBAH RUANGAN SISWA BERDASARKAN KELOMPOK ---
+if ($action == 'set_room_by_group' && $_SERVER['REQUEST_METHOD'] == 'POST') {
+    $kelompok = trim($_POST['kelompok'] ?? '');
+    $room = trim($_POST['room'] ?? '');
+    $clearRoom = isset($_POST['clear_room']) && $_POST['clear_room'] == '1';
+
+    if (!empty($kelompok)) {
+        $roomVal = ($clearRoom || $room === '') ? null : $room;
+
+        $stmt = $pdo->prepare("UPDATE students SET room = ? WHERE kelompok = ?");
+        $stmt->execute([$roomVal, $kelompok]);
+        $countUpdated = $stmt->rowCount();
+
+        if ($roomVal !== null) {
+            $_SESSION['success'] = "Berhasil menetapkan ruangan \"$roomVal\" untuk seluruh siswa di kelompok \"$kelompok\" ($countUpdated siswa terupdate)!";
+        } else {
+            $_SESSION['success'] = "Ruangan berhasil dikosongkan untuk seluruh siswa di kelompok \"$kelompok\" ($countUpdated siswa)!";
+        }
+        header("Location: ../../dashboard.php?page=students&status=room_updated");
+    } else {
+        $_SESSION['error'] = "Pilih kelompok terlebih dahulu.";
         header("Location: ../../dashboard.php?page=students&status=error");
     }
     exit;

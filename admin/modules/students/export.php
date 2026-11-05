@@ -45,6 +45,7 @@ header("Expires: 0");
                 <th>Nama Lengkap</th>
                 <th>Kelas</th>
                 <th>Kelompok</th>
+                <th>Ruangan</th>
                 <th>Password (Default)</th>
             </tr>
         </thead>
@@ -56,6 +57,7 @@ header("Expires: 0");
                 <td><?= htmlspecialchars($s['full_name']) ?></td>
                 <td><?= htmlspecialchars($s['class'] ?? '-') ?></td>
                 <td><?= htmlspecialchars($s['kelompok'] ?? '-') ?></td>
+                <td><?= (!empty($s['room']) && $s['room'] !== '0') ? htmlspecialchars($s['room']) : '-' ?></td>
                 <td>123456</td>
             </tr>
             <?php endforeach; ?>
