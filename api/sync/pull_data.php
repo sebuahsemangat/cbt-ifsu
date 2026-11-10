@@ -287,11 +287,11 @@ if ($action === 'get_students') {
 
         if (!empty($classes)) {
             $placeholders = implode(',', array_fill(0, count($classes), '?'));
-            $stmtStudents = $pdo->prepare("SELECT id, nis, password, full_name, class, kelompok FROM students WHERE class IN ($placeholders) ORDER BY class ASC, full_name ASC");
+            $stmtStudents = $pdo->prepare("SELECT id, nis, password, full_name, class, kelompok, room FROM students WHERE class IN ($placeholders) ORDER BY class ASC, full_name ASC");
             $stmtStudents->execute($classes);
         } else {
             // Jika tidak ada batasan kelas khusus, tarik seluruh siswa
-            $stmtStudents = $pdo->query("SELECT id, nis, password, full_name, class, kelompok FROM students ORDER BY class ASC, full_name ASC");
+            $stmtStudents = $pdo->query("SELECT id, nis, password, full_name, class, kelompok, room FROM students ORDER BY class ASC, full_name ASC");
         }
         $students = $stmtStudents->fetchAll(PDO::FETCH_ASSOC);
 

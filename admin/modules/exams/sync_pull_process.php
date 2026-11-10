@@ -358,53 +358,54 @@ try {
 
         $pdo->beginTransaction();
 
-        // Cek kolom kelompok pada tabel students lokal
+        // Cek kolom kelompok dan room pada tabel students lokal
         $hasKelompok = false;
+        $hasRoom = false;
         try {
             $checkCol = $pdo->query("SHOW COLUMNS FROM students LIKE 'kelompok'");
             $hasKelompok = ($checkCol && $checkCol->rowCount() > 0);
+            $checkRoom = $pdo->query("SHOW COLUMNS FROM students LIKE 'room'");
+            $hasRoom = ($checkRoom && $checkRoom->rowCount() > 0);
         } catch (Exception $e) {
             $hasKelompok = false;
+            $hasRoom = false;
         }
 
+        // Bangun daftar kolom secara dinamis agar sync tetap jalan
+        // walau kolom kelompok/room belum ada di database lokal
+        $columns = ['id', 'nis', 'password', 'full_name', 'class'];
         if ($hasKelompok) {
-            $stmtStu = $pdo->prepare("
-                INSERT INTO students (id, nis, password, full_name, class, kelompok)
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE
-                    password = VALUES(password),
-                    full_name = VALUES(full_name),
-                    class = VALUES(class),
-                    kelompok = VALUES(kelompok)
-            ");
-            foreach ($students as $s) {
-                $stmtStu->execute([
-                    $s['id'],
-                    $s['nis'],
-                    $s['password'],
-                    $s['full_name'],
-                    $s['class'] ?? '',
-                    $s['kelompok'] ?? null
-                ]);
+            $columns[] = 'kelompok';
+        }
+        if ($hasRoom) {
+            $columns[] = 'room';
+        }
+        $placeholders = implode(', ', array_fill(0, count($columns), '?'));
+        $updates = ['password = VALUES(password)', 'full_name = VALUES(full_name)', 'class = VALUES(class)'];
+        if ($hasKelompok) {
+            $updates[] = 'kelompok = VALUES(kelompok)';
+        }
+        if ($hasRoom) {
+            $updates[] = 'room = VALUES(room)';
+        }
+        $stmtStu = $pdo->prepare(
+            'INSERT INTO students (' . implode(', ', $columns) . ') VALUES (' . $placeholders . ') ON DUPLICATE KEY UPDATE ' . implode(', ', $updates)
+        );
+        foreach ($students as $s) {
+            $values = [
+                $s['id'],
+                $s['nis'],
+                $s['password'],
+                $s['full_name'],
+                $s['class'] ?? ''
+            ];
+            if ($hasKelompok) {
+                $values[] = $s['kelompok'] ?? null;
             }
-        } else {
-            $stmtStu = $pdo->prepare("
-                INSERT INTO students (id, nis, password, full_name, class)
-                VALUES (?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE
-                    password = VALUES(password),
-                    full_name = VALUES(full_name),
-                    class = VALUES(class)
-            ");
-            foreach ($students as $s) {
-                $stmtStu->execute([
-                    $s['id'],
-                    $s['nis'],
-                    $s['password'],
-                    $s['full_name'],
-                    $s['class'] ?? ''
-                ]);
+            if ($hasRoom) {
+                $values[] = $s['room'] ?? null;
             }
+            $stmtStu->execute($values);
         }
 
         $pdo->commit();
