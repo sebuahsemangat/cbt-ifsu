@@ -14,7 +14,7 @@ $settings = $stmtSettings->fetchAll(PDO::FETCH_KEY_PAIR);
 $bimbel_logo = $settings['bimbel_logo'] ?? 'logo-bimbel.png';
 $bimbel_name = $settings['bimbel_name'] ?? 'SMK INFORMATIKA SUMEDANG';
 
-// 2. Encode Logo & Tanda Tangan ke Base64 (Reliabel & 100% didukung Dompdf)
+// 2. Encode Logo Sekolah & Logo YPS ke Base64 (Reliabel & 100% didukung Dompdf)
 $logoPath = realpath(__DIR__ . '/../../../assets/img/' . $bimbel_logo);
 $logoBase64 = '';
 if ($logoPath && file_exists($logoPath)) {
@@ -23,15 +23,48 @@ if ($logoPath && file_exists($logoPath)) {
     $logoBase64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
 }
 
-$ttdPath = realpath(__DIR__ . '/../../../assets/img/ttd.png');
-$ttdBase64 = '';
-if ($ttdPath && file_exists($ttdPath)) {
-    $type = pathinfo($ttdPath, PATHINFO_EXTENSION);
-    $data = file_get_contents($ttdPath);
-    $ttdBase64 = 'data:image/' . $type . ';base64,' . base64_encode($data);
+$logoYpsPath = realpath(__DIR__ . '/../../../assets/img/logo-yps.png');
+$logoYpsBase64 = '';
+if ($logoYpsPath && file_exists($logoYpsPath)) {
+    $typeYps = pathinfo($logoYpsPath, PATHINFO_EXTENSION);
+    $dataYps = file_get_contents($logoYpsPath);
+    $logoYpsBase64 = 'data:image/' . $typeYps . ';base64,' . base64_encode($dataYps);
 }
 
-// 3. Filter Siswa yang Akan Dicetak
+// 3. Ambil Daftar Mata Pelajaran Terurut dari Tanggal Terdekat (Dikelompokkan per Kelas)
+$stmtClassSubjects = $pdo->query("
+    SELECT ec.class_name, s.name AS subject_name, e.start_date
+    FROM subjects s
+    JOIN exams e ON s.exam_id = e.id
+    JOIN exam_classes ec ON ec.exam_id = e.id
+    WHERE e.is_active = 1 AND s.is_active = 1
+    ORDER BY e.start_date ASC, s.name ASC
+");
+$allClassSubjects = [];
+while ($row = $stmtClassSubjects->fetch(PDO::FETCH_ASSOC)) {
+    $allClassSubjects[$row['class_name']][] = [
+        'name' => $row['subject_name'],
+        'date' => date('d-m-Y', strtotime($row['start_date']))
+    ];
+}
+
+// Fallback: Seluruh mata pelajaran aktif jika siswa belum memiliki mapping kelas spesifik
+$stmtGlobalSubjects = $pdo->query("
+    SELECT s.name AS subject_name, e.start_date
+    FROM subjects s
+    JOIN exams e ON s.exam_id = e.id
+    WHERE e.is_active = 1 AND s.is_active = 1
+    ORDER BY e.start_date ASC, s.name ASC
+");
+$globalSubjects = [];
+while ($row = $stmtGlobalSubjects->fetch(PDO::FETCH_ASSOC)) {
+    $globalSubjects[] = [
+        'name' => $row['subject_name'],
+        'date' => date('d-m-Y', strtotime($row['start_date']))
+    ];
+}
+
+// 4. Filter Siswa yang Akan Dicetak
 $id = isset($_GET['id']) ? (int)$_GET['id'] : null;
 $class = isset($_GET['class']) ? trim($_GET['class']) : 'all';
 
@@ -55,10 +88,10 @@ if (empty($students)) {
     die("Tidak ada data siswa yang dapat dicetak.");
 }
 
-// 4. Bagi siswa ke dalam grup 4 kartu per lembar A4 (Grid 2 Kolom x 2 Baris)
-$studentChunks = array_chunk($students, 4);
+// 5. Bagi siswa ke dalam grup 6 kartu per lembar A4 (Grid 2 Kolom x 3 Baris)
+$studentChunks = array_chunk($students, 6);
 
-// 5. Generate HTML untuk Dompdf
+// 6. Generate HTML untuk Dompdf
 ob_start();
 ?>
 <!DOCTYPE html>
@@ -69,22 +102,21 @@ ob_start();
     <style>
         @page {
             size: A4 portrait;
-            margin: 8mm 6mm;
+            margin: 3.5mm 4.5mm;
         }
         * {
             box-sizing: border-box;
             -webkit-box-sizing: border-box;
         }
         body {
-            font-family: 'Helvetica', Arial, sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
             color: #111;
             margin: 0;
             padding: 0;
-            font-size: 8.5pt;
+            font-size: 6pt;
         }
         .page {
             width: 100%;
-            height: 100%;
         }
         .page-break {
             page-break-before: always;
@@ -93,133 +125,135 @@ ob_start();
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
+            margin: 0;
+            padding: 0;
         }
         .grid-td {
             width: 50%;
             vertical-align: top;
-            padding: 3.5mm 3.5mm;
+            padding: 1.2mm 3.5mm;
+            text-align: center;
         }
         .card-box {
-            border: 1.5px solid #222;
-            border-radius: 8px;
-            padding: 7px 9px 6px 9px;
+            width: 85mm;
+            height: 86mm;
+            border: 1px solid #000;
+            border-radius: 0;
+            padding: 2mm 2.5mm;
             background-color: #ffffff;
-            height: 130mm;
-            max-height: 130mm;
             overflow: hidden;
-            position: relative;
+            margin: 0 auto;
+            text-align: left;
         }
-        .header-table {
+
+        /* KOP HEADER (3 KOLOM: LOGO KIRI, TEKS TENGAH, LOGO KANAN) */
+        .kop-table {
             width: 100%;
             border-collapse: collapse;
+            margin: 0;
         }
-        .header-logo {
-            width: 48px;
+        .kop-logo-left {
+            width: 20px;
             vertical-align: middle;
             text-align: center;
         }
-        .header-logo img {
-            max-width: 44px;
-            max-height: 44px;
-            object-fit: contain;
+        .kop-logo-left img {
+            max-width: 19px;
+            max-height: 21px;
+            display: block;
+            margin: 0 auto;
         }
-        .header-text {
+        .kop-logo-right {
+            width: 20px;
             vertical-align: middle;
             text-align: center;
-            padding-left: 4px;
         }
-        .school-name {
-            font-size: 9.5pt;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-            margin: 0;
-            color: #0f172a;
+        .kop-logo-right img {
+            max-width: 19px;
+            max-height: 21px;
+            display: block;
+            margin: 0 auto;
         }
-        .school-address {
-            font-size: 6.8pt;
-            color: #334155;
-            margin-top: 1px;
-            line-height: 1.15;
-        }
-        .divider {
-            border-top: 1.8px solid #000;
-            border-bottom: 0.5px solid #000;
-            height: 2px;
-            margin: 4px 0 5px 0;
-        }
-        .card-title {
+        .kop-text {
+            vertical-align: middle;
             text-align: center;
+            padding: 0 1px;
+        }
+        .kop-line-1 {
+            font-size: 6.5pt;
             font-weight: bold;
-            font-size: 8.5pt;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin: 0;
-            color: #0f172a;
+            color: #000;
+            line-height: 1.1;
         }
-        .card-subtitle {
-            text-align: center;
-            font-size: 7.2pt;
-            color: #475569;
-            margin-top: 1px;
-            margin-bottom: 6px;
+        .kop-line-2 {
+            font-size: 5.2pt;
+            font-weight: bold;
+            color: #000;
+            line-height: 1.1;
+            margin-top: 0.5px;
         }
+        .kop-line-3 {
+            font-size: 5.5pt;
+            font-weight: bold;
+            color: #000;
+            line-height: 1.1;
+            margin-top: 0.5px;
+        }
+        .kop-divider {
+            border-bottom: 1px solid #000;
+            margin: 1.5mm 0 1.5mm 0;
+            height: 0;
+            font-size: 0;
+            line-height: 0;
+        }
+
+        /* IDENTITAS SISWA */
         .bio-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 8pt;
-            margin-top: 3px;
-            margin-bottom: 4px;
+            font-size: 5.3pt;
+            margin-bottom: 1.5mm;
         }
         .bio-table td {
-            padding: 2px 1px;
+            padding: 0.4px 0;
             vertical-align: top;
             border: none;
+            line-height: 1.15;
         }
         .bio-label {
-            width: 50px;
-            color: #334155;
+            width: 56px;
+            color: #222;
         }
         .bio-colon {
-            width: 8px;
+            width: 5px;
             text-align: center;
         }
         .bio-value {
-            font-weight: 600;
-            color: #0f172a;
+            color: #000;
         }
-        .sig-table {
+
+        /* TABEL MATA PELAJARAN */
+        .mapel-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 6px;
+            font-size: 5pt;
         }
-        .sig-table td {
-            border: none;
-            vertical-align: top;
+        .mapel-table th, .mapel-table td {
+            border: 0.8px solid #000;
+            padding: 0.8px 1.5px;
+            line-height: 1.1;
         }
-        .sig-date {
-            font-size: 7.2pt;
-            margin-bottom: 1px;
-        }
-        .sig-title {
-            font-size: 7.2pt;
-            margin-bottom: 1px;
-        }
-        .sig-image-container {
-            height: 38px;
+        .mapel-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
             text-align: center;
         }
-        .sig-image {
-            max-height: 36px;
-            max-width: 110px;
-            object-fit: contain;
+        .mapel-col-date {
+            width: 22mm;
+            text-align: center;
         }
-        .sig-name {
-            font-size: 7.5pt;
-            font-weight: bold;
-            text-decoration: underline;
-            color: #0f172a;
-            margin-top: 1px;
+        .mapel-col-name {
+            text-align: left;
         }
     </style>
 </head>
@@ -232,160 +266,103 @@ ob_start();
 
     <div class="page">
         <table class="grid-table">
-            <tr>
-                <?php for ($col = 0; $col < 2; $col++): ?>
-                    <td class="grid-td">
-                        <?php if (isset($chunk[$col])): $s = $chunk[$col]; ?>
-                            <div class="card-box">
-                                <!-- Bagian Atas: Header Logo & Nama Sekolah -->
-                                <table class="header-table">
-                                    <tr>
-                                        <?php if (!empty($logoBase64)): ?>
-                                            <td class="header-logo">
-                                                <img src="<?= $logoBase64 ?>" alt="Logo">
-                                            </td>
-                                        <?php endif; ?>
-                                        <td class="header-text">
-                                            <div class="school-name">SMK INFORMATIKA SUMEDANG</div>
-                                            <div class="school-address">Jln. Angkrek Situ No. 19 Sumedang</div>
-                                        </td>
-                                    </tr>
-                                </table>
-
-                                <!-- Garis Pemisah -->
-                                <div class="divider"></div>
-
-                                <!-- Judul Kartu -->
-                                <div class="card-title">KARTU UJIAN SEKOLAH</div>
-                                <div class="card-subtitle">Tahun Pelajaran 2026/2027</div>
-
-                                <!-- Identitas Siswa (Tabel tanpa border) -->
-                                <table class="bio-table">
-                                    <tr>
-                                        <td class="bio-label">NIS</td>
-                                        <td class="bio-colon">:</td>
-                                        <td class="bio-value"><?= htmlspecialchars($s['nis']) ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="bio-label">Nama</td>
-                                        <td class="bio-colon">:</td>
-                                        <td class="bio-value"><?= htmlspecialchars($s['full_name']) ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="bio-label">Kelas</td>
-                                        <td class="bio-colon">:</td>
-                                        <td class="bio-value"><?= htmlspecialchars($s['class'] ?? '-') ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="bio-label">Ruang / Kel.</td>
-                                        <td class="bio-colon">:</td>
-                                        <td class="bio-value">
-                                            <?= (!empty($s['room']) && $s['room'] !== '0') ? htmlspecialchars($s['room']) : '-' ?>
-                                            <?= !empty($s['kelompok']) ? ' (' . htmlspecialchars($s['kelompok']) . ')' : '' ?>
-                                        </td>
-                                    </tr>
-                                </table>
-
-                                <!-- Tanda Tangan Kepala Sekolah (Kanan Bawah) -->
-                                <table class="sig-table">
-                                    <tr>
-                                        <td style="width: 45%;"></td>
-                                        <td style="width: 55%; text-align: center;">
-                                            <div class="sig-date">Sumedang, 20 Oktober 2026</div>
-                                            <div class="sig-title">Kepala Sekolah,</div>
-                                            <div class="sig-image-container">
-                                                <?php if (!empty($ttdBase64)): ?>
-                                                    <img src="<?= $ttdBase64 ?>" class="sig-image" alt="TTD">
-                                                <?php else: ?>
-                                                    <div style="height: 36px;"></div>
+            <?php for ($row = 0; $row < 3; $row++): ?>
+                <tr>
+                    <?php for ($col = 0; $col < 2; $col++): 
+                        $cardIndex = $row * 2 + $col;
+                    ?>
+                        <td class="grid-td">
+                            <?php if (isset($chunk[$cardIndex])): 
+                                $s = $chunk[$cardIndex]; 
+                                $studentClass = $s['class'] ?? '';
+                                $subjects = $allClassSubjects[$studentClass] ?? $globalSubjects;
+                            ?>
+                                <div class="card-box">
+                                    <!-- KOP HEADER -->
+                                    <table class="kop-table">
+                                        <tr>
+                                            <td class="kop-logo-left">
+                                                <?php if (!empty($logoBase64)): ?>
+                                                    <img src="<?= $logoBase64 ?>" alt="Logo Sekolah">
                                                 <?php endif; ?>
-                                            </div>
-                                            <div class="sig-name">Tatang Suryana, S.Ag., M.Pd.</div>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </div>
-                        <?php endif; ?>
-                    </td>
-                <?php endfor; ?>
-            </tr>
-            <tr>
-                <?php for ($col = 2; $col < 4; $col++): ?>
-                    <td class="grid-td">
-                        <?php if (isset($chunk[$col])): $s = $chunk[$col]; ?>
-                            <div class="card-box">
-                                <!-- Bagian Atas: Header Logo & Nama Sekolah -->
-                                <table class="header-table">
-                                    <tr>
-                                        <?php if (!empty($logoBase64)): ?>
-                                            <td class="header-logo">
-                                                <img src="<?= $logoBase64 ?>" alt="Logo">
                                             </td>
-                                        <?php endif; ?>
-                                        <td class="header-text">
-                                            <div class="school-name">SMK INFORMATIKA SUMEDANG</div>
-                                            <div class="school-address">Jln. Angkrek Situ No. 19 Sumedang</div>
-                                        </td>
-                                    </tr>
-                                </table>
-
-                                <!-- Garis Pemisah -->
-                                <div class="divider"></div>
-
-                                <!-- Judul Kartu -->
-                                <div class="card-title">KARTU UJIAN SEKOLAH</div>
-                                <div class="card-subtitle">Tahun Pelajaran 2026/2027</div>
-
-                                <!-- Identitas Siswa (Tabel tanpa border) -->
-                                <table class="bio-table">
-                                    <tr>
-                                        <td class="bio-label">NIS</td>
-                                        <td class="bio-colon">:</td>
-                                        <td class="bio-value"><?= htmlspecialchars($s['nis']) ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="bio-label">Nama</td>
-                                        <td class="bio-colon">:</td>
-                                        <td class="bio-value"><?= htmlspecialchars($s['full_name']) ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="bio-label">Kelas</td>
-                                        <td class="bio-colon">:</td>
-                                        <td class="bio-value"><?= htmlspecialchars($s['class'] ?? '-') ?></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="bio-label">Ruang / Kel.</td>
-                                        <td class="bio-colon">:</td>
-                                        <td class="bio-value">
-                                            <?= (!empty($s['room']) && $s['room'] !== '0') ? htmlspecialchars($s['room']) : '-' ?>
-                                            <?= !empty($s['kelompok']) ? ' (' . htmlspecialchars($s['kelompok']) . ')' : '' ?>
-                                        </td>
-                                    </tr>
-                                </table>
-
-                                <!-- Tanda Tangan Kepala Sekolah (Kanan Bawah) -->
-                                <table class="sig-table">
-                                    <tr>
-                                        <td style="width: 45%;"></td>
-                                        <td style="width: 55%; text-align: center;">
-                                            <div class="sig-date">Sumedang, 20 Oktober 2026</div>
-                                            <div class="sig-title">Kepala Sekolah,</div>
-                                            <div class="sig-image-container">
-                                                <?php if (!empty($ttdBase64)): ?>
-                                                    <img src="<?= $ttdBase64 ?>" class="sig-image" alt="TTD">
-                                                <?php else: ?>
-                                                    <div style="height: 36px;"></div>
+                                            <td class="kop-text">
+                                                <div class="kop-line-1">KARTU PESERTA &amp; LOGIN</div>
+                                                <div class="kop-line-2">PENILAIAN SUMATIF AKHIR JENJANG (PSAJ)</div>
+                                                <div class="kop-line-3">TAHUN <?= date('Y') ?></div>
+                                            </td>
+                                            <td class="kop-logo-right">
+                                                <?php if (!empty($logoYpsBase64)): ?>
+                                                    <img src="<?= $logoYpsBase64 ?>" alt="Logo YPS">
                                                 <?php endif; ?>
-                                            </div>
-                                            <div class="sig-name">Tatang Suryana, S.Ag., M.Pd.</div>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </div>
-                        <?php endif; ?>
-                    </td>
-                <?php endfor; ?>
-            </tr>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    <div class="kop-divider"></div>
+
+                                    <!-- IDENTITAS SISWA -->
+                                    <table class="bio-table">
+                                        <tr>
+                                            <td class="bio-label">Nama Peserta</td>
+                                            <td class="bio-colon">:</td>
+                                            <td class="bio-value"><?= htmlspecialchars($s['full_name'] ?? '') ?></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="bio-label">NIS</td>
+                                            <td class="bio-colon">:</td>
+                                            <td class="bio-value"><strong><?= htmlspecialchars($s['nis'] ?? '') ?></strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="bio-label">Kelas</td>
+                                            <td class="bio-colon">:</td>
+                                            <td class="bio-value"><?= htmlspecialchars($s['class'] ?? '-') ?></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="bio-label">Nama Kelompok</td>
+                                            <td class="bio-colon">:</td>
+                                            <td class="bio-value"><?= htmlspecialchars($s['kelompok'] ?? '-') ?></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="bio-label">Password</td>
+                                            <td class="bio-colon">:</td>
+                                            <td class="bio-value">123456</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="bio-label">Ruang</td>
+                                            <td class="bio-colon">:</td>
+                                            <td class="bio-value"><?= (!empty($s['room']) && $s['room'] !== '0') ? htmlspecialchars($s['room']) : '-' ?></td>
+                                        </tr>
+                                    </table>
+
+                                    <!-- TABEL MATA PELAJARAN -->
+                                    <table class="mapel-table">
+                                        <thead>
+                                            <tr>
+                                                <th class="mapel-col-date">Tanggal</th>
+                                                <th class="mapel-col-name">Mata Pelajaran</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php if (!empty($subjects)): ?>
+                                                <?php foreach ($subjects as $sub): ?>
+                                                    <tr>
+                                                        <td class="mapel-col-date"><?= htmlspecialchars($sub['date']) ?></td>
+                                                        <td class="mapel-col-name"><?= htmlspecialchars($sub['name']) ?></td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            <?php else: ?>
+                                                <tr>
+                                                    <td colspan="2" style="text-align: center; color: #888; font-style: italic;">Jadwal belum ditentukan</td>
+                                                </tr>
+                                            <?php endif; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            <?php endif; ?>
+                        </td>
+                    <?php endfor; ?>
+                </tr>
+            <?php endfor; ?>
         </table>
     </div>
 <?php endforeach; ?>
@@ -395,16 +372,16 @@ ob_start();
 <?php
 $html = ob_get_clean();
 
-// 6. Konfigurasi dan Render Dompdf
+// 7. Konfigurasi dan Render Dompdf
 $options = new Options();
 $options->set('isHtml5ParserEnabled', true);
 $options->set('isRemoteEnabled', true);
-$options->set('defaultFont', 'Helvetica');
+$options->set('defaultFont', 'Arial');
 
 $dompdf = new Dompdf($options);
 $dompdf->loadHtml($html);
 $dompdf->setPaper('A4', 'portrait');
 $dompdf->render();
 
-// 7. Output PDF langsung ke browser (inline preview)
+// 8. Output PDF langsung ke browser (inline preview)
 $dompdf->stream($pdfTitle . ".pdf", ["Attachment" => false]);

@@ -578,8 +578,8 @@ $kelompok_stats = $stmt_kelompok_stats->fetchAll(PDO::FETCH_ASSOC);
 
                     <div class="alert alert-light border small text-muted mb-0">
                         <i class="bi bi-info-circle text-primary me-1"></i>
-                        Dokumen dicetak dalam format <strong>PDF ukuran A4</strong> (memuat 4 kartu per lembar kertas),
-                        lengkap dengan logo sekolah, nama & alamat sekolah, data siswa, serta tanda tangan kepala sekolah.
+                        Dokumen dicetak dalam format <strong>PDF ukuran A4</strong> (memuat 6 kartu ukuran 9x9 cm per lembar kertas),
+                        lengkap dengan logo sekolah &amp; yayasan, identitas peserta (nama, NIS, kelas, kelompok, password, ruang), serta jadwal mata pelajaran.
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
